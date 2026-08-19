@@ -3,23 +3,11 @@
   "name": "io.github.nirholas/xactions",
   "title": "XActions",
   "description": "X/Twitter automation MCP: scrape, post, schedule, analyze, engage. No API key required.",
-  "license": "Apache-2.0",
-  "authors": [
-    {
-      "name": "nich",
-      "url": "https://github.com/nirholas"
-    }
-  ],
   "repository": {
     "url": "https://github.com/nirholas/XActions",
     "source": "github"
   },
   "version": "3.5.0",
-  "links": {
-    "homepage": "https://github.com/nirholas/XActions",
-    "bugs": "https://github.com/nirholas/XActions/issues",
-    "npm": "https://www.npmjs.com/package/xactions"
-  },
   "icons": [
     {
       "src": "https://xactions.app/icon-192.png",
