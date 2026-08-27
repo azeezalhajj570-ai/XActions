@@ -33,6 +33,9 @@
 /analytics /analytics.html 200
 /calendar /calendar.html 200
 
-# API proxy to backend — Cloud Run service "xactions-api", mapped to
-# api.xactions.app (see deploy/gcp/provision-api.sh)
-/api/* https://api.xactions.app/api/:splat 200
+# /api/* is served by Pages Functions (functions/api/), not by a redirect.
+# Cloudflare Pages rejects a 200-proxy rule that points at another origin
+# ("Proxy (200) redirects can only point to relative paths"), so the rule that
+# used to live here never took effect. functions/api/[[path]].js forwards to
+# XACTIONS_API_ORIGIN when that variable is set on the Pages project, and
+# answers a JSON 503 when it is not.

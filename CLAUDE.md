@@ -64,7 +64,8 @@ api/                → Express.js backend
   ├── services/     → Business logic (jobQueue, scrapers, payments)
   ├── middleware/    → Auth, rate limiting, error handling
   └── realtime/     → Socket.io handlers
-dashboard/          → Static HTML frontend (served by Express)
+dashboard/          → Static HTML frontend (served by Express, deployed to Cloudflare Pages)
+functions/          → Cloudflare Pages Functions: the /api/* surface xactions.app serves at the edge
 skills/             → 32 Agent Skills (skills/*/SKILL.md)
 tests/              → Vitest tests (agents/, client/, http-scraper/, a2a/)
 types/              → TypeScript declarations (index.d.ts)

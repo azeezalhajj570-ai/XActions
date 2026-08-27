@@ -6,7 +6,8 @@
 # Wildcard thread viewer: /thread/<id> all serve the same SPA shell
 /thread/:id /thread.html 200
 
-# API proxy to backend — Railway URL is currently dead (404), needs a live
-# backend deployed before this route works. Set XACTIONS_API_URL in
-# Cloudflare Pages env vars once one exists.
-/api/* https://web-production-2eb69.up.railway.app/api/:splat 200
+# /api/* is served by Pages Functions (functions/api/), not by a redirect.
+# A 200-proxy rule pointing at another origin is rejected by Pages, so the
+# rule that used to live here never took effect. functions/api/[[path]].js
+# forwards to XACTIONS_API_ORIGIN when that variable is set on the Pages
+# project, and answers a JSON 503 when it is not.

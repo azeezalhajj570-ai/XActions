@@ -62,18 +62,32 @@ served at `/foo`, and a direct request to `/foo.html` gets a 308 redirect to
   trailing-slash form (`/scripts/`), which then serves the index. This is
   standard web server behavior, not a bug — no rule needed.
 
+## The `/api/*` surface
+
+`_redirects` cannot proxy to another origin: Pages accepts a 200-rewrite only
+when it points at a relative path, and silently drops the rule otherwise
+(wrangler prints "Proxy (200) redirects can only point to relative paths" at
+build time). The `/api/*` rule that used to live here therefore never worked,
+which is why `POST /api/video/extract` answered a bare 405 from the static
+asset handler.
+
+`/api/*` is now served by Pages Functions in [`functions/`](../../functions),
+which deploy with the site:
+
+- `/api/health` and the three `/api/video/*` routes run entirely at the edge,
+  with no backend at all.
+- Every other `/api/*` route needs the Node backend (Postgres, Redis,
+  Puppeteer). Set `XACTIONS_API_ORIGIN` on the Pages project to forward them to
+  a self-hosted deployment; without it they answer a JSON 503 that says so.
+
 ## Current limitations
 
-- `/api/*` proxies to a Railway URL (`web-production-2eb69.up.railway.app`)
-  that currently returns 404 (backend not deployed). App pages that call
-  the API (login, monitor, analytics-dashboard) will not function until a
-  live backend is deployed and `deploy/cloudflare/_redirects` is updated to
-  point at it. All content pages (docs, blog, tutorials, pricing, etc.)
-  work fully without it.
-- Custom domain (`xactions.app`) is not yet attached to this Pages project.
-  That requires switching the domain's nameservers to Cloudflare at the
-  registrar (Namecheap), then adding the domain under the Pages project's
-  Custom Domains tab.
+- App pages that call non-video API routes (login, monitor,
+  analytics-dashboard) need a self-hosted backend and `XACTIONS_API_ORIGIN`.
+  All content pages (docs, blog, tutorials, pricing) and the video downloader
+  work fully without one.
+- Deploys come from `.github/workflows/deploy-cloudflare.yml`, which requires
+  the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
 
 ## Alternative: Google Cloud Run
 

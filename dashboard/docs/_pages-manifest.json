@@ -801,7 +801,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/video-downloader.md",
-    "minutes": 2
+    "minutes": 3
   },
   {
     "slug": "video-generation",
@@ -2109,7 +2109,7 @@
     "outSubdir": "project",
     "priority": 0.5,
     "sourcePath": "CHANGELOG.md",
-    "minutes": 22
+    "minutes": 24
   },
   {
     "slug": "roadmap",
