@@ -212,7 +212,7 @@
 </ul>
 <h2>Quick Start</h2>
 <ol>
-<li>Navigate to your profile page: <code>https://x.com/YOUR_USERNAME</code></li>
+<li>Navigate to your own profile: <code>https://x.com/YOUR_USERNAME</code>. Its tabs work too,<br>so <code>https://x.com/YOUR_USERNAME/with_replies</code> is the right place to clear replies.</li>
 <li>Open DevTools (F12) and go to the Console tab</li>
 <li>Copy the contents of <code>src/bulkDeleteTweets.js</code></li>
 <li>Edit the <code>CONFIG</code> section (filters, dryRun)</li>
@@ -440,8 +440,12 @@ XActionsUtils.abort();   // Stop
 </tr>
 </thead>
 <tbody><tr>
-<td>&quot;Navigate to your profile page first!&quot;</td>
-<td>Go to <code>x.com/YOUR_USERNAME</code></td>
+<td>&quot;Run this on your profile timeline&quot;</td>
+<td>You are on a feed, a single post, or a section like <code>/home</code>. Open <code>x.com/YOUR_USERNAME</code> (or one of its tabs).</td>
+</tr>
+<tr>
+<td>&quot;This is @someone&#39;s profile&quot;</td>
+<td>You are viewing another account. The script only deletes posts on the account you are signed in as.</td>
 </tr>
 <tr>
 <td>&quot;No confirm dialog&quot;</td>

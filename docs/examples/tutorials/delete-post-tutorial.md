@@ -8,7 +8,8 @@
 - **Backup first** -- deletion is permanent. Consider using `src/backupAccount.js` before deleting.
 
 ## Quick Start
-1. Navigate to your profile page: `https://x.com/YOUR_USERNAME`
+1. Navigate to your own profile: `https://x.com/YOUR_USERNAME`. Its tabs work too,
+   so `https://x.com/YOUR_USERNAME/with_replies` is the right place to clear replies.
 2. Open DevTools (F12) and go to the Console tab
 3. Copy the contents of `src/bulkDeleteTweets.js`
 4. Edit the `CONFIG` section (filters, dryRun)
@@ -228,7 +229,8 @@ A JSON file is auto-downloaded with all deleted tweets:
 
 | Problem | Solution |
 |---------|----------|
-| "Navigate to your profile page first!" | Go to `x.com/YOUR_USERNAME` |
+| "Run this on your profile timeline" | You are on a feed, a single post, or a section like `/home`. Open `x.com/YOUR_USERNAME` (or one of its tabs). |
+| "This is @someone's profile" | You are viewing another account. The script only deletes posts on the account you are signed in as. |
 | "No confirm dialog" | X may have changed the delete confirmation UI |
 | Script stops with consecutive errors | The three-dot menu or delete option selectors may need updating |
 | Not all tweets deleted | Reload the page and re-run. Some tweets load lazily. |

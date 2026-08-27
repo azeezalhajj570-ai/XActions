@@ -384,13 +384,31 @@
     console.log(&#39;║  by nichxbt — v1.0&#39; + &#39; &#39;.repeat(W - 21) + &#39;║&#39;);
     console.log(&#39;╚&#39; + &#39;═&#39;.repeat(W) + &#39;╝&#39;);
 
-    // Detect profile
-    const pathMatch = window.location.pathname.match(/^\/([A-Za-z0-9_]+)/);
-    if (!pathMatch || [&#39;home&#39;, &#39;explore&#39;, &#39;notifications&#39;, &#39;messages&#39;, &#39;i&#39;, &#39;search&#39;, &#39;settings&#39;].includes(pathMatch[1])) {
-      console.error(&#39;❌ Navigate to your profile page first! (x.com/YOUR_USERNAME)&#39;);
+    // Detect profile. X serves it at /&lt;handle&gt; and its tabs at /&lt;handle&gt;/&lt;tab&gt;,
+    // so accept both; a feed, a single status, or a reserved section is not a
+    // profile timeline. The signed-in handle comes from the left nav.
+    const PROFILE_TABS = [&#39;with_replies&#39;, &#39;media&#39;, &#39;likes&#39;, &#39;highlights&#39;, &#39;articles&#39;, &#39;superfollows&#39;, &#39;affiliates&#39;];
+    const RESERVED = [&#39;home&#39;, &#39;explore&#39;, &#39;notifications&#39;, &#39;messages&#39;, &#39;i&#39;, &#39;search&#39;, &#39;settings&#39;, &#39;compose&#39;,
+      &#39;hashtag&#39;, &#39;bookmarks&#39;, &#39;lists&#39;, &#39;topics&#39;, &#39;communities&#39;, &#39;jobs&#39;];
+    const pathMatch = window.location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/([A-Za-z0-9_]+))?\/?$/);
+    const pathUser = pathMatch &amp;&amp; !RESERVED.includes(pathMatch[1].toLowerCase()) ? pathMatch[1] : null;
+    const onProfile = Boolean(pathUser) &amp;&amp; (!pathMatch[2] || PROFILE_TABS.includes(pathMatch[2].toLowerCase()));
+
+    const navHref = document.querySelector(&#39;a[data-testid=&quot;AppTabBar_Profile_Link&quot;]&#39;)?.getAttribute(&#39;href&#39;) || &#39;&#39;;
+    const switcher = document.querySelector(&#39;[data-testid=&quot;SideNav_AccountSwitcher_Button&quot;]&#39;)?.textContent || &#39;&#39;;
+    const ownHandle = (navHref.match(/^\/([A-Za-z0-9_]{1,15})$/) || switcher.match(/@([A-Za-z0-9_]{1,15})/) || [])[1] || null;
+
+    if (!onProfile) {
+      console.error(ownHandle
+        ? `❌ Run this on your profile timeline: https://x.com/${ownHandle}`
+        : &#39;❌ Run this on your profile timeline (x.com/YOUR_USERNAME)&#39;);
       return;
     }
-    const profileUser = pathMatch[1];
+    if (ownHandle &amp;&amp; pathUser.toLowerCase() !== ownHandle.toLowerCase()) {
+      console.error(`❌ This is @${pathUser}&#39;s profile. You can only delete your own posts: https://x.com/${ownHandle}`);
+      return;
+    }
+    const profileUser = ownHandle || pathUser;
     console.log(`\n👤 Profile: @${profileUser}`);
 
     // Log active filters
@@ -747,7 +765,7 @@ xactions --help
 <pre><code class="language-bash"># Start MCP server
 npm run mcp
 </code></pre>
-<p>See the <a href="/docs/guides/mcp-setup">MCP Setup Guide</a> for integration with Claude Desktop, Cursor, and other AI tools.</p>
+<p>See the <a href="../mcp-setup.md">MCP Setup Guide</a> for integration with Claude Desktop, Cursor, and other AI tools.</p>
 <hr>
 <h2>📁 Source Files</h2>
 <table>
@@ -772,7 +790,7 @@ npm run mcp
 </tr>
 </thead>
 <tbody><tr>
-<td>See <a href="/docs/guides/readme">all scripts</a></td>
+<td>See <a href="README.md">all scripts</a></td>
 <td>Browse the complete script catalog</td>
 </tr>
 </tbody></table>

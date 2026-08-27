@@ -7,12 +7,13 @@
  * @name         delete-tweets
  * @description  DESTRUCTIVE: bulk-delete your own posts by age, keywords, or performance. Defaults to a safe dry run.
  * @author       nichxbt
- * @version      1.0.0
- * @date         2026-07-20
+ * @version      1.1.0
+ * @date         2026-08-27
  * @website      https://xactions.app
  *
  * Usage:
- *   1. Go to YOUR OWN profile page (x.com/YOUR_USERNAME)
+ *   1. Go to YOUR OWN profile (x.com/YOUR_USERNAME). Its tabs work too:
+ *      /with_replies, /media, /likes, /highlights, /articles
  *   2. Open the browser console (F12 or Cmd+Option+I -> Console)
  *   3. (Optional) edit the CONFIG options at the top of the script
  *   4. Paste this entire script and press Enter. It starts in DRY RUN and
@@ -77,7 +78,9 @@
     likeButton: '[data-testid="like"], [data-testid="unlike"]',
     socialContext: '[data-testid="socialContext"]',
     confirm: '[data-testid="confirmationSheetConfirm"]',
-    menuItem: '[role="menuitem"]'
+    menuItem: '[role="menuitem"]',
+    profileLink: 'a[data-testid="AppTabBar_Profile_Link"]',
+    accountSwitcher: '[data-testid="SideNav_AccountSwitcher_Button"]'
   };
 
   // ============================================
@@ -144,6 +147,28 @@
   const isPinned = (tweet) => /pinned/i.test(tweet.querySelector(SELECTORS.socialContext)?.textContent || '');
   const isRepost = (tweet) => /reposted/i.test(tweet.querySelector(SELECTORS.socialContext)?.textContent || '');
 
+  // The signed-in handle, read from the left nav: the profile link on wide
+  // layouts, the account switcher on narrow ones. Null when neither rendered.
+  const getOwnHandle = () => {
+    const href = document.querySelector(SELECTORS.profileLink)?.getAttribute('href') || '';
+    const fromNav = href.match(/^\/([A-Za-z0-9_]{1,15})$/);
+    if (fromNav) return fromNav[1];
+    const switcher = document.querySelector(SELECTORS.accountSwitcher)?.textContent || '';
+    const fromSwitcher = switcher.match(/@([A-Za-z0-9_]{1,15})/);
+    return fromSwitcher ? fromSwitcher[1] : null;
+  };
+
+  // The timeline hydrates after the shell paints, so poll instead of giving up
+  // on the first empty query.
+  const waitForPosts = async (timeoutMs = 15000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (document.querySelector(SELECTORS.tweet)) return true;
+      await sleep(500);
+    }
+    return false;
+  };
+
   // ============================================
   // 🎯 MAIN LOGIC
   // ============================================
@@ -176,16 +201,35 @@
 ╚══════════════════════════════════════════════════════════╝
   `);
 
-  // Page guard: must be on the user's own profile (a /<handle> path, not a
-  // reserved section). Warn, do not redirect.
-  const pathMatch = window.location.pathname.match(/^\/([A-Za-z0-9_]{1,15})\/?$/);
-  const reserved = ['home', 'explore', 'notifications', 'messages', 'i', 'search', 'settings', 'compose', 'hashtag'];
-  if (!pathMatch || reserved.includes(pathMatch[1].toLowerCase())) {
-    log.warning('Go to YOUR OWN profile page first (x.com/YOUR_USERNAME), then run this again.');
+  // Page guard: this has to run on your own profile timeline. X serves that at
+  // /<handle> and its tabs at /<handle>/<tab>, so accept both; anything else
+  // (a feed, a single status, a reserved section) is not a profile. Warn, do
+  // not redirect.
+  const PROFILE_TABS = ['with_replies', 'media', 'likes', 'highlights', 'articles', 'superfollows', 'affiliates'];
+  const RESERVED = ['home', 'explore', 'notifications', 'messages', 'i', 'search', 'settings', 'compose',
+    'hashtag', 'bookmarks', 'lists', 'topics', 'communities', 'jobs', 'tos', 'privacy'];
+  const pathMatch = window.location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/([A-Za-z0-9_]+))?\/?$/);
+  const pathUser = pathMatch && !RESERVED.includes(pathMatch[1].toLowerCase()) ? pathMatch[1] : null;
+  const onProfile = Boolean(pathUser) && (!pathMatch[2] || PROFILE_TABS.includes(pathMatch[2].toLowerCase()));
+  const ownHandle = getOwnHandle();
+
+  if (!onProfile) {
+    log.warning(ownHandle
+      ? `Run this on your profile timeline. Open https://x.com/${ownHandle} and run it again.`
+      : 'Run this on your profile timeline (x.com/YOUR_USERNAME), then run it again.');
     return;
   }
-  const profileUser = pathMatch[1];
+
+  if (ownHandle && pathUser.toLowerCase() !== ownHandle.toLowerCase()) {
+    log.error(`This is @${pathUser}'s profile. You can only delete your own posts: open https://x.com/${ownHandle} and run it again.`);
+    return;
+  }
+
+  const profileUser = ownHandle || pathUser;
   log.info(`Profile: @${profileUser}`);
+  if (!ownHandle) {
+    log.warning('Could not confirm the signed-in account from the page. Make sure this is YOUR profile before turning off dryRun.');
+  }
 
   // Loud destructive warning.
   if (CONFIG.dryRun) {
@@ -200,8 +244,11 @@
   log.info(`Keywords: ${CONFIG.containingKeywords.length ? CONFIG.containingKeywords.join(', ') : 'none (matches all)'}`);
   log.info('To stop early: window.stopDeleteTweets()');
 
-  if (document.querySelector(SELECTORS.tweet) === null) {
-    log.warning('No posts visible yet. Wait for your profile to load, then re-run.');
+  if (!document.querySelector(SELECTORS.tweet)) {
+    log.info('Waiting for your posts to render...');
+  }
+  if (!(await waitForPosts())) {
+    log.warning('No posts rendered after 15s. Reload the page, let the timeline appear, then run this again.');
     return;
   }
 
@@ -215,6 +262,10 @@
     for (const tweet of tweets) {
       if (stopped) break;
       if (CONFIG.dryRun ? stats.wouldDelete >= CONFIG.maxDeletes : stats.deleted >= CONFIG.maxDeletes) break;
+
+      // A live deletion re-renders the timeline, which detaches nodes still
+      // held by this snapshot; clicking one does nothing.
+      if (!tweet.isConnected) continue;
 
       const tweetId = getTweetId(tweet);
       if (!tweetId || processed.has(tweetId)) continue;
