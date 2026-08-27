@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   test:
-    name: Test
+    name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -54,14 +54,22 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: 6379
 
+    strategy:
+      fail-fast: false
+      matrix:
+        # engines.node says >=20, so prove it on the floor and on what
+        # people actually run. A test that only ever sees 20 is a claim,
+        # not a guarantee.
+        node-version: [20, 22, 24]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
@@ -80,6 +88,31 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Report coverage
+        if: matrix.node-version == 20
+        run: npm run test:coverage
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
 
   build:
     name: Build Check
