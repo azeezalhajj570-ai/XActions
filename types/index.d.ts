@@ -756,6 +756,57 @@ export declare function buildGraphQLUrl(
   fieldToggles?: Record<string, boolean>,
 ): string;
 
+// ── Cookie Import (painless login) ────────────────────────────────────────────
+
+/** A cookie parsed from an export or read from a browser database. */
+export interface ImportedCookie {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  secure: boolean;
+  httpOnly: boolean;
+  /** ISO 8601 expiry, or null when the cookie is a session cookie. */
+  expires: string | null;
+}
+
+/** Cookie export formats understood by parseCookieInput / detectCookieFormat. */
+export type CookieFormat = 'json-array' | 'storage-state' | 'netscape' | 'header' | 'unknown';
+
+/** Browsers readBrowserCookies can read cookies from. */
+export type BrowserName = 'chrome' | 'chromium' | 'brave' | 'edge' | 'arc' | 'firefox';
+
+export interface ParseCookieOptions {
+  /** Force a format instead of auto-detecting. */
+  format?: CookieFormat | 'auto';
+}
+
+/**
+ * Parse cookie text in any supported format (Netscape cookies.txt, Cookie-Editor
+ * / EditThisCookie JSON, Playwright / Puppeteer storageState, or a raw
+ * "auth_token=...; ct0=..." header string) into X/Twitter cookies.
+ *
+ * @throws When the text is empty or contains no X/Twitter cookies.
+ */
+export function parseCookieInput(text: string, options?: ParseCookieOptions): ImportedCookie[];
+
+/** Identify which cookie export format a blob of text is. */
+export function detectCookieFormat(text: string): CookieFormat;
+
+/**
+ * Read x.com cookies straight out of a locally installed browser. Supports
+ * Firefox everywhere, and Chromium-family browsers on Linux (default key) and
+ * macOS (Keychain). Throws an actionable Error naming the --cookies-file export
+ * path for unsupported combinations.
+ *
+ * @throws On an unknown browser name or an unsupported platform/browser combo.
+ */
+export function readBrowserCookies(browser: BrowserName): ImportedCookie[];
+
+/** Browsers readBrowserCookies understands. */
+export const SUPPORTED_BROWSERS: BrowserName[];
+
+
 // ============================================================================
 // AI: prompt-driven comment generator (src/ai/commentGenerator.js)
 // ============================================================================

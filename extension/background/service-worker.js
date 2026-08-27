@@ -339,6 +339,15 @@ function updateBadge() {
   });
 }
 
+/** Snapshot for the popup's GET_STATE request (plain data, safe to post as a message). */
+function getState() {
+  return {
+    automations: state.activeAutomations,
+    globalPaused: state.globalPaused,
+    totalActions: state.totalActions,
+  };
+}
+
 async function syncState() {
   await chrome.storage.local.set({
     automations: state.activeAutomations,

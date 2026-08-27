@@ -22,6 +22,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 import { VERSION } from '../../version.js';
+import { countInstalledSkills } from './skills.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xactions');
 const COOKIE_FILE = path.join(CONFIG_DIR, 'cookies.json');
@@ -242,6 +243,27 @@ async function checkMcp() {
 }
 
 /**
+ * Are the bundled skills installed anywhere an agent will read them.
+ * @returns {Promise<CheckResult>}
+ */
+async function checkSkills() {
+  try {
+    const counts = await countInstalledSkills();
+    const perTarget = ['claude', 'cursor', 'codex', 'windsurf'].map((t) => `${t} ${counts[t]}`).join(', ');
+    if (counts.total === 0) {
+      return {
+        status: 'warn',
+        detail: `No skills installed (${perTarget})`,
+        fix: 'Run `xactions skills install --all --global` so your agent knows which script to reach for.',
+      };
+    }
+    return { status: 'ok', detail: `${counts.total} skill install${counts.total === 1 ? '' : 's'} found (${perTarget})` };
+  } catch (error) {
+    return { status: 'fail', detail: `Could not read the skills catalogue: ${error.message}`, fix: 'Reinstall with `npm install -g xactions`.' };
+  }
+}
+
+/**
  * Print the result of one check.
  * @param {string} name
  * @param {CheckResult} result
@@ -277,6 +299,7 @@ export async function doctorCommand() {
   await run('Node', checkNode());
   await run('Browser', await checkBrowser());
   await run('MCP server', await checkMcp());
+  await run('Skills', await checkSkills());
 
   console.log('');
   console.log(chalk.bold('  Guest tier'), chalk.gray('(works with no account)'));

@@ -26,7 +26,7 @@
     return;
   }
 
-  const { log, sleep, randomDelay, scrollBy, clickElement, SELECTORS, storage, rateLimit } = window.XActions.Core;
+  const { log, sleep, randomDelay, scrollBy, clickElement, waitForElement, SELECTORS, storage, rateLimit } = window.XActions.Core;
 
   // ========================================================================
   // PANEL STATE

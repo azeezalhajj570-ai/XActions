@@ -25,6 +25,12 @@ import {
   NotFoundError,
   NetworkError,
 } from './errors.js';
+import {
+  resolveOperation,
+  refreshQueryIds,
+  maybeRefreshInBackground,
+  isStaleQueryIdError,
+} from './queryIds.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,6 +75,11 @@ export class TwitterHttpClient {
    * @param {number} [options.maxRetries=3]
    * @param {string|'rotate'} [options.userAgent]
    * @param {function} [options.fetch] - Custom fetch implementation
+   * @param {boolean} [options.autoRefreshQueryIds] - Re-discover GraphQL query IDs
+   *   from x.com's bundles when a call fails with a stale-ID error, and in the
+   *   background when the on-disk cache is older than 24h. Defaults to true,
+   *   except under vitest where it defaults to false so unit tests never reach
+   *   the network unless they opt in.
    */
   constructor(options = {}) {
     this._cookies = {};
@@ -76,6 +87,7 @@ export class TwitterHttpClient {
     this._maxRetries = options.maxRetries ?? 3;
     this._fetch = options.fetch || globalThis.fetch;
     this._userAgents = USER_AGENTS;
+    this._autoRefreshQueryIds = options.autoRefreshQueryIds ?? !process.env.VITEST;
 
     if (options.userAgent && options.userAgent !== 'rotate') {
       this._userAgents = [options.userAgent];
@@ -259,9 +271,37 @@ export class TwitterHttpClient {
     const features = options.features || DEFAULT_FEATURES;
     const isMutation = options.mutation === true;
 
+    // The caller's queryId is the hardcoded table value. Prefer the ID
+    // discovered from x.com's live bundles when one is cached; otherwise the
+    // caller's ID is used as given, so offline behaviour is unchanged.
+    const resolved = resolveOperation(operationName);
+    const resolvedId = resolved.source === 'cache' ? resolved.queryId : queryId;
+
+    if (this._autoRefreshQueryIds) {
+      maybeRefreshInBackground({ fetch: this._fetch });
+    }
+
+    try {
+      return await this._graphqlOnce(resolvedId, operationName, variables, features, isMutation);
+    } catch (err) {
+      if (!this._autoRefreshQueryIds || !this._isStaleQueryIdFailure(err)) throw err;
+      const freshId = await this._refreshedQueryId(operationName);
+      if (!freshId || freshId === resolvedId) throw err;
+      if (this._debug) {
+        console.log(`[TwitterHttpClient] ${operationName}: query ID ${resolvedId} is stale, retrying with ${freshId}`);
+      }
+      return this._graphqlOnce(freshId, operationName, variables, features, isMutation);
+    }
+  }
+
+  /**
+   * One GraphQL round-trip with a fixed query ID.
+   * @private
+   */
+  async _graphqlOnce(queryId, operationName, variables, features, isMutation) {
     if (isMutation) {
       const url = `${GRAPHQL_BASE}/${queryId}/${operationName}`;
-      // Mutations don't paginate — return raw JSON
+      // Mutations don't paginate: return raw JSON
       return this.request(url, {
         method: 'POST',
         body: { variables, features, queryId },
@@ -274,6 +314,33 @@ export class TwitterHttpClient {
     // Extract bottom cursor for pagination (queries only)
     const cursor = this._extractCursor(json);
     return { data: json, cursor };
+  }
+
+  /**
+   * A 404 on a GraphQL URL, or a 400 whose body names the persisted query,
+   * means the query ID no longer exists on x.com's side.
+   * @private
+   */
+  _isStaleQueryIdFailure(err) {
+    if (err instanceof NotFoundError) return true;
+    return err instanceof TwitterApiError && isStaleQueryIdError(err.status, err.data);
+  }
+
+  /**
+   * Re-discover query IDs from the live bundles and return the operation's
+   * new ID, or null if discovery failed (offline, blocked, no bundle).
+   * @private
+   */
+  async _refreshedQueryId(operationName) {
+    try {
+      await refreshQueryIds({ fetch: this._fetch });
+    } catch (err) {
+      if (this._debug) {
+        console.log(`[TwitterHttpClient] query ID refresh failed: ${err.message}`);
+      }
+      return null;
+    }
+    return resolveOperation(operationName).queryId;
   }
 
   /**

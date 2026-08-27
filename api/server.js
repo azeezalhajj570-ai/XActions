@@ -12,6 +12,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Process-level safety net. A Puppeteer page crash or a rejected promise inside a
+// background job must not take the whole API down with it: log it, keep serving.
+process.on('unhandledRejection', (reason) => {
+  const detail = reason instanceof Error ? (reason.stack || reason.message) : String(reason);
+  console.error(`❌ Unhandled promise rejection (server kept running): ${detail}`);
+});
+process.on('uncaughtException', (error) => {
+  console.error(`❌ Uncaught exception (server kept running): ${error?.stack || error}`);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -561,8 +571,12 @@ httpServer.listen(PORT, async () => {
     const x402Validation = validateX402Config(false);
     if (x402Validation.valid) {
       console.log(`  ├─ x402 micropayments: enabled`);
+    } else if (process.env.NODE_ENV === 'production' && x402Validation.errors.length > 0) {
+      // Fail loudly: paid routes will answer 500 until X402_PAY_TO_ADDRESS is set.
+      console.error('❌ x402 micropayments: DISABLED (configuration error)');
+      x402Validation.errors.forEach((e) => console.error(`   • ${e}`));
     }
-    // Silently skip if not configured — x402 is optional
+    // Otherwise skip quietly: x402 is optional
   } catch (error) {
     // x402 is optional — don't crash if not configured
     if (process.env.DEBUG) console.warn('x402 config:', error.message);

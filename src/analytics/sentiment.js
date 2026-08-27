@@ -37,7 +37,7 @@ const LEXICON = {
   'interesting': 1, 'hope': 1, 'thanks': 1, 'thank': 1,
 
   // Mild negative (-1)
-  'meh': -1, 'boring': -1, 'slow': -1, 'mediocre': -1, 'overrated': -1,
+  'meh': -1, 'boring': -1, 'mediocre': -1, 'overrated': -1,
   'underwhelming': -1, 'concerned': -1, 'doubt': -1, 'uncertain': -1,
 
   // Moderate negative (-2/-3)

@@ -21,9 +21,11 @@
 | [Architecture](architecture.md) | System design and project structure |
 | [Analytics & Monitoring](analytics.md) | Sentiment, reputation, follower tracking |
 | [AI Features](ai-api.md) | AI tweet writer, voice analysis, Grok |
-| [Skills Reference](skills.md) | 31 agent skills for AI assistants |
+| [Skills Reference](skills.md) | 49 agent skills for AI assistants |
 | [DOM Selectors](dom-selectors.md) | X/Twitter DOM selector reference |
 | [Troubleshooting](troubleshooting.md) | Common issues and fixes |
+| [Portability](portability.md) | Import your X data archive, export and migrate to Bluesky or Mastodon |
+| [Audits](audits/2026-08-27-competitive-and-structural-audit.md) | Competitive gap analysis and repo health, with the open backlog |
 
 ## Interfaces
 
@@ -41,7 +43,7 @@ XActions provides **5 interfaces** to the same underlying toolkit:
 ```
 
 1. **CLI** — `xactions <command>` from your terminal
-2. **MCP Server** — 145 tools for Claude, Cursor, Windsurf, GPT
+2. **MCP Server** — 149 tools for Claude, Cursor, Windsurf, GPT
 3. **REST API** — 170+ endpoints at `localhost:3001/api`
 4. **Web Dashboard** — Full-featured UI at `localhost:3001`
 5. **Browser Scripts** — Paste into DevTools on x.com
@@ -57,7 +59,7 @@ XActions provides **5 interfaces** to the same underlying toolkit:
 
 ## Version
 
-Current version: **v3.1.0** (February 2026)
+Current version: **v3.5.0** (August 2026)
 
 ---
 

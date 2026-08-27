@@ -28,7 +28,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 </p>
 
 <p>
-  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-145-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="145 MCP Tools"></a>&nbsp;
+  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-149-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="149 MCP Tools"></a>&nbsp;
   <a href="https://smithery.ai/server/xactions"><img src="https://smithery.ai/badge/xactions" alt="Smithery"></a>&nbsp;
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP_Registry-deployed-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="MCP Registry"></a>&nbsp;
   <a href="Dockerfile"><img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>&nbsp;
@@ -101,13 +101,14 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 
 > Why build with XActions instead of the alternatives?
 
-| Feature | **XActions** | twikit | twitter-mcp | agent-twitter-client | twit | twitter-scraper |
-|---------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **No API Key Required** | ✅ | ✅ | ❌ Needs keys | ✅ | ❌ Needs keys | ✅ |
-| **MCP Server (AI agents)** | ✅ **145 tools** | ❌ | ✅ 2 tools | ❌ | ❌ | ❌ |
-| **Browser Console Scripts** | ✅ 50+ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **AI Voice Agent in Spaces** | ✅ Join, listen, speak | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CLI** | ✅ 12 commands | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Feature | **XActions** | twikit | twscrape | x-use | xmcp (official) | bird | twitter-cli | Agent-Reach |
+|---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **No API Key Required** | ✅ | ✅ Cookies | ✅ Account pool | ✅ Browser | ❌ X API keys | ✅ Cookies | ❌ X API keys | ✅ |
+| **MCP Server (AI agents)** | ✅ **149 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
+| **Browser Console Scripts** | ✅ 94 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **AI Voice Agent in Spaces** | ✅ Join, listen, speak | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **CLI** | ✅ 50+ commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Language** | JavaScript | Python | Python | TypeScript | TypeScript | TypeScript | Python | Python |
 
 **XActions is the only toolkit that works in the browser, terminal, and with AI agents — all without an API key.**
 
@@ -130,7 +131,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | **Plugin system** | Community plugins via npm: `xactions-plugin-*` packages extend scrapers, MCP tools, and automation. |
 | **Workflow engine** | Declarative JSON pipelines with triggers, conditions, and chained actions. |
 | **Sentiment analysis** | Offline rule-based analyzer, with an optional LLM mode behind the same interface. |
-| **Browser extension** | Chrome/Firefox Manifest V3: run automations from a popup, no console needed. |
+| **Browser extension** | Chrome/Edge Manifest V3: run automations from a popup, no console needed. |
 
 
 ---
@@ -162,7 +163,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 - [Space Agent (AI Voice)](#-autonomous-space-agent) — AI agents in live Spaces
 - [CLI Reference](#-cli-reference) — Command line usage
 - [Node.js API](#-nodejs-api) — Programmatic access
-- [Browser Scripts](docs/browser-scripts.md) — 93 console scripts, no install
+- [Browser Scripts](docs/browser-scripts.md) — 94 console scripts, no install
 - [Docker](#-docker) — One-command deployment
 - [API Reference](#-api-reference) — Full function documentation
 - [Claude Tutorials](#-claude-tutorials) — 23 ready-to-paste prompts
@@ -423,7 +424,7 @@ This only applies to the hosted remote API. Local mode is always free.
 </tr>
 <tr><td><strong>Scope</strong></td><td>Browser + CLI + Node.js + MCP + Extension</td><td>Usually 1 thing</td></tr>
 <tr><td><strong>API Key</strong></td><td>Not needed</td><td>Most need Twitter API ($100/mo)</td></tr>
-<tr><td><strong>MCP Tools</strong></td><td>140+ for Claude, GPT, Cursor</td><td>0–2 tools</td></tr>
+<tr><td><strong>MCP Tools</strong></td><td>149 for Claude, GPT, Cursor</td><td>0–2 tools</td></tr>
 <tr><td><strong>AI Features</strong></td><td>Sentiment, Grok, reputation</td><td>None</td></tr>
 <tr><td><strong>Export</strong></td><td>JSON, CSV, Markdown, HTML</td><td>JSON only (if any)</td></tr>
 <tr><td><strong>Migration</strong></td><td>Bluesky & Mastodon stubs</td><td>None</td></tr>
@@ -935,7 +936,7 @@ npx xactions mcp-config --client cursor
 npx xactions mcp-config --client windsurf
 ```
 
-### Available MCP Tools (140+)
+### Available MCP Tools (149)
 
 | Category | Tools |
 |----------|-------|
@@ -1170,7 +1171,7 @@ Use browser scripts &nbsp;·&nbsp; Copy-paste console scripts &nbsp;·&nbsp; Vie
 
 ---
 
-## � Built With
+## 🛠️ Built With
 
 <p>
   <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
@@ -1185,7 +1186,7 @@ Use browser scripts &nbsp;·&nbsp; Copy-paste console scripts &nbsp;·&nbsp; Vie
 
 ---
 
-## �📁 Project Structure
+## 📁 Project Structure
 
 ```
 xactions/
@@ -1198,7 +1199,7 @@ xactions/
 │   │   ├── mastodon/     # Mastodon scrapers (REST API)
 │   │   └── threads/      # Threads scrapers (Puppeteer)
 │   ├── cli/              # Command-line interface
-│   ├── mcp/              # MCP server (145 tools for AI agents)
+│   ├── mcp/              # MCP server (149 tools for AI agents)
 │   ├── spaces/           # Autonomous Space agent (xspace-agent integration)
 │   ├── automation/       # Browser console automation scripts
 │   ├── plugins/          # Plugin system (loader, manager, template)
@@ -1208,14 +1209,14 @@ xactions/
 │   ├── portability/      # Account export, migration, archive viewer
 │   └── graph/            # Social graph analysis & visualization
 ├── api/                  # Express REST API
-│   ├── routes/           # 29 route modules
+│   ├── routes/           # 39 route modules
 │   ├── services/         # Business logic + Bull job queue
 │   ├── middleware/       # Auth, x402, AI detection
 │   └── realtime/         # Socket.IO handler
 ├── dashboard/            # Website (static HTML pages)
-├── extension/            # Chrome/Firefox browser extension (Manifest V3)
+├── extension/            # Chrome/Edge browser extension (Manifest V3)
 ├── docs/                 # Documentation
-├── skills/               # 26 Agent Skills (skills/*/SKILL.md)
+├── skills/               # 49 Agent Skills (skills/*/SKILL.md)
 ├── tests/                # Vitest test suite
 └── prisma/               # Database schema
 ```
@@ -1389,20 +1390,22 @@ curl -X POST https://modelcontextprotocol.name/mcp/xactions \
 
 > Extended feature-by-feature comparison with every alternative.
 
-| Feature | **XActions** | twikit | twitter-mcp | agent-twitter-client | twit | twitter-scraper |
-|---------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Node.js Library** | ✅ | ❌ Python | ✅ | ✅ | ✅ | ❌ Python |
-| **Workflow Engine** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Sentiment Analysis** | ✅ Built-in | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Real-Time Streaming** | ✅ | ❌ | ❌ | ❌ | ✅ API only | ❌ |
-| **Account Export/Migration** | ✅ JSON/CSV/HTML | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Dashboard (No-Code)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Grok AI Integration** | ✅ | ✅ Separate pkg | ❌ | ❌ | ❌ | ❌ |
-| **Docker Support** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **TypeScript Types** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Claude Tutorials** | ✅ 22 prompts | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Language** | JavaScript | Python | TypeScript | TypeScript | JavaScript | Python |
-| **Cost** | **Free** | Free | Free + API keys | Free | Free + API keys | Free |
+| Feature | **XActions** | twikit | twscrape | x-use | xmcp (official) | bird | twitter-cli | Agent-Reach |
+|---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Node.js Library** | ✅ | ❌ Python | ❌ Python | ✅ | ✅ | ✅ | ❌ Python | ❌ Python |
+| **Workflow Engine** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Sentiment Analysis** | ✅ Built-in | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Real-Time Streaming** | ✅ | ❌ | ❌ | ❌ | ✅ API only | ❌ | ❌ | ❌ |
+| **Account Export/Migration** | ✅ JSON/CSV/HTML | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Dashboard (No-Code)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Grok AI Integration** | ✅ | ✅ Separate pkg | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Docker Support** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **TypeScript Types** | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Claude Tutorials** | ✅ 22 prompts | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Multi-platform (X + others)** | ✅ Bluesky, Mastodon, Threads | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Cost** | **Free** | Free | Free | Free | Free + X API plan | Free | Free + X API plan | Free |
+
+Comparison reflects each project's public README at time of writing (August 2026); open an issue if a column is out of date.
 
 ## Documentation
 

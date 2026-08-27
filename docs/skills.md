@@ -16,6 +16,47 @@ them to use, in what order, for this task."
 
 ## Using them
 
+### Install into your agent
+
+The CLI ships the whole catalogue and can copy any skill into the directory
+your coding agent already reads. Nothing is fetched: `xactions skills` resolves
+the `skills/` directory relative to the installed package, so it works from a
+global `npm install -g xactions` as well as a clone.
+
+```bash
+xactions skills list                                   # every skill, and where each is installed
+xactions skills show follower-monitoring               # print one SKILL.md in full
+xactions skills install --all --global                 # Claude Code, for every project: ~/.claude/skills/<id>/
+xactions skills install growth-automation              # Claude Code, this project only: ./.claude/skills/<id>/
+xactions skills install --all --target cursor          # ./.cursor/rules/<id>.mdc
+xactions skills install --all --target codex --global  # ~/.codex/skills/<id>/
+xactions skills install --all --target windsurf        # ./.windsurf/rules/<id>.md
+xactions skills uninstall --all --target cursor
+```
+
+Where each target puts things, and what it writes:
+
+| `--target` | Destination | What lands there |
+|---|---|---|
+| `claude` (default) | `~/.claude/skills/<id>/` with `--global`, else `./.claude/skills/<id>/` | The skill directory, copied whole, so `references/` and relative script paths keep working |
+| `project` | `./.claude/skills/<id>/` | Same as `claude` without `--global` |
+| `cursor` | `./.cursor/rules/<id>.mdc` | SKILL.md wrapped in `.mdc` frontmatter (`description`, `globs: []`, `alwaysApply: false`) |
+| `codex` | `~/.codex/skills/<id>/` with `--global`, else `./.codex/skills/<id>/` | The skill directory, plus a managed block in `./AGENTS.md` listing every installed SKILL.md |
+| `windsurf` | `./.windsurf/rules/<id>.md` | SKILL.md wrapped in Windsurf frontmatter (`trigger: model_decision`) |
+
+`cursor`, `windsurf` and `project` are per-project by definition, so `--global`
+is ignored for them and the command says so.
+
+Every run is idempotent and reports what it did per skill: `installed`,
+`updated` (the copy on disk was stale), `unchanged`, `removed`, or `absent`.
+The rules-file targets carry a `Source:` line naming the package's skill
+directory, because a SKILL.md refers to its scripts by relative path and the
+agent needs to know where those resolve. `--json` on any sub-command prints
+the same report as JSON.
+
+`xactions doctor` reports how many skills are installed per target, and
+`xactions skills list` marks each skill with where it was found.
+
 ### With Claude Code
 
 Point Claude at the directory. It reads the frontmatter `description` of each
@@ -138,7 +179,7 @@ _49 skills. Generated from [`skills/index.json`](../skills/index.json)._
 | [X Pro Management](../skills/x-pro-management/SKILL.md) | Navigate X Pro (TweetDeck), set up monitoring columns, manage multi-column view. |
 | [x402 Payments](../skills/x402-payments/SKILL.md) | Enable x402 crypto payment protocol for XActions API access — multi-chain, multi-currency. |
 | [XActions CLI](../skills/xactions-cli/SKILL.md) | Command-line interface for scraping, MCP server config, and automation — `npm install -g xactions`. |
-| [XActions MCP Server](../skills/xactions-mcp-server/SKILL.md) | 145 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze). |
+| [XActions MCP Server](../skills/xactions-mcp-server/SKILL.md) | 149 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze). |
 
 ---
 
@@ -169,7 +210,7 @@ Rules that keep a skill useful:
 
 ## Related
 
-- [MCP Setup](mcp-setup.md) — the 145 tools skills drive
+- [MCP Setup](mcp-setup.md) — the 149 tools skills drive
 - [Browser Scripts](browser-scripts.md) — what most skills reference
 - [Agents](agents.md) — the autonomous agent that consumes skills
 - [AGENTS.md](../AGENTS.md) — integration notes for AI coding assistants

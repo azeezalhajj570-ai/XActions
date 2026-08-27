@@ -255,7 +255,7 @@ import { dmManager, profileManager, engagementManager } from 'xactions';
 
 ## MCP Server
 
-145 tools for AI agent integration. See [MCP Server docs](examples/mcp-server.md).
+149 tools for AI agent integration. See [MCP Server docs](examples/mcp-server.md).
 
 ```bash
 # Start MCP server

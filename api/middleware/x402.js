@@ -265,7 +265,7 @@ export async function x402Middleware(req, res, next) {
     if (process.env.NODE_ENV !== 'production') {
       return next();
     }
-    return res.status(500).json({ error: 'Payment system not configured' });
+    return res.status(500).json({ error: 'Payment system not configured', hint: 'Set X402_PAY_TO_ADDRESS to a 0x wallet address on the server' });
   }
 
   // Lazy-initialize middleware

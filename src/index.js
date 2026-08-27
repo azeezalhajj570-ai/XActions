@@ -35,6 +35,20 @@ export { scrapers };
 export { Scraper, SearchMode, Tweet, Profile, ScraperError } from './client/index.js';
 
 // ============================================================================
+// Cookie Import (painless login)
+// ============================================================================
+// Parse cookie exports (Netscape cookies.txt, Cookie-Editor / EditThisCookie
+// JSON, Playwright / Puppeteer storageState, or a raw header string) and read
+// x.com cookies straight out of a locally installed browser.
+
+export {
+  parseCookieInput,
+  detectCookieFormat,
+  readBrowserCookies,
+  SUPPORTED_BROWSERS,
+} from './client/auth/cookieImport.js';
+
+// ============================================================================
 // Plugin System
 // ============================================================================
 

@@ -383,6 +383,103 @@ const mastoProfile = await mastodon.getProfile('user', 'https://mastodon.social'
 
 ---
 
+## GraphQL Query ID Discovery
+
+Every GraphQL call to x.com is addressed by a persisted query ID
+(`/i/api/graphql/<queryId>/<operationName>`). X rotates those IDs whenever it
+ships a new web bundle, and a stale ID answers `404 Query not found`. That is
+the single most common way a no-API client breaks, and the reason a scraper
+that worked last month stops working with no code change.
+
+The HTTP scraper refreshes its IDs the way the web client does, from x.com's
+own JavaScript bundles (`src/scrapers/twitter/http/queryIds.js`):
+
+1. Load an x.com page that still ships the classic client (`/home`, then
+   `/i/flow/login`). `https://x.com/` itself is a server-rendered shell with
+   no bundles, so it is only a last resort.
+2. Read the inline webpack runtime's chunk manifest (chunk name to hash) and the
+   `main.*.js` URL.
+3. Download `main` plus the feature chunks that carry the operations XActions
+   uses (`bundle.LoggedInMain`, `ondemand.HoverCard`, the Bookmarks, HomeTimeline
+   and TweetActivity `shared~` chunks, ...). About 2 MB in total. A full sweep of
+   every chunk (`scope: 'full'`) is ~130 MB and only worth it when you need an
+   operation outside the table.
+4. Extract every `{queryId, operationName, operationType}` descriptor and write
+   them to `~/.xactions/query-ids.json` (or `$XACTIONS_HOME/query-ids.json`)
+   with a `fetchedAt` timestamp.
+
+### Resolution order
+
+For any operation: the cached/discovered ID, then the hardcoded table in
+`src/scrapers/twitter/http/endpoints.js`. Offline behaviour is unchanged: with
+no cache and no network the hardcoded IDs are used exactly as before. The cache
+wins over the table because it was read from x.com's live bundle, and the
+table value may have rotated since it was pinned.
+
+### When it refreshes
+
+`TwitterHttpClient` handles this on its own:
+
+- A GraphQL call that fails with `404`, or `400` with an error naming the
+  persisted query, triggers one refresh and one retry with the new ID. If the
+  refreshed ID is unchanged, or discovery fails (offline), the original error is
+  rethrown. Mutations are only retried when the first attempt was rejected for a
+  stale ID, so nothing is ever sent twice.
+- When the cache is older than 24 hours, a refresh starts in the background (at
+  most once per hour per process) without blocking the call.
+
+Pass `autoRefreshQueryIds: false` to the client to turn both off. Under vitest
+the default is off, so unit tests never reach the network unless they opt in.
+
+### API
+
+```javascript
+import {
+  discoverQueryIds,
+  refreshQueryIds,
+  getQueryId,
+  resolveOperation,
+  queryIdStatus,
+} from 'xactions/scrapers/twitter/http/queryIds.js';
+
+// Probe x.com now and persist the result
+const { count, source, cachePath } = await discoverQueryIds();
+console.log(`${count} operations from ${source.mainBundle} -> ${cachePath}`);
+
+// Cache > discovered > hardcoded, never touches the network
+getQueryId('TweetDetail');                 // 'XMOz5h24KAZ86qKffKTLdQ'
+resolveOperation('Likes');                 // { queryId, operationName: 'Favoriters', source: 'cache' }
+
+// Force a refresh (concurrent callers share one in-flight discovery)
+await refreshQueryIds({ fetch: myProxiedFetch, scope: 'full' });
+
+// For diagnostics (`xactions doctor` reads this)
+queryIdStatus();                           // { cached, fetchedAt, count, cachePath, stale }
+```
+
+`resolveOperation` accepts either an operationName (`Favoriters`) or a key of
+the hardcoded table (`Likes`). `src/client/api/graphqlQueries.js` reads the same
+cache on every access, so the high-level `Scraper` client benefits without
+changes.
+
+### Verifying against live x.com
+
+```bash
+node --input-type=module -e '
+import { discoverQueryIds } from "./src/scrapers/twitter/http/queryIds.js";
+import { GRAPHQL } from "./src/scrapers/twitter/http/endpoints.js";
+const r = await discoverQueryIds({ persist: false });
+for (const e of Object.values(GRAPHQL)) {
+  const live = r.operations[e.operationName]?.queryId;
+  console.log(e.operationName.padEnd(26), live === e.queryId ? "match" : `differs (${live})`);
+}'
+```
+
+On 2026-08-27 this found 148 operations and 22 of the 26 hardcoded IDs had
+rotated, including `UserByScreenName`, `TweetDetail` and `SearchTimeline`.
+
+---
+
 ## Environment Variables
 
 | Variable | Description |

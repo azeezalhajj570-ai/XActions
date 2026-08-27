@@ -12,7 +12,8 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
+import { createSpinner, printCompact, resolveOutputMode } from '../../utils/output.js';
 
 import { buildAccountReport, compareReports, formatCount, WEEKDAYS } from '../../analysis/accountReport.js';
 
@@ -213,7 +214,8 @@ export function registerReportCommand(program, { createHttpScraper, smartOutput 
     .option('--json', 'Print raw JSON instead of the formatted report')
     .action(async (usernames, options) => {
       const limit = Math.min(Math.max(parseInt(options.limit, 10) || 50, 5), 200);
-      const spinner = ora(`Sampling ${limit} posts...`).start();
+      const mode = resolveOutputMode(program, options);
+      const spinner = createSpinner(`Sampling ${limit} posts...`, mode);
 
       try {
         const scraper = await createHttpScraper();
@@ -226,7 +228,9 @@ export function registerReportCommand(program, { createHttpScraper, smartOutput 
 
         spinner.stop();
 
-        if (options.json) {
+        if (mode.compact) {
+          printCompact(reports, { kind: 'report', fields: mode.fields });
+        } else if (options.json) {
           console.log(JSON.stringify(reports.length === 1 ? reports[0] : reports, null, 2));
         } else if (reports.length === 1) {
           printReport(reports[0]);

@@ -314,9 +314,9 @@ for (const file of files) {
   // -- 4. Version claims --------------------------------------------------
   // Only flag explicit product-version claims ("XActions v3.1.0"), not every
   // semver in a changelog or a dependency range. Release notes and launch
-  // posts are historical records: "XActions v3.1.0" in one of those is correct
+  // posts (and dated audit snapshots under docs/audits/) are historical records: "XActions v3.1.0" in one of those is correct
   // forever and must not be rewritten.
-  const historical = /(^|\/)(CHANGELOG|ROADMAP)\.md$|(^|\/)(launch|releases|changelog)\//i.test(rel);
+  const historical = /(^|\/)(CHANGELOG|ROADMAP)\.md$|(^|\/)(launch|releases|changelog|audits)\//i.test(rel);
 
   for (const match of historical ? [] : content.matchAll(/XActions\s+v(\d+\.\d+\.\d+)/g)) {
     if (match[1] === PKG_VERSION) continue;

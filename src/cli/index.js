@@ -25,7 +25,9 @@ import { registerReportCommand } from './commands/report.js';
 import { registerQuickstartCommand } from './commands/quickstart.js';
 import { registerCompletionCommand } from './commands/completion.js';
 import { registerEngageCommand } from './commands/engage.js';
+import { registerSkillsCommand } from './commands/skills.js';
 import { renderRootHelp } from './help-groups.js';
+import { createSpinner, printCompact, resolveOutputMode } from '../utils/output.js';
 
 const program = new Command();
 
@@ -49,6 +51,34 @@ async function loadConfig() {
 async function saveConfig(config) {
   await fs.mkdir(CONFIG_DIR, { recursive: true });
   await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+/** Where the full cookie jar lives; `createHttpScraper` reads this first. */
+const COOKIE_FILE = path.join(CONFIG_DIR, 'cookies.json');
+
+/**
+ * Persist an imported set of cookies through the same storage path every later
+ * command reads. Writes the full jar to ~/.xactions/cookies.json (owner-only,
+ * what `createHttpScraper` prefers) and mirrors auth_token + ct0 into
+ * config.json (the fallback path). Returns the two tokens for reporting.
+ *
+ * @param {Array<{name: string, value: string, domain?: string, path?: string, secure?: boolean, httpOnly?: boolean, expires?: string|null}>} cookies
+ * @returns {Promise<{authToken: string|undefined, csrfToken: string|undefined, count: number}>}
+ */
+async function saveImportedSession(cookies) {
+  await fs.mkdir(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  await fs.writeFile(COOKIE_FILE, JSON.stringify(cookies, null, 2), { encoding: 'utf-8', mode: 0o600 });
+
+  const authToken = cookies.find((c) => c.name === 'auth_token')?.value;
+  const csrfToken = cookies.find((c) => c.name === 'ct0')?.value;
+
+  const config = await loadConfig();
+  if (authToken) config.authToken = authToken;
+  if (csrfToken) config.csrfToken = csrfToken;
+  else delete config.csrfToken;
+  await saveConfig(config);
+
+  return { authToken, csrfToken, count: cookies.length };
 }
 
 function formatNumber(num) {
@@ -128,7 +158,19 @@ const AUTH_HINT =
  * @param {Object} options - CLI options (output, googleSheets, sheetName)
  * @param {string} defaultName - Default filename stem (e.g., 'followers')
  */
+/** Record kind per smartOutput default name, so --compact knows which columns matter. */
+const COMPACT_KIND = { followers: 'user', following: 'user', tweets: 'tweet', report: 'report' };
+
 async function smartOutput(data, options, defaultName = 'data') {
+  // `--compact` is the agent-facing sibling of `--json`: one record per line,
+  // essential fields only. Like `--json` it is a stdout contract and wins
+  // over every file destination.
+  const mode = resolveOutputMode(program, options);
+  if (mode.compact) {
+    printCompact(data, { kind: COMPACT_KIND[defaultName] || 'record', fields: mode.fields });
+    return;
+  }
+
   // `--json` is an explicit "give me the data on stdout" and outranks every
   // destination flag. These commands already default to JSON when no
   // destination is set, but a script written against the documented contract
@@ -196,7 +238,9 @@ async function smartOutput(data, options, defaultName = 'data') {
 program
   .name('xactions')
   .description(chalk.bold('⚡ XActions - The Complete X/Twitter Automation Toolkit'))
-  .version(VERSION);
+  .version(VERSION)
+  .option('--compact', 'One record per line, essential fields only, no colours or spinners (for agents and pipes)')
+  .option('--fields <list>', 'With --compact: comma-separated fields to print, e.g. id,text,likes');
 
 // ============================================================================
 // Commands that live in their own modules
@@ -213,6 +257,7 @@ registerReportCommand(program, { createHttpScraper, smartOutput });
 registerEngageCommand(program, { createHttpScraper, loadConfig, configDir: CONFIG_DIR });
 registerQuickstartCommand(program, { version: VERSION });
 registerCompletionCommand(program);
+registerSkillsCommand(program);
 
 // ============================================================================
 // Auth Commands
@@ -221,9 +266,63 @@ registerCompletionCommand(program);
 program
   .command('login')
   .description('Set up authentication with session cookie')
-  .action(async () => {
+  .option(
+    '--cookies-file <path>',
+    'Import cookies from a file: Netscape cookies.txt, Cookie-Editor / EditThisCookie JSON, Playwright / Puppeteer storageState, or a raw "auth_token=...; ct0=..." string',
+  )
+  .option(
+    '--from-browser [browser]',
+    'Read x.com cookies from a locally installed browser: chrome, chromium, brave, edge, arc, or firefox (default: firefox)',
+  )
+  .action(async (options) => {
+    // --cookies-file: parse an export and save it through the session path.
+    if (options.cookiesFile) {
+      const { parseCookieInput } = await import('../client/auth/cookieImport.js');
+      const spinner = ora(`Reading cookies from ${options.cookiesFile}`).start();
+      try {
+        const text = await fs.readFile(options.cookiesFile, 'utf-8');
+        const cookies = parseCookieInput(text);
+        const { authToken, csrfToken, count } = await saveImportedSession(cookies);
+        spinner.succeed(chalk.green(`Imported ${count} x.com cookie${count === 1 ? '' : 's'}`));
+        reportSessionSaved(authToken, csrfToken);
+      } catch (error) {
+        spinner.fail(chalk.red(error.message));
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    // --from-browser: read cookies straight out of the browser's cookie DB.
+    if (options.fromBrowser !== undefined) {
+      const { readBrowserCookies, SUPPORTED_BROWSERS } = await import('../client/auth/cookieImport.js');
+      const browser = options.fromBrowser === true ? 'firefox' : String(options.fromBrowser).toLowerCase();
+      if (!SUPPORTED_BROWSERS.includes(browser)) {
+        console.error(
+          chalk.red(`Unknown browser "${browser}". Supported: ${SUPPORTED_BROWSERS.join(', ')}.`),
+        );
+        process.exitCode = 1;
+        return;
+      }
+      const spinner = ora(`Reading x.com cookies from ${browser}`).start();
+      try {
+        const cookies = readBrowserCookies(browser);
+        const { authToken, csrfToken, count } = await saveImportedSession(cookies);
+        spinner.succeed(chalk.green(`Imported ${count} x.com cookie${count === 1 ? '' : 's'} from ${browser}`));
+        reportSessionSaved(authToken, csrfToken);
+      } catch (error) {
+        spinner.fail(chalk.red(error.message));
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    // Default: interactive paste of auth_token + ct0.
     console.log(chalk.cyan('\n⚡ XActions Login Setup\n'));
-    console.log(chalk.gray('To get your session cookies:'));
+    console.log(chalk.gray('Fastest paths (no DevTools):'));
+    console.log(chalk.gray('  xactions login --from-browser firefox    Read cookies from your browser'));
+    console.log(chalk.gray('  xactions login --cookies-file cookies.txt  Import an exported cookies file'));
+    console.log(chalk.gray('  xactions connect                          Log in through a real browser\n'));
+    console.log(chalk.gray('Or paste them by hand:'));
     console.log(chalk.gray('1. Go to x.com and log in'));
     console.log(chalk.gray('2. Open DevTools (F12) → Application → Cookies → https://x.com'));
     console.log(chalk.gray('3. Copy the values of "auth_token" and "ct0"\n'));
@@ -266,6 +365,30 @@ program
     }
   });
 
+/**
+ * Print the outcome of a cookie import in a consistent voice, warning when the
+ * CSRF token is missing (session-tier endpoints stay blocked without it).
+ *
+ * @param {string|undefined} authToken
+ * @param {string|undefined} csrfToken
+ */
+function reportSessionSaved(authToken, csrfToken) {
+  if (!authToken) {
+    console.log(
+      chalk.yellow('  No auth_token found in that source. Make sure you were logged in to x.com when exporting.\n'),
+    );
+    return;
+  }
+  console.log(chalk.gray(`  Saved to ${COOKIE_FILE} (owner-only)`));
+  if (!csrfToken) {
+    console.log(
+      chalk.yellow('  No ct0 found — login-only endpoints (search, DMs) will stay blocked until you re-import with ct0.\n'),
+    );
+  } else {
+    console.log(chalk.gray('  auth_token + ct0 captured. Session-tier commands are unlocked.\n'));
+  }
+}
+
 program
   .command('logout')
   .description('Remove saved authentication')
@@ -285,7 +408,8 @@ program
   .description('Get profile information for a user')
   .option('-j, --json', 'Output as JSON')
   .action(async (username, options) => {
-    const spinner = ora(`Fetching profile for @${username}`).start();
+    const mode = resolveOutputMode(program, options);
+    const spinner = createSpinner(`Fetching profile for @${username}`, mode);
 
     try {
       const scraper = await createHttpScraper();
@@ -299,7 +423,9 @@ program
 
       spinner.stop();
 
-      if (options.json) {
+      if (mode.compact) {
+        printCompact(profile, { kind: 'profile', fields: mode.fields });
+      } else if (options.json) {
         console.log(JSON.stringify(profile, null, 2));
       } else {
         console.log(chalk.bold(`\n⚡ @${profile.username || username}\n`));
@@ -342,7 +468,7 @@ program
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (username, options) => {
     const limit = parseInt(options.limit);
-    const spinner = ora(`Scraping followers for @${username}`).start();
+    const spinner = createSpinner(`Scraping followers for @${username}`, resolveOutputMode(program, options));
 
     try {
       const scraper = await createHttpScraper();
@@ -375,7 +501,7 @@ program
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (username, options) => {
     const limit = parseInt(options.limit);
-    const spinner = ora(`Scraping following for @${username}`).start();
+    const spinner = createSpinner(`Scraping following for @${username}`, resolveOutputMode(program, options));
 
     try {
       const scraper = await createHttpScraper();
@@ -405,7 +531,8 @@ program
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (username, options) => {
     const limit = parseInt(options.limit);
-    const spinner = ora('Analyzing follow relationships...').start();
+    const mode = resolveOutputMode(program, options);
+    const spinner = createSpinner('Analyzing follow relationships...', mode);
 
     try {
       const scraper = await createHttpScraper();
@@ -435,6 +562,11 @@ program
       const mutuals = following.filter((u) => followerHandles.has(u.username.toLowerCase()));
 
       spinner.succeed('Analysis complete!');
+
+      if (mode.compact) {
+        printCompact(nonFollowers, { kind: 'user', fields: mode.fields });
+        return;
+      }
 
       console.log(chalk.bold('\n📊 Follow Analysis\n'));
       console.log(`  ${chalk.cyan('Total Following:')} ${following.length}`);
@@ -477,7 +609,7 @@ program
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (username, options) => {
     const limit = parseInt(options.limit);
-    const spinner = ora(`Scraping tweets from @${username}`).start();
+    const spinner = createSpinner(`Scraping tweets from @${username}`, resolveOutputMode(program, options));
 
     try {
       const scraper = await createHttpScraper();
@@ -511,7 +643,8 @@ program
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (query, options) => {
     const limit = parseInt(options.limit);
-    const spinner = ora(`Searching for "${query}"`).start();
+    const mode = resolveOutputMode(program, options);
+    const spinner = createSpinner(`Searching for "${query}"`, mode);
 
     try {
       const scraper = await createHttpScraper();
@@ -534,7 +667,9 @@ program
       assertNotEmpty(tweets, `results for "${query}"`, AUTH_HINT);
       spinner.succeed(`Found ${tweets.length} tweets`);
 
-      if (options.json) {
+      if (mode.compact) {
+        printCompact(tweets, { kind: 'tweet', fields: mode.fields });
+      } else if (options.json) {
         console.log(JSON.stringify(tweets, null, 2));
       } else if (options.output) {
         await scrapers.exportToJSON(tweets, options.output);
@@ -558,7 +693,8 @@ program
   .action(async (tag, options) => {
     const limit = parseInt(options.limit);
     const hashtag = tag.startsWith('#') ? tag : `#${tag}`;
-    const spinner = ora(`Scraping ${hashtag}`).start();
+    const mode = resolveOutputMode(program, options);
+    const spinner = createSpinner(`Scraping ${hashtag}`, mode);
 
     try {
       const browser = await scrapers.createBrowser();
@@ -574,7 +710,9 @@ program
 
       spinner.succeed(`Found ${tweets.length} tweets`);
 
-      if (options.json) {
+      if (mode.compact) {
+        printCompact(tweets, { kind: 'tweet', fields: mode.fields });
+      } else if (options.json) {
         console.log(JSON.stringify(tweets, null, 2));
       } else if (options.output) {
         await scrapers.exportToJSON(tweets, options.output);
@@ -594,7 +732,8 @@ program
   .option('-o, --output <file>', 'Output file')
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (url, options) => {
-    const spinner = ora('Scraping thread...').start();
+    const mode = resolveOutputMode(program, options);
+    const spinner = createSpinner('Scraping thread...', mode);
 
     try {
       const browser = await scrapers.createBrowser();
@@ -610,7 +749,9 @@ program
 
       spinner.succeed(`Scraped ${thread.length} tweets in thread`);
 
-      if (options.json) {
+      if (mode.compact) {
+        printCompact(thread, { kind: 'tweet', fields: mode.fields });
+      } else if (options.json) {
         console.log(JSON.stringify(thread, null, 2));
       } else if (options.output) {
         await scrapers.exportToJSON(thread, options.output);
@@ -636,7 +777,8 @@ program
   .option('--json', 'Force JSON on stdout, ignoring --output and --google-sheets')
   .action(async (username, options) => {
     const limit = parseInt(options.limit);
-    const spinner = ora(`Scraping media from @${username}`).start();
+    const mode = resolveOutputMode(program, options);
+    const spinner = createSpinner(`Scraping media from @${username}`, mode);
 
     try {
       const browser = await scrapers.createBrowser();
@@ -652,7 +794,9 @@ program
 
       spinner.succeed(`Found ${media.length} media items`);
 
-      if (options.json) {
+      if (mode.compact) {
+        printCompact(media, { kind: 'media', fields: mode.fields });
+      } else if (options.json) {
         console.log(JSON.stringify(media, null, 2));
       } else if (options.output) {
         await scrapers.exportToJSON(media, options.output);

@@ -31,7 +31,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +40,20 @@ import { fileURLToPath } from 'node:url';
 // ============================================================================
 
 import { initializePlugins, getPluginTools } from '../plugins/index.js';
+
+// ============================================================================
+// Tool filtering + draft approval
+// ============================================================================
+
+import {
+  createToolFilter,
+  isWriteTool,
+  groupOf,
+  buildGroups,
+  GROUP_NAMES,
+  ALWAYS_AVAILABLE_TOOLS,
+} from './tool-groups.js';
+import * as drafts from './drafts.js';
 
 // ============================================================================
 // Configuration
@@ -221,7 +235,7 @@ const TOOLS = [
   },
   {
     name: 'x_follow',
-    description: 'Follow an X/Twitter user.',
+    description: 'Follow an X/Twitter account by username. Requires an authenticated session (XACTIONS_SESSION_COOKIE).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -235,7 +249,7 @@ const TOOLS = [
   },
   {
     name: 'x_unfollow',
-    description: 'Unfollow an X/Twitter user.',
+    description: 'Unfollow an X/Twitter account by username. Requires an authenticated session (XACTIONS_SESSION_COOKIE).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -285,7 +299,7 @@ const TOOLS = [
   },
   {
     name: 'x_post_tweet',
-    description: 'Post a new tweet to X/Twitter.',
+    description: 'Publish a new tweet from the authenticated account. Returns the posted tweet URL when X reports success.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -299,7 +313,7 @@ const TOOLS = [
   },
   {
     name: 'x_like',
-    description: 'Like a tweet by its URL.',
+    description: 'Like a tweet by its URL from the authenticated account. Idempotent: liking an already-liked tweet is a no-op.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -313,7 +327,7 @@ const TOOLS = [
   },
   {
     name: 'x_retweet',
-    description: 'Retweet a tweet by its URL.',
+    description: 'Retweet (repost) a tweet by its URL from the authenticated account, without adding a quote comment.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -327,7 +341,7 @@ const TOOLS = [
   },
   {
     name: 'x_download_video',
-    description: 'Get video download URLs from a tweet.',
+    description: 'Download the video attached to a tweet and return the local file path plus the resolved media URL and metadata.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -356,7 +370,7 @@ const TOOLS = [
   // ====== Posting & Content ======
   {
     name: 'x_post_thread',
-    description: 'Post a multi-tweet thread to X/Twitter.',
+    description: 'Publish a multi-tweet thread from an ordered list of texts. Each entry becomes a reply to the previous one.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -371,7 +385,7 @@ const TOOLS = [
   },
   {
     name: 'x_create_poll',
-    description: 'Create a poll tweet on X/Twitter.',
+    description: 'Create a poll tweet with a question, two to four options, and a duration in minutes (default 24 hours).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -400,7 +414,7 @@ const TOOLS = [
   },
   {
     name: 'x_delete_tweet',
-    description: 'Delete a tweet by its URL.',
+    description: 'Permanently delete one of the authenticated account\'s tweets by its URL. This cannot be undone.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -412,7 +426,7 @@ const TOOLS = [
   // ====== Engagement ======
   {
     name: 'x_reply',
-    description: 'Reply to a tweet.',
+    description: 'Reply to a tweet by its URL with the given text. The reply is posted from the authenticated account.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -424,7 +438,7 @@ const TOOLS = [
   },
   {
     name: 'x_bookmark',
-    description: 'Bookmark a tweet.',
+    description: 'Save a tweet to the authenticated account\'s private bookmarks by its URL so it can be found later.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -435,7 +449,7 @@ const TOOLS = [
   },
   {
     name: 'x_get_bookmarks',
-    description: 'Export your bookmarked tweets.',
+    description: 'List the authenticated account\'s saved bookmarks, newest first, up to the requested limit.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -504,7 +518,7 @@ const TOOLS = [
   },
   {
     name: 'x_mute_user',
-    description: 'Mute an X/Twitter user.',
+    description: 'Mute an account by username so its posts stop appearing in the authenticated user\'s timeline and notifications.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -515,7 +529,7 @@ const TOOLS = [
   },
   {
     name: 'x_unmute_user',
-    description: 'Unmute an X/Twitter user.',
+    description: 'Unmute a previously muted account by username, restoring its posts to the authenticated user\'s timeline.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -539,7 +553,7 @@ const TOOLS = [
   },
   {
     name: 'x_get_conversations',
-    description: 'Get your DM conversation list.',
+    description: 'List the authenticated account\'s direct-message conversations with participants and the latest message preview.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -549,7 +563,7 @@ const TOOLS = [
   },
   {
     name: 'x_export_dms',
-    description: 'Export DM messages to JSON.',
+    description: 'Export the authenticated account\'s direct messages as structured JSON, including sender, text, and timestamps.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -584,7 +598,7 @@ const TOOLS = [
   // ====== Lists ======
   {
     name: 'x_get_lists',
-    description: 'Get your X/Twitter lists.',
+    description: 'List the X Lists the authenticated account owns or follows, with names, member counts, and URLs.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -607,7 +621,7 @@ const TOOLS = [
   // ====== Spaces ======
   {
     name: 'x_get_spaces',
-    description: 'Get live or scheduled X/Twitter Spaces.',
+    description: 'Discover X Spaces (live audio rooms) by state and topic: live now, scheduled, or recently ended.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -674,7 +688,7 @@ const TOOLS = [
   // ====== Analytics ======
   {
     name: 'x_get_analytics',
-    description: 'Get your account engagement analytics.',
+    description: 'Fetch the authenticated account\'s analytics dashboard: impressions, engagements, profile visits, and follower change for the period.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -715,7 +729,7 @@ const TOOLS = [
   },
   {
     name: 'x_get_blocked',
-    description: 'Get your blocked accounts list.',
+    description: 'List the accounts the authenticated user has blocked, with usernames and display names.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1570,7 +1584,7 @@ const TOOLS = [
   },
   {
     name: 'x_crm_tag',
-    description: 'Add a tag to a CRM contact.',
+    description: 'Attach one or more tags to a contact in the local CRM so it can be found later with x_crm_search or grouped by x_crm_segment.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1591,7 +1605,7 @@ const TOOLS = [
   },
   {
     name: 'x_crm_segment',
-    description: 'Get contacts in a CRM segment.',
+    description: 'Group the local CRM into segments by tag, follower count, or engagement level and return each segment\'s contacts.',
     inputSchema: {
       type: 'object',
       properties: { name: { type: 'string', description: 'Segment name' } },
@@ -1618,7 +1632,7 @@ const TOOLS = [
   // ── 09-F: Scheduler ──
   {
     name: 'x_schedule_add',
-    description: 'Add a cron-scheduled job.',
+    description: 'Queue a tweet to be posted later at the given ISO timestamp by the local scheduler. Returns the scheduled job id.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1631,12 +1645,12 @@ const TOOLS = [
   },
   {
     name: 'x_schedule_list',
-    description: 'List all scheduled jobs.',
+    description: 'List every tweet queued in the local scheduler with its id, text, scheduled time, and status.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'x_schedule_remove',
-    description: 'Remove a scheduled job.',
+    description: 'Cancel a queued tweet in the local scheduler by its job id so it is never posted.',
     inputSchema: {
       type: 'object',
       properties: { name: { type: 'string', description: 'Job name' } },
@@ -1662,7 +1676,7 @@ const TOOLS = [
   // ── 09-I: RSS Monitor ──
   {
     name: 'x_rss_add',
-    description: 'Add an RSS feed to monitor.',
+    description: 'Subscribe to an RSS or Atom feed URL so new entries can be turned into tweet drafts by x_rss_check.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1675,12 +1689,12 @@ const TOOLS = [
   },
   {
     name: 'x_rss_check',
-    description: 'Check all RSS feeds for new items.',
+    description: 'Poll the subscribed RSS feeds for entries published since the last check and stage them as tweet drafts.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'x_rss_drafts',
-    description: 'View drafts generated from RSS feeds.',
+    description: 'List the tweet drafts generated from RSS feed entries, ready for review, editing, or posting.',
     inputSchema: { type: 'object', properties: {} },
   },
 
@@ -1699,7 +1713,7 @@ const TOOLS = [
   },
   {
     name: 'x_suggest_hashtags',
-    description: 'Suggest relevant hashtags for a tweet.',
+    description: 'Suggest relevant hashtags for a draft tweet based on its topic, current trends, and the account\'s niche.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1758,7 +1772,7 @@ const TOOLS = [
   // ── 09-M: Datasets ──
   {
     name: 'x_dataset_list',
-    description: 'List all stored scraping datasets.',
+    description: 'List the locally saved datasets (exports, scrapes, snapshots) with their names, row counts, and timestamps.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -1778,7 +1792,7 @@ const TOOLS = [
   // ── 09-N: Team Management ──
   {
     name: 'x_team_create',
-    description: 'Create a new team.',
+    description: 'Create a named team workspace for shared accounts, roles, and audit history across several operators.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1790,7 +1804,7 @@ const TOOLS = [
   },
   {
     name: 'x_team_members',
-    description: 'List team members.',
+    description: 'List the members of a team workspace with their roles and when they were added.',
     inputSchema: {
       type: 'object',
       properties: { teamId: { type: 'string', description: 'Team ID' } },
@@ -2208,6 +2222,50 @@ const TOOLS = [
       },
     },
   },
+  // ====== Draft approval (always available, see tool-groups.js) ======
+  {
+    name: 'x_list_drafts',
+    description: 'List tool calls held as drafts by the approval gate (XACTIONS_MCP_REQUIRE_APPROVAL). Each draft records the tool, its arguments, when it was created, and whether it is still pending, has been executed, or failed. Newest first.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['pending', 'executed', 'failed', 'all'], description: 'Only return drafts in this state (default: all)' },
+      },
+    },
+  },
+  {
+    name: 'x_approve_draft',
+    description: 'Approve a pending draft and execute the stored tool call exactly as it was submitted. Returns the tool result and marks the draft executed; a draft that already ran is refused so nothing is posted twice.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Draft id returned when the call was held' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'x_discard_draft',
+    description: 'Delete a draft without executing it. Use this to reject a held write, or to clean up drafts that have already been executed or failed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Draft id to remove' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'x_draft_status',
+    description: 'Show one draft in full: the tool, the arguments it will run with, its current state, and the result or error if it has already been approved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Draft id to inspect' },
+      },
+      required: ['id'],
+    },
+  },
 ];
 
 // ============================================================================
@@ -2254,6 +2312,16 @@ async function executeTool(name, args) {
   // Add session cookie to args if provided globally
   if (SESSION_COOKIE && !args.cookie && name === 'x_login') {
     args.cookie = SESSION_COOKIE;
+  }
+
+  // Draft approval tools never touch a backend and are always available
+  if (ALWAYS_AVAILABLE_TOOLS.includes(name)) {
+    return await executeDraftTool(name, args);
+  }
+
+  // Platform directory: reads the scraper registry, needs no browser
+  if (name === 'x_list_platforms') {
+    return await executePlatformTool();
   }
 
   // Handle Space agent tools (xspace-agent integration)
@@ -2351,6 +2419,136 @@ async function executeTool(name, args) {
     }
     return await toolFn(args);
   }
+}
+
+/**
+ * Draft approval tools. The executor handed to approveDraft is executeTool
+ * itself, so an approved draft takes the identical dispatch path the live
+ * call would have (plugins, remote mode, multi-platform variants included).
+ */
+async function executeDraftTool(name, args) {
+  switch (name) {
+    case 'x_list_drafts': {
+      const list = drafts.listDrafts({ status: args.status || 'all' });
+      return {
+        count: list.length,
+        pending: list.filter((d) => d.status === 'pending').length,
+        store: drafts.getDraftsPath(),
+        drafts: list,
+      };
+    }
+    case 'x_approve_draft': {
+      if (!args.id) throw new Error('x_approve_draft: "id" is required');
+      const draft = await drafts.approveDraft(args.id, (tool, toolArgs) => executeTool(tool, toolArgs));
+      if (draft.status === 'failed') {
+        throw new Error(`Draft ${draft.id} (${draft.tool}) failed: ${draft.error}`);
+      }
+      return { approved: true, draft };
+    }
+    case 'x_discard_draft': {
+      if (!args.id) throw new Error('x_discard_draft: "id" is required');
+      const removed = drafts.discardDraft(args.id);
+      return { discarded: true, id: removed.id, tool: removed.tool, status: removed.status };
+    }
+    case 'x_draft_status': {
+      if (!args.id) throw new Error('x_draft_status: "id" is required');
+      const draft = drafts.getDraft(args.id);
+      if (!draft) throw new Error(`No draft with id "${args.id}"`);
+      return draft;
+    }
+    default:
+      throw new Error(`Unknown draft tool: ${name}`);
+  }
+}
+
+/**
+ * Capability names each scraper module exposes, keyed by the exported
+ * function that implements them. Mirrors the actionMap in scrapers/index.js
+ * so the MCP answer matches what `scrape(platform, action)` accepts.
+ */
+const PLATFORM_ACTION_NAMES = {
+  scrapeProfile: 'profile',
+  scrapeFollowers: 'followers',
+  scrapeFollowing: 'following',
+  scrapeTweets: 'posts',
+  searchTweets: 'search',
+  scrapeHashtag: 'hashtag',
+  scrapeTrending: 'trending',
+  scrapeThread: 'thread',
+  scrapeLikes: 'likes',
+  scrapeMedia: 'media',
+  scrapeListMembers: 'listMembers',
+  scrapeBookmarks: 'bookmarks',
+  scrapeNotifications: 'notifications',
+  scrapeCommunityMembers: 'communityMembers',
+  scrapeSpaces: 'spaces',
+  scrapeFeed: 'feed',
+};
+
+const PLATFORM_META = {
+  twitter: {
+    aliases: ['x'],
+    transport: 'browser',
+    auth: 'XACTIONS_SESSION_COOKIE (auth_token) for private data; guest tier for public profiles',
+    mcpTools: 'all x_* tools; the default when no platform argument is given',
+  },
+  bluesky: {
+    aliases: ['bsky'],
+    transport: 'api',
+    auth: 'BLUESKY_IDENTIFIER + BLUESKY_PASSWORD (app password) for authenticated calls',
+    mcpTools: 'x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets with platform: "bluesky"',
+  },
+  mastodon: {
+    aliases: ['masto'],
+    transport: 'api',
+    auth: 'MASTODON_INSTANCE + MASTODON_ACCESS_TOKEN for authenticated calls',
+    mcpTools: 'x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets with platform: "mastodon"',
+  },
+  threads: {
+    aliases: [],
+    transport: 'browser',
+    auth: 'none for public profiles',
+    mcpTools: 'x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets with platform: "threads"',
+  },
+};
+
+/**
+ * x_list_platforms: enumerate the scraper registry with the actions each
+ * platform module actually exports, plus the scraping adapters (Puppeteer,
+ * Playwright, Cheerio, ...) and whether their dependencies are installed.
+ */
+async function executePlatformTool() {
+  const scrapers = await import('../scrapers/index.js');
+  const { platforms, getAdapterInfo, getDefaultAdapterName } = scrapers;
+
+  const seen = new Set();
+  const result = [];
+  for (const [key, mod] of Object.entries(platforms)) {
+    if (seen.has(mod)) continue;
+    seen.add(mod);
+    const meta = PLATFORM_META[key] || { aliases: [], transport: 'unknown', auth: 'unknown', mcpTools: '' };
+    const capabilities = Object.keys(mod)
+      .filter((fn) => typeof mod[fn] === 'function' && PLATFORM_ACTION_NAMES[fn])
+      .map((fn) => PLATFORM_ACTION_NAMES[fn]);
+    result.push({
+      name: key,
+      aliases: meta.aliases,
+      transport: meta.transport,
+      auth: meta.auth,
+      capabilities,
+      mcpTools: meta.mcpTools,
+    });
+  }
+
+  const adapters = await getAdapterInfo();
+
+  return {
+    platforms: result,
+    defaultPlatform: 'twitter',
+    adapters,
+    defaultAdapter: getDefaultAdapterName(),
+    usage: 'Pass platform: "bluesky" | "mastodon" | "threads" to x_get_profile, x_get_followers, x_get_following, x_get_tweets, or x_search_tweets. Omit it for X/Twitter.',
+  };
 }
 
 /**
@@ -3816,7 +4014,55 @@ async function executeAITool(name, args) {
  * Create a configured MCP Server instance with all tool handlers registered.
  * Returns a new instance each time — needed for HTTP mode (one server per session).
  */
-function createMcpServer() {
+/**
+ * Resolve the runtime options that shape a server instance. Explicit
+ * options win, then environment variables, then defaults. Read at call time
+ * (not import time) so tests and the CLI can change the environment before
+ * building a server.
+ *
+ * @param {object} [overrides]
+ * @param {string | string[]} [overrides.tools] allowlist tokens (tool or group names)
+ * @param {string | string[]} [overrides.exclude] denylist tokens
+ * @param {boolean} [overrides.requireApproval] hold write tools as drafts
+ * @returns {{ tools: string | string[] | undefined, exclude: string | string[] | undefined, requireApproval: boolean }}
+ */
+function resolveServerOptions(overrides = {}) {
+  const truthy = (v) => v !== undefined && v !== '' && !['0', 'false', 'no', 'off'].includes(String(v).toLowerCase());
+  return {
+    tools: overrides.tools ?? process.env.XACTIONS_MCP_TOOLS,
+    exclude: overrides.exclude ?? process.env.XACTIONS_MCP_EXCLUDE,
+    requireApproval: overrides.requireApproval ?? truthy(process.env.XACTIONS_MCP_REQUIRE_APPROVAL),
+  };
+}
+
+/**
+ * Build the filter over the core tools plus whatever plugins registered.
+ * Plugin tools are only known after initializePlugins(), so the filter is
+ * rebuilt per request rather than cached at construction.
+ */
+function buildToolFilter(options) {
+  const pluginToolDefs = getPluginTools().map(({ _plugin, handler, ...def }) => def);
+  const all = [...TOOLS, ...pluginToolDefs];
+  return { all, filter: createToolFilter({ include: options.tools, exclude: options.exclude, tools: all }) };
+}
+
+/** Wrap a plain object as an MCP text result. */
+function textResult(payload, isError = false) {
+  return {
+    content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
+    ...(isError ? { isError: true } : {}),
+  };
+}
+
+/**
+ * Create an MCP Server instance wired to the tool list, the allowlist
+ * filter, and the draft-approval gate.
+ *
+ * @param {object} [overrides] see resolveServerOptions()
+ */
+function createMcpServer(overrides = {}) {
+  const options = resolveServerOptions(overrides);
+
   const srv = new Server(
     {
       name: 'xactions-mcp',
@@ -3829,15 +4075,47 @@ function createMcpServer() {
     }
   );
 
-  // List available tools (core + plugins)
+  // List available tools (core + plugins), minus anything filtered out
   srv.setRequestHandler(ListToolsRequestSchema, async () => {
-    const pluginToolDefs = getPluginTools().map(({ _plugin, handler, ...def }) => def);
-    return { tools: [...TOOLS, ...pluginToolDefs] };
+    const { all, filter } = buildToolFilter(options);
+    return { tools: filter.filter(all) };
   });
 
   // Execute tools
   srv.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+
+    // A filtered tool is neither listed nor callable. Say why, so an agent
+    // that remembered the tool from a previous session gets a fix, not a
+    // generic "unknown tool".
+    const { all, filter } = buildToolFilter(options);
+    if (!filter.isAllowed(name)) {
+      const exists = all.some((t) => t.name === name);
+      return textResult({
+        error: exists
+          ? `Tool "${name}" is disabled by the server's tool filter`
+          : `Unknown tool: ${name}`,
+        ...(exists ? {
+          group: groupOf(name),
+          hint: 'Remove it from XACTIONS_MCP_EXCLUDE / --exclude, or add its name or group to XACTIONS_MCP_TOOLS / --tools.',
+          groups: GROUP_NAMES,
+        } : {}),
+      }, true);
+    }
+
+    // Draft-approval gate: hold side-effect tools instead of running them
+    if (options.requireApproval && isWriteTool(name)) {
+      const draft = drafts.createDraft(name, args || {});
+      return textResult({
+        held: true,
+        draftId: draft.id,
+        tool: draft.tool,
+        args: draft.args,
+        createdAt: draft.createdAt,
+        message: `Approval mode is on. "${name}" was saved as draft ${draft.id} and has NOT been executed.`,
+        next: `Review with x_draft_status, run with x_approve_draft {"id":"${draft.id}"}, or drop with x_discard_draft.`,
+      });
+    }
 
     try {
       const result = await executeTool(name, args || {});
@@ -3990,41 +4268,168 @@ function printBanner(pluginCount, pluginToolCount) {
 }
 
 // ============================================================================
-// HTTP Transport (for Railway / remote deployment)
+// CLI flags
 // ============================================================================
+
+const CLI_USAGE = `Usage: xactions-mcp [options]
+
+Transport
+  --http                 Serve Streamable HTTP on /mcp instead of stdio
+  --port <n>             HTTP port (default: PORT env or 8787)
+  --host <addr>          HTTP bind address (default: XACTIONS_MCP_HOST env or 127.0.0.1)
+
+Tool filtering (tool names, group names, or prefix* patterns; comma separated)
+  --tools <list>         Only expose these tools/groups (XACTIONS_MCP_TOOLS)
+  --exclude <list>       Hide these tools/groups (XACTIONS_MCP_EXCLUDE)
+  --list-groups          Print every group with its tools and exit
+
+Safety
+  --require-approval     Hold write tools as drafts for x_approve_draft (XACTIONS_MCP_REQUIRE_APPROVAL=1)
+
+  -h, --help             Show this help
+
+Groups: ${GROUP_NAMES.join(', ')}
+Bearer auth for --http: set XACTIONS_MCP_TOKEN and send "Authorization: Bearer <token>".
+`;
+
+/**
+ * Parse the server's own flags. Unknown flags are ignored rather than
+ * rejected so a host that appends its own arguments does not break startup.
+ *
+ * @param {string[]} argv
+ * @returns {{
+ *   http: boolean, port?: number, host?: string,
+ *   tools: string[], exclude: string[], requireApproval?: boolean,
+ *   listGroups: boolean, help: boolean,
+ * }}
+ */
+function parseCliArgs(argv) {
+  const out = { http: false, tools: [], exclude: [], listGroups: false, help: false };
+  const takeValue = (i) => {
+    const eq = argv[i].indexOf('=');
+    if (eq !== -1) return [argv[i].slice(eq + 1), i];
+    return [argv[i + 1], i + 1];
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    const key = arg.includes('=') ? arg.slice(0, arg.indexOf('=')) : arg;
+    switch (key) {
+      case '--http': out.http = true; break;
+      case '--stdio': out.http = false; break;
+      case '--port': { const [v, j] = takeValue(i); out.port = Number(v); i = j; break; }
+      case '--host': { const [v, j] = takeValue(i); out.host = v; i = j; break; }
+      case '--tools': { const [v, j] = takeValue(i); if (v) out.tools.push(v); i = j; break; }
+      case '--exclude': { const [v, j] = takeValue(i); if (v) out.exclude.push(v); i = j; break; }
+      case '--require-approval': out.requireApproval = true; break;
+      case '--no-require-approval': out.requireApproval = false; break;
+      case '--list-groups': out.listGroups = true; break;
+      case '-h':
+      case '--help': out.help = true; break;
+      default: break;
+    }
+  }
+  if (out.port !== undefined && (!Number.isInteger(out.port) || out.port < 0 || out.port > 65535)) {
+    throw new Error(`--port must be an integer between 0 and 65535, got "${out.port}"`);
+  }
+  return out;
+}
+
+/** Turn parsed flags into createMcpServer() overrides (undefined means "use env"). */
+function serverOptionsFromCli(cli) {
+  return {
+    tools: cli.tools.length ? cli.tools : undefined,
+    exclude: cli.exclude.length ? cli.exclude : undefined,
+    requireApproval: cli.requireApproval,
+  };
+}
+
+/** Log what the filter and gate are doing so a misconfigured allowlist is obvious at startup. */
+function printFilterStatus(serverOverrides) {
+  const options = resolveServerOptions(serverOverrides);
+  const { all, filter } = buildToolFilter(options);
+  if (filter.active) {
+    const visible = filter.filter(all).length;
+    console.error(`🔎 Tool filter active: ${visible}/${all.length} tools exposed`);
+    if (filter.include) console.error(`   include: ${[...filter.include].length} tools`);
+    if (filter.exclude.size) console.error(`   exclude: ${filter.exclude.size} tools`);
+    if (filter.unknown.length) {
+      console.error(`   ⚠️  unknown selection tokens ignored: ${filter.unknown.join(', ')}`);
+      console.error(`   groups: ${GROUP_NAMES.join(', ')}`);
+    }
+  }
+  if (options.requireApproval) {
+    console.error('🛡️  Approval mode: write tools are held as drafts in ' + drafts.getDraftsPath());
+    console.error('   Approve with x_approve_draft, inspect with x_list_drafts / x_draft_status.');
+  }
+  if (filter.active || options.requireApproval) console.error('');
+}
+
+// ============================================================================
+// HTTP Transport (Streamable HTTP, for remote clients and hosted deploys)
+// ============================================================================
+
+/**
+ * Bearer-token guard for /mcp. Off when XACTIONS_MCP_TOKEN is unset, which
+ * is fine for a loopback bind and exactly why the default host is
+ * 127.0.0.1. Constant-time compare so the token cannot be sniffed by timing.
+ */
+function createBearerAuth(token) {
+  return (req, res, next) => {
+    if (!token) return next();
+    const header = req.headers.authorization || '';
+    const presented = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+    const a = Buffer.from(presented);
+    const b = Buffer.from(token);
+    const ok = a.length === b.length && timingSafeEqual(a, b);
+    if (ok) return next();
+    res.set('WWW-Authenticate', 'Bearer realm="xactions-mcp"');
+    res.status(401).json({
+      jsonrpc: '2.0',
+      error: { code: -32001, message: 'Unauthorized: send "Authorization: Bearer <XACTIONS_MCP_TOKEN>"' },
+      id: null,
+    });
+  };
+}
 
 /**
  * Start the MCP server with Streamable HTTP transport.
  * Each client session gets its own Server + Transport pair.
  *
- * Set MCP_TRANSPORT=http to use this mode.
- * Listens on PORT (default 3001) at /mcp.
+ * Enable with `--http` or MCP_TRANSPORT=http. Listens on --port / PORT
+ * (default 8787) at --host / XACTIONS_MCP_HOST (default 127.0.0.1), path /mcp.
  *
  * x402 micropayments are enabled automatically when X402_PAY_TO_ADDRESS is set.
  * Per-tool pricing is available at GET /mcp/pricing.
+ *
+ * @param {{ port?: number, host?: string, serverOverrides?: object }} [config]
+ * @returns {Promise<import('node:http').Server>}
  */
-async function startHttpTransport() {
+async function startHttpTransport({ port, host, serverOverrides = {} } = {}) {
   const { default: express } = await import('express');
   const { createMcpPaymentMiddleware, mcpPricingHandler } = await import('./x402-mcp.js');
 
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '4mb' }));
 
   /** @type {Map<string, { server: Server, transport: StreamableHTTPServerTransport }>} */
   const sessions = new Map();
+  const token = process.env.XACTIONS_MCP_TOKEN || '';
 
-  // Health check
+  // Health check (unauthenticated, no session data)
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', transport: 'http', tools: TOOLS.length, sessions: sessions.size });
+    res.json({ status: 'ok', transport: 'http', tools: TOOLS.length, sessions: sessions.size, auth: token ? 'bearer' : 'none' });
   });
 
-  // x402 pricing discovery (free endpoint — no payment required)
+  // x402 pricing discovery (free endpoint, no payment required)
   app.get('/mcp/pricing', mcpPricingHandler);
 
-  // x402 payment middleware — gates priced tool calls before reaching the MCP handler
+  // Bearer auth gates everything under /mcp except pricing discovery
+  app.use('/mcp', createBearerAuth(token));
+
+  // x402 payment middleware gates priced tool calls before reaching the MCP handler
   app.use(createMcpPaymentMiddleware());
 
-  // MCP endpoint — handles POST (messages), GET (SSE stream), DELETE (session close)
+  // MCP endpoint: POST (messages), GET (SSE stream), DELETE (session close)
   app.all('/mcp', async (req, res) => {
     const sessionId = req.headers['mcp-session-id'];
 
@@ -4035,7 +4440,7 @@ async function startHttpTransport() {
       return;
     }
 
-    // New session (only via POST — the initialize request)
+    // New session (only via POST, the initialize request)
     if (req.method === 'POST' && !sessionId) {
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
@@ -4053,7 +4458,7 @@ async function startHttpTransport() {
         }
       };
 
-      const srv = createMcpServer();
+      const srv = createMcpServer(serverOverrides);
       await srv.connect(transport);
       await transport.handleRequest(req, res, req.body);
       return;
@@ -4067,25 +4472,37 @@ async function startHttpTransport() {
     });
   });
 
-  const port = process.env.PORT || 3001;
-  app.listen(port, () => {
-    console.error(`✅ Server running on HTTP — http://0.0.0.0:${port}/mcp`);
-    console.error('   Ready for remote MCP client connections.');
-    if (process.env.X402_PAY_TO_ADDRESS) {
-      console.error(`💰 x402 payments enabled — pricing: http://0.0.0.0:${port}/mcp/pricing`);
-    } else {
-      console.error('ℹ️  x402 payments disabled (set X402_PAY_TO_ADDRESS to enable per-tool billing)');
-    }
-    console.error('');
+  const listenPort = port ?? Number(process.env.PORT || 8787);
+  const listenHost = host || process.env.XACTIONS_MCP_HOST || '127.0.0.1';
+
+  return await new Promise((resolve, reject) => {
+    const httpServer = app.listen(listenPort, listenHost, () => {
+      const actual = httpServer.address();
+      const shownPort = typeof actual === 'object' && actual ? actual.port : listenPort;
+      console.error(`✅ Server running on Streamable HTTP: http://${listenHost}:${shownPort}/mcp`);
+      console.error(token
+        ? '🔐 Bearer auth required (XACTIONS_MCP_TOKEN set)'
+        : (listenHost === '127.0.0.1' || listenHost === 'localhost' || listenHost === '::1'
+          ? 'ℹ️  No bearer token (loopback bind only). Set XACTIONS_MCP_TOKEN before exposing this port.'
+          : '⚠️  No bearer token on a non-loopback bind. Set XACTIONS_MCP_TOKEN.'));
+      if (process.env.X402_PAY_TO_ADDRESS) {
+        console.error(`💰 x402 payments enabled: pricing at http://${listenHost}:${shownPort}/mcp/pricing`);
+      } else {
+        console.error('ℹ️  x402 payments disabled (set X402_PAY_TO_ADDRESS to enable per-tool billing)');
+      }
+      console.error('');
+      resolve(httpServer);
+    });
+    httpServer.on('error', reject);
   });
 }
 
 // ============================================================================
-// Stdio Transport (default — for Claude Desktop, Cursor, etc.)
+// Stdio Transport (default, for Claude Desktop, Cursor, etc.)
 // ============================================================================
 
-async function startStdioTransport() {
-  const server = createMcpServer();
+async function startStdioTransport(serverOverrides = {}) {
+  const server = createMcpServer(serverOverrides);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
@@ -4098,19 +4515,42 @@ async function startStdioTransport() {
 // Main
 // ============================================================================
 
-async function main() {
+async function main(argv = process.argv.slice(2)) {
+  const cli = parseCliArgs(argv);
+
+  // `xactions-mcp --list-groups | head` closes the pipe early; that is not an error worth a stack trace.
+  process.stdout.on('error', (err) => {
+    if (err.code === 'EPIPE') process.exit(0);
+    throw err;
+  });
+
+  if (cli.help) {
+    process.stdout.write(CLI_USAGE);
+    return;
+  }
+  if (cli.listGroups) {
+    const groups = buildGroups(TOOLS);
+    for (const g of GROUP_NAMES) {
+      if (groups[g]) process.stdout.write(`${g} (${groups[g].length})\n  ${groups[g].join(', ')}\n`);
+    }
+    process.stdout.write(`always available: ${ALWAYS_AVAILABLE_TOOLS.join(', ')}\n`);
+    return;
+  }
+
   await initializeBackend();
 
   const pluginCount = await initializePlugins();
   const pluginToolCount = getPluginTools().length;
 
-  const transportMode = process.env.MCP_TRANSPORT || 'stdio';
+  const serverOverrides = serverOptionsFromCli(cli);
+  const transportMode = cli.http ? 'http' : (process.env.MCP_TRANSPORT || 'stdio');
   printBanner(pluginCount, pluginToolCount);
+  printFilterStatus(serverOverrides);
 
   if (transportMode === 'http') {
-    await startHttpTransport();
+    await startHttpTransport({ port: cli.port, host: cli.host, serverOverrides });
   } else {
-    await startStdioTransport();
+    await startStdioTransport(serverOverrides);
   }
 }
 
@@ -4149,4 +4589,4 @@ if (isEntryPoint()) {
 }
 
 // Exported so the tool list can be inspected without starting a transport.
-export { TOOLS, main, createMcpServer };
+export { TOOLS, main, createMcpServer, executeTool, startHttpTransport, parseCliArgs };

@@ -50,7 +50,7 @@ Go to the [src/ folder](https://github.com/nirholas/XActions/tree/main/src) on G
 
 ```bash
 npm install -g xactions
-xactions login          # Saves your auth_token cookie
+xactions login --from-browser firefox  # Import your session (or: --cookies-file, connect, login)
 xactions profile elonmusk --json
 xactions followers elonmusk --count 500 --output followers.csv
 xactions non-followers myhandle
@@ -111,7 +111,7 @@ Generate this config automatically:
 xactions mcp-config
 ```
 
-145 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See [MCP Setup](mcp-setup.md).
+149 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See [MCP Setup](mcp-setup.md).
 
 ---
 
@@ -137,15 +137,40 @@ See [Extension Guide](extension.md).
 
 ## Authentication
 
-All interfaces need an X/Twitter session cookie (`auth_token`):
+All interfaces need an X/Twitter session cookie (`auth_token`, plus `ct0` for
+search, bookmarks, and DMs). The CLI gives you four ways to capture it, fastest
+first:
 
-1. Open [x.com](https://x.com) and log in
-2. Open DevTools → Application → Cookies → `https://x.com`
-3. Find the `auth_token` cookie and copy its value
+```bash
+# 1. Read cookies straight out of your browser (no DevTools, no copy/paste)
+xactions login --from-browser firefox     # also: chrome, chromium, brave, edge, arc
+
+# 2. Import a cookies file you already exported
+xactions login --cookies-file cookies.txt # Netscape, Cookie-Editor/EditThisCookie JSON,
+                                          # Playwright/Puppeteer storageState, or a raw
+                                          # "auth_token=...; ct0=..." string
+
+# 3. Log in through a real browser window and let XActions capture the session
+xactions connect
+
+# 4. Paste the two cookies by hand
+xactions login
+```
+
+`--from-browser` works headlessly for Firefox on every platform, and for
+Chromium-family browsers on Linux (default keyring-less key) and macOS (via the
+Keychain). If your browser seals its cookies with the system keyring (GNOME
+Keyring / KWallet) or you are on Windows, XActions tells you the exact export
+path to use with `--cookies-file` instead.
+
+To export a cookies file by hand: install the "Get cookies.txt LOCALLY" or
+Cookie-Editor extension, open [x.com](https://x.com) while logged in, and export.
+Or, in DevTools → Application → Cookies → `https://x.com`, copy the `auth_token`
+and `ct0` values.
 
 | Interface | How to Set |
 |-----------|------------|
-| CLI | `xactions login` (interactive prompt) |
+| CLI | `xactions login --from-browser <name>`, `--cookies-file <path>`, `xactions connect`, or `xactions login` (paste) |
 | Node.js | Pass `{ cookie: 'your_token' }` to functions |
 | MCP | Set `XACTIONS_SESSION_COOKIE` env var |
 | Dashboard | Pasted via bridge script |

@@ -41,7 +41,7 @@ Three commands. All of them run in CI, so running them locally saves a round
 trip:
 
 ```bash
-npm test           # 913 tests
+npm test           # 1156 tests
 npm run docs:check # dead links, stale versions, invented CLI commands
 npm run docs:scripts  # only if you added or renamed a browser script
 ```

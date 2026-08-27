@@ -13,6 +13,7 @@
  */
 
 import { GRAPHQL, BEARER_TOKEN as SHARED_BEARER_TOKEN } from '../../scrapers/twitter/http/endpoints.js';
+import { getQueryId } from '../../scrapers/twitter/http/queryIds.js';
 
 /**
  * Public bearer token embedded in Twitter's web client JavaScript.
@@ -22,21 +23,43 @@ import { GRAPHQL, BEARER_TOKEN as SHARED_BEARER_TOKEN } from '../../scrapers/twi
 export const BEARER_TOKEN = SHARED_BEARER_TOKEN;
 
 /**
- * Look up a query ID in the shared endpoint map.
+ * Look up the query ID for an operation, live.
  *
  * This file used to carry its own copy of every query ID, and the two copies
  * drifted: 11 of the IDs here went stale while the shared map stayed current,
  * so `Scraper.getProfile()` answered every call with
  * `HTTP 404: {"message":"Query not found"}`. Query IDs now have exactly one
- * home — `src/scrapers/twitter/http/endpoints.js` — and this table only adds
- * the client-specific metadata (HTTP method, default variables, REST URLs).
+ * home, `src/scrapers/twitter/http/endpoints.js`, and on top of that the
+ * discovery cache in `src/scrapers/twitter/http/queryIds.js` (IDs read from
+ * x.com's live bundles) takes precedence whenever it holds the operation.
  *
- * @param {string} name - Key in the shared GRAPHQL map
- * @param {string} [fallback] - ID to use when the shared map has no entry
+ * Read at access time, not module load time, so a refresh that lands after
+ * import is picked up by the next request.
+ *
+ * @param {string} name - operationName, or a key in the shared GRAPHQL map
+ * @param {string} [fallback] - ID to use when neither the cache nor the shared map has an entry
  * @returns {string|null}
  */
 function queryId(name, fallback = null) {
-  return GRAPHQL[name]?.queryId ?? fallback;
+  return getQueryId(name) ?? GRAPHQL[name]?.queryId ?? fallback;
+}
+
+/**
+ * Build an endpoint entry whose `queryId` resolves on every read.
+ *
+ * @param {string} name - operationName (also the GRAPHQL map key)
+ * @param {string} fallback - Last-resort query ID
+ * @param {object} rest - method, defaultVariables
+ * @returns {object}
+ */
+function graphqlEndpoint(name, fallback, rest) {
+  return {
+    get queryId() {
+      return queryId(name, fallback);
+    },
+    operationName: name,
+    ...rest,
+  };
 }
 
 /**
@@ -80,83 +103,21 @@ export const DEFAULT_FEATURES = {
  * @type {Object}
  */
 export const GRAPHQL_ENDPOINTS = {
-  UserByScreenName: {
-    queryId: queryId('UserByScreenName', 'xc8f1g7BYqr6VTzTbvNLGg'),
-    operationName: 'UserByScreenName',
-    method: 'GET',
-    defaultVariables: { withSafetyModeUserFields: true },
-  },
-  UserByRestId: {
-    queryId: queryId('UserByRestId', 'tD8zKvQzwY3kdx5yz6YmOw'),
-    operationName: 'UserByRestId',
-    method: 'GET',
-    defaultVariables: { withSafetyModeUserFields: true },
-  },
-  UserTweets: {
-    queryId: queryId('UserTweets', 'E3opETHurmVJflFsUBVuUQ'),
-    operationName: 'UserTweets',
-    method: 'GET',
-  },
-  UserTweetsAndReplies: {
-    queryId: queryId('UserTweetsAndReplies', 'Q6aAvPw7azXZbqXzuqTALA'),
-    operationName: 'UserTweetsAndReplies',
-    method: 'GET',
-  },
-  TweetDetail: {
-    queryId: queryId('TweetDetail', 'BbCrSoXIR7z93lLCVFlQ2Q'),
-    operationName: 'TweetDetail',
-    method: 'GET',
-  },
-  SearchTimeline: {
-    queryId: queryId('SearchTimeline', 'gkjsKepM6gl_HmFWoWKfgg'),
-    operationName: 'SearchTimeline',
-    method: 'GET',
-  },
-  Followers: {
-    queryId: queryId('Followers', 'djdTXDIk2qhd4OStqlUFeQ'),
-    operationName: 'Followers',
-    method: 'GET',
-  },
-  Following: {
-    queryId: queryId('Following', 'IWP6Zt14sARO29lJT35bBw'),
-    operationName: 'Following',
-    method: 'GET',
-  },
-  Likes: {
-    queryId: queryId('Likes', 'eSSNbhECHHBBew2wkHY_Bw'),
-    operationName: 'Likes',
-    method: 'GET',
-  },
-  CreateTweet: {
-    queryId: queryId('CreateTweet', 'a1p9RWpkYKBjWv_I3WzS-A'),
-    operationName: 'CreateTweet',
-    method: 'POST',
-  },
-  DeleteTweet: {
-    queryId: queryId('DeleteTweet', 'VaenaVgh5q5ih7kvyVjgtg'),
-    operationName: 'DeleteTweet',
-    method: 'POST',
-  },
-  FavoriteTweet: {
-    queryId: queryId('FavoriteTweet', 'lI07N6Otwv1PhnEgXILM7A'),
-    operationName: 'FavoriteTweet',
-    method: 'POST',
-  },
-  UnfavoriteTweet: {
-    queryId: queryId('UnfavoriteTweet', 'ZYKSe-w7KEslx3JhSIk5LA'),
-    operationName: 'UnfavoriteTweet',
-    method: 'POST',
-  },
-  CreateRetweet: {
-    queryId: queryId('CreateRetweet', 'ojPdsZsimiJrUGLR1sjUtA'),
-    operationName: 'CreateRetweet',
-    method: 'POST',
-  },
-  DeleteRetweet: {
-    queryId: queryId('DeleteRetweet', 'iQtK4dl5hBmXewYZCnMPAA'),
-    operationName: 'DeleteRetweet',
-    method: 'POST',
-  },
+  UserByScreenName: graphqlEndpoint('UserByScreenName', 'xc8f1g7BYqr6VTzTbvNLGg', { method: 'GET', defaultVariables: { withSafetyModeUserFields: true } }),
+  UserByRestId: graphqlEndpoint('UserByRestId', 'xvmVfRLmnr1alc5f2dib0Q', { method: 'GET', defaultVariables: { withSafetyModeUserFields: true } }),
+  UserTweets: graphqlEndpoint('UserTweets', 'E3opETHurmVJflFsUBVuUQ', { method: 'GET' }),
+  UserTweetsAndReplies: graphqlEndpoint('UserTweetsAndReplies', 'Q6aAvPw7azXZbqXzuqTALA', { method: 'GET' }),
+  TweetDetail: graphqlEndpoint('TweetDetail', 'BbCrSoXIR7z93lLCVFlQ2Q', { method: 'GET' }),
+  SearchTimeline: graphqlEndpoint('SearchTimeline', 'gkjsKepM6gl_HmFWoWKfgg', { method: 'GET' }),
+  Followers: graphqlEndpoint('Followers', 'djdTXDIk2qhd4OStqlUFeQ', { method: 'GET' }),
+  Following: graphqlEndpoint('Following', 'IWP6Zt14sARO29lJT35bBw', { method: 'GET' }),
+  Likes: graphqlEndpoint('Likes', 'eSSNbhECHHBBew2wkHY_Bw', { method: 'GET' }),
+  CreateTweet: graphqlEndpoint('CreateTweet', 'a1p9RWpkYKBjWv_I3WzS-A', { method: 'POST' }),
+  DeleteTweet: graphqlEndpoint('DeleteTweet', 'nxpZCY2K-I6QoFHAHeojFQ', { method: 'POST' }),
+  FavoriteTweet: graphqlEndpoint('FavoriteTweet', 'lI07N6Otwv1PhnEgXILM7A', { method: 'POST' }),
+  UnfavoriteTweet: graphqlEndpoint('UnfavoriteTweet', 'ZYKSe-w7KEslx3JhSIk5LA', { method: 'POST' }),
+  CreateRetweet: graphqlEndpoint('CreateRetweet', 'mbRO74GrOvSfRcJnlMapnQ', { method: 'POST' }),
+  DeleteRetweet: graphqlEndpoint('DeleteRetweet', 'iQtK4dl5hBmXewYZCnMPAA', { method: 'POST' }),
   CreateFollow: {
     queryId: null,
     operationName: null,
@@ -185,21 +146,9 @@ export const GRAPHQL_ENDPOINTS = {
     url: () => 'https://x.com/i/api/1.1/dm/inbox_initial_state.json',
     isRest: true,
   },
-  ListLatestTweetsTimeline: {
-    queryId: queryId('ListLatestTweetsTimeline', '2Vjeyo_L0nizAUhHe3fKyA'),
-    operationName: 'ListLatestTweetsTimeline',
-    method: 'GET',
-  },
-  ListMembers: {
-    queryId: queryId('ListMembers', 'BQp2IEYkgxuSxqbTAr1e1g'),
-    operationName: 'ListMembers',
-    method: 'GET',
-  },
-  ListByRestId: {
-    queryId: queryId('ListByRestId', 'lAzEhcd0SKDsk8qSCWgNbg'),
-    operationName: 'ListByRestId',
-    method: 'GET',
-  },
+  ListLatestTweetsTimeline: graphqlEndpoint('ListLatestTweetsTimeline', '2Vjeyo_L0nizAUhHe3fKyA', { method: 'GET' }),
+  ListMembers: graphqlEndpoint('ListMembers', '8rYmkvWQe9jRRZdy_-vkGA', { method: 'GET' }),
+  ListByRestId: graphqlEndpoint('ListByRestId', 'lAzEhcd0SKDsk8qSCWgNbg', { method: 'GET' }),
   Trends: {
     queryId: null,
     operationName: null,

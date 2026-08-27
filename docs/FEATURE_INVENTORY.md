@@ -273,7 +273,7 @@ XActions delivers features through **5 delivery modes**:
 | `src/mcp/local-tools.js` | Puppeteer-based local implementations | 527 |
 | `src/mcp/x402-client.js` | x402 payment client for remote API (USDC on Base/Ethereum/Arbitrum) | 558 |
 
-### 6.2 Complete MCP Tool List (145 tools)
+### 6.2 Complete MCP Tool List (149 tools)
 
 | # | Tool Name | Description | Required Args |
 |---|-----------|-------------|---------------|

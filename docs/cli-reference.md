@@ -16,6 +16,7 @@ The XActions CLI provides command-line tools for X/Twitter automation, scraping,
 - [Finding your way around](#finding-your-way-around)
   - [xactions quickstart](#xactions-quickstart)
   - [xactions completion](#xactions-completion)
+  - [xactions skills](#xactions-skills)
 - [Authentication](#authentication)
   - [xactions login](#xactions-login)
   - [xactions logout](#xactions-logout)
@@ -57,6 +58,7 @@ The XActions CLI provides command-line tools for X/Twitter automation, scraping,
 - [Import/Export Compatibility](#importexport-compatibility)
 - [MCP Config](#mcp-config)
 - [Output Formats](#output-formats)
+  - [Compact output for agents](#compact-output-for-agents)
 - [Environment Variables](#environment-variables)
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
@@ -103,7 +105,7 @@ xactions search "your topic" --limit 50
 xactions followers yourhandle --limit 500 --output followers.json
 ```
 
-Prefer `xactions connect` over `xactions login`: it drives a real browser, you log in normally, and the session is captured for you. `login` is the manual fallback for pasting cookies out of DevTools yourself.
+`xactions connect` drives a real browser: you log in normally and the session is captured for you. `xactions login` now also imports cookies without DevTools, via `--from-browser` (reads your browser's cookie DB) or `--cookies-file` (an exported cookies file); with no flags it prompts you to paste `auth_token` and `ct0`.
 
 ---
 
@@ -164,42 +166,77 @@ XActions uses your X/Twitter session cookie for authentication. This approach by
 
 ### xactions login
 
-Set up authentication with your X/Twitter session cookie.
+Set up authentication with your X/Twitter session cookie. Four ways in, fastest first.
 
 **Syntax:**
 
 ```bash
-xactions login
+xactions login [--from-browser [browser]] [--cookies-file <path>]
 ```
 
-**Usage:**
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--from-browser [browser]` | Read x.com cookies from a locally installed browser: `chrome`, `chromium`, `brave`, `edge`, `arc`, or `firefox` (default `firefox`). |
+| `--cookies-file <path>` | Import cookies from a file: Netscape `cookies.txt`, Cookie-Editor / EditThisCookie JSON, Playwright / Puppeteer `storageState`, or a raw `auth_token=...; ct0=...` string. |
+
+With no flags, `xactions login` prompts you to paste `auth_token` and `ct0` by hand.
+
+**1. Read cookies from your browser (no DevTools, no copy/paste):**
+
+```bash
+$ xactions login --from-browser firefox
+✔ Imported 4 x.com cookies from firefox
+  Saved to ~/.xactions/cookies.json (owner-only)
+  auth_token + ct0 captured. Session-tier commands are unlocked.
+```
+
+`--from-browser` reads the browser's own cookie database. It works headlessly for
+Firefox on every platform, and for Chromium-family browsers on Linux (default
+keyring-less key) and macOS (via the Keychain). If a Chromium browser seals its
+cookies with the system keyring (GNOME Keyring / KWallet), or you are on Windows,
+the command prints the exact `--cookies-file` export path to use instead. Nothing
+is faked and nothing is sent anywhere.
+
+**2. Import a cookies file you exported:**
+
+```bash
+$ xactions login --cookies-file ~/Downloads/x.com_cookies.txt
+✔ Imported 4 x.com cookies
+  Saved to ~/.xactions/cookies.json (owner-only)
+  auth_token + ct0 captured. Session-tier commands are unlocked.
+```
+
+Accepted formats (auto-detected):
+
+- **Netscape `cookies.txt`** — what curl, wget, and the "Get cookies.txt LOCALLY" extension write (tab-separated, `#HttpOnly_` prefixes supported).
+- **Cookie-Editor / EditThisCookie JSON** — a `[{name, value, domain, ...}]` array.
+- **Playwright / Puppeteer `storageState`** — a `{ cookies: [...] }` object.
+- **Raw header string** — `auth_token=...; ct0=...`.
+
+Only x.com / twitter.com cookies are extracted; anything else in the export is dropped.
+
+**3. Log in through a real browser window:** run `xactions connect`. It opens a real Chrome window, you log in normally (2FA included), and the session is captured when you finish.
+
+**4. Paste the two cookies by hand:**
 
 ```bash
 $ xactions login
 
 ⚡ XActions Login Setup
-
-To get your auth_token cookie:
-1. Go to x.com and log in
-2. Open DevTools (F12) → Application → Cookies
-3. Find "auth_token" and copy its value
-
+...
 ? Enter your auth_token cookie: ********
+? Enter your ct0 cookie (optional, press Enter to skip): ********
 
 ✓ Authentication saved!
 ```
 
-**How to get your auth_token:**
+To find them in DevTools: open [x.com](https://x.com) logged in, press `F12`, go to
+the **Application** tab (Chrome) or **Storage** tab (Firefox), expand **Cookies** →
+`https://x.com`, and copy the values of `auth_token` and `ct0`.
 
-1. Open [x.com](https://x.com) in your browser and log in
-2. Press `F12` to open Developer Tools
-3. Go to **Application** tab (Chrome) or **Storage** tab (Firefox)
-4. Expand **Cookies** → click on `https://x.com`
-5. Find the cookie named `auth_token`
-6. Copy the **Value** (a long hexadecimal string)
-7. Paste it when prompted by `xactions login`
-
-> ⚠️ **Security Note**: Your auth_token is stored locally in `~/.xactions/config.json`. Never share this token with anyone.
+> ⚠️ **Security Note**: Your session is stored locally in `~/.xactions/cookies.json` and `~/.xactions/config.json` with owner-only permissions. Never share these values with anyone.
 
 ---
 
@@ -2351,3 +2388,84 @@ Apache 2.0 License - see [LICENSE](../LICENSE) for details.
   Built by <a href="https://x.com/nichxbt">nich (@nichxbt)</a><br>
   <a href="https://xactions.app">https://xactions.app</a>
 </p>
+
+---
+
+## Skills
+
+### xactions skills
+
+Install the bundled agent skills (the `skills/*/SKILL.md` files) where your coding agent reads them. Resolves the skills directory relative to the package, so it works from a global npm install.
+
+```bash
+xactions skills list [--json]
+xactions skills show <name> [--json]
+xactions skills install [names...] [--all] [--target <target>] [--global] [--json]
+xactions skills uninstall [names...] [--all] [--target <target>] [--global] [--json]
+```
+
+| Option | Description | Default |
+|---|---|---|
+| `-a, --all` | Every bundled skill | |
+| `-t, --target <target>` | `claude`, `project`, `cursor`, `codex`, `windsurf` | `claude` |
+| `-g, --global` | Home directory instead of the current project (`claude` and `codex` only) | |
+| `--json` | Report as JSON | |
+
+| Target | Path |
+|---|---|
+| `claude` | `~/.claude/skills/<id>/` with `--global`, else `./.claude/skills/<id>/` |
+| `project` | `./.claude/skills/<id>/` |
+| `cursor` | `./.cursor/rules/<id>.mdc` |
+| `codex` | `~/.codex/skills/<id>/` or `./.codex/skills/<id>/`, plus a managed block in `./AGENTS.md` |
+| `windsurf` | `./.windsurf/rules/<id>.md` |
+
+```bash
+xactions skills install --all --global
+# Output:
+#   + a2a-multi-agent                claude    installed /home/you/.claude/skills/a2a-multi-agent
+#   + account-backup                 claude    installed /home/you/.claude/skills/account-backup
+#   ...
+#   49 installed
+
+xactions skills install account-backup --global
+#   = account-backup                 claude    unchanged /home/you/.claude/skills/account-backup
+
+xactions skills list
+#   account-backup                 claude (global)
+#                                  Export and backup your X/Twitter account data ...
+```
+
+Names match a skill id (`account-backup`) or its display name, case-insensitively. Every run is idempotent; `doctor` counts installs per target. The full target table and what each wrapper contains are in [skills.md](skills.md#install-into-your-agent).
+
+---
+
+## Compact output for agents
+
+`--compact` is a global flag for the read commands: `profile`, `tweets`, `search`, `thread`, `followers`, `following`, `non-followers`, `hashtag`, `media`, and `analyze`. It prints one record per line as tab-separated `key=value` pairs with only the essential fields, no colours, no spinner, no box drawing. It costs a fraction of the tokens of `--json` and is trivial to `cut` or `awk`.
+
+```bash
+xactions tweets nasa --limit 3 --compact
+# id=2092744659667673582	username=NASA	date=2026-08-27T01:23:02.000Z	likes=2958	retweets=665	replies=89	views=467791	text=A partial lunar eclipse will pass over the Americas ...
+# id=2092721435663798658	username=NASA	date=2026-08-26T23:50:45.000Z	likes=776	retweets=91	replies=30	views=376104	text=On Aug. 30, @NASARoman is scheduled to lift off ...
+
+xactions profile nasa --compact --fields username,followers,verified
+# username=NASA	followers=92350973	verified=false
+
+xactions analyze nasa --compact
+# username=NASA	followers=92350972	following=118	postsPerDay=2.78	engagementRate=0.004	medianEngagement=3890	mediaShare=100	bestWeekday=Wednesday
+```
+
+`--fields id,text,likes` picks exactly those columns, in that order. The names are the same on every command, so `likes` means likes whether the record came from `tweets`, `search`, or `thread`:
+
+| Kind | Default columns |
+|---|---|
+| tweets, search, thread, hashtag | `id username date likes retweets replies views text` |
+| profile | `id username name followers following tweets verified bio` |
+| followers, following, non-followers | `id username name followers verified bio` |
+| media | `type url tweetUrl` |
+| analyze | `username followers following postsPerDay engagementRate medianEngagement mediaShare bestHourUTC bestWeekday` |
+
+Any raw field of the underlying record can also be named in `--fields` (for example `permanentUrl` or `isRetweet`); a field the record lacks is skipped rather than printed empty. Newlines and tabs inside a value become single spaces so a line is always one record. Dates print as ISO 8601.
+
+`--compact` outranks `--output` and `--google-sheets`, the same way `--json` does. When stdout is a pipe, both `--json` and `--compact` keep the spinner completely silent, so nothing lands on stderr but a real error.
+

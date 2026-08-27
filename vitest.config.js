@@ -9,6 +9,14 @@ export default defineConfig({
     include: ['tests/**/*.test.js'],
     exclude: ['node_modules', 'dist', 'archive'],
     reporters: ['verbose'],
+    // Cap worker processes: an uncapped fork pool on a loaded machine produced
+    // "Worker exited unexpectedly" crashes mid-suite.
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 4,
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

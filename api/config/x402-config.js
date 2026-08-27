@@ -13,8 +13,10 @@
 // Determine environment
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Payment receiving address (override with X402_PAY_TO_ADDRESS env var)
-export const PAY_TO_ADDRESS = process.env.X402_PAY_TO_ADDRESS || '0x4027FdaC1a5216e264A00a5928b8366aE59cE888';
+// Payment receiving address. No default: x402 stays disabled until the operator
+// sets X402_PAY_TO_ADDRESS, and in production a missing value is a startup error
+// (see validateConfig) rather than silently routing funds to someone else's wallet.
+export const PAY_TO_ADDRESS = (process.env.X402_PAY_TO_ADDRESS || '').trim();
 
 // Facilitator URL (testnet for development, mainnet for production)
 export const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';

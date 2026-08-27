@@ -163,7 +163,192 @@ Then use `xactions-mcp` as the command instead of `npx`:
 | `XACTIONS_SESSION_COOKIE` | For most tools | Your X/Twitter `auth_token` cookie |
 | `OPENROUTER_API_KEY` | For AI tools | Free key from [openrouter.ai](https://openrouter.ai) |
 | `XACTIONS_MODE` | No | `local` (default, free) or `remote` |
+| `XACTIONS_MCP_TOOLS` | No | Allowlist of tool or group names to expose (see [Tool filtering](#tool-filtering)) |
+| `XACTIONS_MCP_EXCLUDE` | No | Denylist of tool or group names to hide; wins over the allowlist |
+| `XACTIONS_MCP_REQUIRE_APPROVAL` | No | `1` holds every write tool as a draft until approved (see [Approval mode](#approval-mode-draft-before-you-post)) |
+| `XACTIONS_MCP_TOKEN` | No | Bearer token required on `/mcp` when running with `--http` |
+| `XACTIONS_MCP_HOST` | No | Bind address for `--http` (default `127.0.0.1`) |
+| `XACTIONS_HOME` | No | Directory for local state such as `mcp-drafts.json` (default `~/.xactions`) |
 | `DEBUG` | No | Set to `true` for verbose error stacks |
+
+---
+
+## Tool filtering
+
+The server ships 149 tools. Most sessions need a handful, and a smaller tool list means a cheaper, more accurate model. Filter with an allowlist, a denylist, or both. Each accepts a comma-separated mix of:
+
+- **tool names** such as `x_get_profile`
+- **group names** such as `read` or `analytics`
+- **prefix patterns** such as `x_get_*`
+
+Groups (run `npx xactions-mcp --list-groups` to see every member):
+
+| Group | What it covers |
+|-------|----------------|
+| `read` | Profiles, followers, tweets, search, threads, media, trends, notifications, `x_list_platforms` |
+| `write` | Post, reply, quote, like, retweet, bookmark, follow, unfollow, mute, delete, profile edits |
+| `dm` | Send, list, and export direct messages |
+| `lists` | X Lists and their members |
+| `spaces` | Spaces discovery, transcripts, and the live Space agent |
+| `analytics` | Account reports, growth, engagement, sentiment, bots, influencers, history |
+| `ai` | Voice analysis, tweet generation, rewriting, summarising, hashtag suggestions |
+| `grok` | Grok queries and image analysis |
+| `automation` | Auto-like, auto-follow, smart unfollow, auto-comment, bulk execution |
+| `monitoring` | Streams, keyword and account monitors, follower alerts, notifications |
+| `workflows` | Saved workflows, the local scheduler, RSS to tweet drafts |
+| `persona` | The persona autopilot |
+| `graph` | Social graph building and analysis |
+| `data` | Account export and migration, datasets, CRM, teams, format conversion |
+| `auth` | `x_login` |
+| `x402` | Paid plugin tools, when a plugin registers them |
+| `drafts` | The four approval tools; these are never filtered out |
+
+The rules match [xdevplatform/xmcp](https://github.com/xdevplatform/xmcp): an empty allowlist means everything, the denylist always wins, and `x_list_drafts`, `x_approve_draft`, `x_discard_draft`, `x_draft_status` stay available so pending drafts can never be orphaned. `tools/list` only returns what passes the filter, and calling a hidden tool returns an error naming the group to enable rather than a generic "unknown tool".
+
+Environment variables (any client):
+
+```json
+{
+  "mcpServers": {
+    "xactions": {
+      "command": "npx",
+      "args": ["-y", "xactions-mcp"],
+      "env": {
+        "XACTIONS_SESSION_COOKIE": "your_auth_token_here",
+        "XACTIONS_MCP_TOOLS": "read,analytics,x_post_tweet",
+        "XACTIONS_MCP_EXCLUDE": "x_get_non_followers"
+      }
+    }
+  }
+}
+```
+
+The same thing as CLI flags (Cursor, `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "xactions": {
+      "command": "npx",
+      "args": ["-y", "xactions-mcp", "--tools", "read,analytics", "--exclude", "x_get_*"],
+      "env": { "XACTIONS_SESSION_COOKIE": "your_auth_token_here" }
+    }
+  }
+}
+```
+
+Unknown names are reported on stderr at startup and otherwise ignored, so a typo hides nothing silently.
+
+---
+
+## HTTP transport
+
+Stdio is the default and is what Claude Desktop, Cursor, Windsurf, and VS Code speak. For a remote client, a shared team server, or a container, run the [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) transport instead:
+
+```bash
+XACTIONS_MCP_TOKEN=$(openssl rand -hex 24) npx xactions-mcp --http --port 8787 --host 127.0.0.1
+```
+
+- The MCP endpoint is `POST /mcp` (plus `GET` for the event stream and `DELETE` to end a session). Sessions are managed by the server: the `initialize` response carries an `Mcp-Session-Id` header that every later request must echo.
+- `GET /health` is unauthenticated and reports tool and session counts.
+- `XACTIONS_MCP_TOKEN` turns on bearer auth for everything under `/mcp`. Without it the server will still start, but only bind it to loopback (the default). Set a token before you change `--host`.
+- `MCP_TRANSPORT=http` and `PORT` are honoured too, for hosts like Railway that inject them.
+
+Hand-check it with curl:
+
+```bash
+curl -s -i -X POST http://127.0.0.1:8787/mcp \
+  -H "Authorization: Bearer $XACTIONS_MCP_TOKEN" \
+  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}'
+# copy the mcp-session-id header, then:
+curl -s -X POST http://127.0.0.1:8787/mcp \
+  -H "Authorization: Bearer $XACTIONS_MCP_TOKEN" -H "Mcp-Session-Id: <id>" \
+  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+```
+
+Claude Desktop and Cursor connect to a remote MCP server by URL. Cursor `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "xactions-remote": {
+      "url": "http://127.0.0.1:8787/mcp",
+      "headers": { "Authorization": "Bearer your_token_here" }
+    }
+  }
+}
+```
+
+Tool filtering and approval mode apply to every HTTP session exactly as they do on stdio.
+
+---
+
+## Approval mode (draft before you post)
+
+Giving an agent a live posting tool is a leap of faith. Approval mode, borrowed from [x-use](https://github.com/nirholas/x-use), removes it: with `XACTIONS_MCP_REQUIRE_APPROVAL=1` (or `--require-approval`) every side-effect tool is **held as a draft instead of executed**. Posting, replying, quoting, liking, retweeting, bookmarking, following, unfollowing, muting, blocking-style profile changes, DM sending, deleting, scheduling, bulk automation, workflow and persona runs, and joining Spaces are all covered; the exact register is `WRITE_TOOLS` in `src/mcp/tool-groups.js`. Read and analytics tools run immediately as before.
+
+A held call returns the draft id:
+
+```json
+{
+  "held": true,
+  "draftId": "3f9c1a2b",
+  "tool": "x_post_tweet",
+  "args": { "text": "Shipping approval mode today." },
+  "createdAt": "2026-08-27T05:15:05.512Z",
+  "message": "Approval mode is on. \"x_post_tweet\" was saved as draft 3f9c1a2b and has NOT been executed.",
+  "next": "Review with x_draft_status, run with x_approve_draft {\"id\":\"3f9c1a2b\"}, or drop with x_discard_draft."
+}
+```
+
+Four tools manage drafts and are always available, whatever the tool filter says:
+
+| Tool | Does |
+|------|------|
+| `x_list_drafts` | List drafts, newest first; optional `status` of `pending`, `executed`, `failed`, or `all` |
+| `x_draft_status` | Show one draft with its arguments, state, and result or error |
+| `x_approve_draft` | Execute the stored call exactly as submitted; an already-run draft is refused so nothing posts twice |
+| `x_discard_draft` | Delete a draft without running it |
+
+Drafts live in `~/.xactions/mcp-drafts.json` (`XACTIONS_HOME` overrides the directory), written atomically, so a second process, a script, or a person with a text editor can review the queue. The same list, approve, and discard functions are exported from `src/mcp/drafts.js` for use outside MCP.
+
+Claude Desktop, read-only session that can still queue posts for you to approve elsewhere:
+
+```json
+{
+  "mcpServers": {
+    "xactions": {
+      "command": "npx",
+      "args": ["-y", "xactions-mcp", "--require-approval"],
+      "env": {
+        "XACTIONS_SESSION_COOKIE": "your_auth_token_here",
+        "XACTIONS_MCP_TOOLS": "read,analytics,write"
+      }
+    }
+  }
+}
+```
+
+Cursor, approval on with the drafts reviewed in the same chat:
+
+```json
+{
+  "mcpServers": {
+    "xactions": {
+      "command": "npx",
+      "args": ["-y", "xactions-mcp"],
+      "env": {
+        "XACTIONS_SESSION_COOKIE": "your_auth_token_here",
+        "XACTIONS_MCP_REQUIRE_APPROVAL": "1"
+      }
+    }
+  }
+}
+```
+
+A typical exchange: the agent calls `x_post_tweet`, gets draft `3f9c1a2b` back, and shows you the text. You say "approve it", the agent calls `x_approve_draft {"id":"3f9c1a2b"}`, and only then does the tweet go out.
 
 ---
 

@@ -166,7 +166,7 @@ const SKIP_FILES = new Set([
   'AGENTS.md',
   'CLAUDE.md',
   'GEMINI.md',
-  'AUDIT_REPORT.md',
+  'docs/audits/2026-02-24-quality-coverage.md',
   'AGENT_PROMPTS.md',
   'TEMPLATE.md',
 ]);

@@ -2,7 +2,7 @@
 
 > ⚡ The Complete X/Twitter Automation Toolkit — Scrapers, MCP server for AI agents (Claude/GPT), CLI, browser scripts. No API fees. Open source. By nichxbt.
 
-XActions automates X/Twitter without needing API access. It provides 60+ browser scripts, a Puppeteer-based scraping engine, an MCP server for AI agents, a CLI tool, and a full Express.js web dashboard with PostgreSQL backend.
+XActions automates X/Twitter without needing API access. It provides 94 browser scripts, a Puppeteer-based scraping engine, an MCP server for AI agents, a CLI tool, and a full Express.js web dashboard with PostgreSQL backend.
 
 ## Links
 

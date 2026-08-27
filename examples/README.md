@@ -186,7 +186,7 @@ want a downloadable log of who was unfollowed. The full catalog is in
 These examples cover the Node.js library. XActions has four more entry points:
 
 - **CLI** — `npx xactions profile nasa`. See [docs/cli-reference.md](../docs/cli-reference.md).
-- **MCP server** — 145 tools for Claude, Cursor, and Windsurf. See [docs/mcp-setup.md](../docs/mcp-setup.md).
+- **MCP server** — 149 tools for Claude, Cursor, and Windsurf. See [docs/mcp-setup.md](../docs/mcp-setup.md).
 - **Browser scripts** — paste into DevTools, no install. See [docs/browser-scripts.md](../docs/browser-scripts.md).
 - **REST API** — self-hosted. See [docs/rest-api.md](../docs/rest-api.md).
 

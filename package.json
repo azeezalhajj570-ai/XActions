@@ -27,7 +27,8 @@
     "./mcp": "./src/mcp/server.js",
     "./cli": "./src/cli/index.js",
     "./client": "./src/client/index.js",
-    "./spaces": "./src/spaces/agent.js"
+    "./spaces": "./src/spaces/agent.js",
+    "./portability": "./src/portability/index.js"
   },
   "bin": {
     "xactions": "./src/cli/index.js",
@@ -56,7 +57,7 @@
     "audit:verbose": "node scripts/audit-console-errors.js --verbose",
     "docs:audit": "node scripts/audit-docs.mjs",
     "docs:scripts": "node scripts/build-browser-scripts-doc.mjs",
-    "docs:check": "node scripts/build-browser-scripts-doc.mjs --check && node scripts/audit-docs.mjs",
+    "docs:check": "node scripts/build-browser-scripts-doc.mjs --check && node scripts/sync-registry.mjs --check && node scripts/audit-docs.mjs",
     "check:endpoints": "node scripts/check-endpoints.mjs",
     "deploy": "bash scripts/deploy.sh",
     "deploy:railway": "bash scripts/deploy.sh railway",
@@ -82,7 +83,9 @@
     "site:scripts": "node scripts/build-script-pages.js",
     "site:sitemap": "node scripts/build-sitemap.js",
     "site:build": "npm run site:docs && npm run site:index && npm run site:scripts && npm run site:sitemap && bash deploy/cloudflare/build.sh",
-    "site:deploy": "npm run site:build && npx wrangler pages deploy pages-out --project-name xactions"
+    "site:deploy": "npm run site:build && npx wrangler pages deploy pages-out --project-name xactions",
+    "lint": "eslint .",
+    "registry:sync": "node scripts/sync-registry.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -119,17 +122,23 @@
     "redis": "^4.6.11",
     "remotion": "^4.0.428",
     "socket.io": "^4.7.5",
-    "stripe": "^14.10.0"
+    "stripe": "^14.10.0",
+    "yauzl": "^3.4.0"
   },
   "optionalDependencies": {
     "@atproto/api": "^0.13.35",
     "@x402/core": "^2.8.0",
     "@x402/evm": "^2.8.0",
     "@x402/express": "^2.8.0",
+    "ioredis": "^5.4.1",
     "viem": "^2.0.0",
     "xspace-agent": "^0.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "archiver": "^5.3.2",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
     "jsdom": "^28.1.0",
     "marked": "^17.0.3",
     "nodemon": "^3.0.2",
@@ -187,7 +196,7 @@
     "x-algorithm"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20"
   },
   "files": [
     "src",
@@ -197,5 +206,29 @@
   "mcpName": "io.github.nirholas/xactions",
   "overrides": {
     "uuid": "^11.1.1"
+  },
+  "peerDependencies": {
+    "cheerio": ">=1.0.0",
+    "crawlee": ">=3.0.0",
+    "got-scraping": ">=4.0.0",
+    "playwright": ">=1.40.0",
+    "selenium-webdriver": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    },
+    "cheerio": {
+      "optional": true
+    },
+    "crawlee": {
+      "optional": true
+    },
+    "selenium-webdriver": {
+      "optional": true
+    },
+    "got-scraping": {
+      "optional": true
+    }
   }
 }

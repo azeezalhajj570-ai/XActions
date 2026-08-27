@@ -72,6 +72,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const randomUserAgent = () =>
   USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 
+/**
+ * Headers a browser sends on a top-level page navigation. Used when fetching
+ * x.com HTML (query-ID discovery loads a page to read the bundle manifest);
+ * a bare fetch with no Accept/Sec-Fetch headers is served a stripped shell.
+ *
+ * @param {string} [userAgent]  Override the rotated User-Agent
+ * @returns {Record<string, string>}
+ */
+const browserNavigationHeaders = (userAgent = randomUserAgent()) => ({
+  'user-agent': userAgent,
+  accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'accept-language': 'en-US,en;q=0.9',
+  'sec-fetch-dest': 'document',
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'none',
+  'sec-fetch-user': '?1',
+  'upgrade-insecure-requests': '1',
+});
+
 // ============================================================================
 // GuestToken — wraps a single token with metadata
 // ============================================================================
@@ -422,6 +441,7 @@ export {
   GUEST_RATE_LIMITS,
   USER_AGENTS,
   randomUserAgent,
+  browserNavigationHeaders,
 };
 
 export default GuestTokenManager;
