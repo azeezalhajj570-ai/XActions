@@ -24,7 +24,7 @@ You should see, on stderr:
 
 ```
 💻 XActions MCP Server: Local mode (free)
-⚡ XActions MCP Server v3.4.4 — 149 tools
+⚡ XActions MCP Server v3.4.4 — 150 tools
 📋 Tools available: 144
 ✅ Server running on stdio
 ```

@@ -45,7 +45,7 @@ XActions provides **5 interfaces** to the same underlying toolkit:
 ```
 
 1. **CLI** — `xactions <command>` from your terminal
-2. **MCP Server** — 149 tools for Claude, Cursor, Windsurf, GPT
+2. **MCP Server** — 150 tools for Claude, Cursor, Windsurf, GPT
 3. **REST API** — 170+ endpoints at `localhost:3001/api`
 4. **Web Dashboard** — Full-featured UI at `localhost:3001`
 5. **Browser Scripts** — Paste into DevTools on x.com

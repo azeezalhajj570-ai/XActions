@@ -89,6 +89,9 @@ export default [
         CONFIG: 'readonly',
         Chart: 'readonly',
         io: 'readonly',
+        // Loaded from a script tag on the pages that render answers
+        marked: 'readonly',
+        DOMPurify: 'readonly',
       },
     },
     rules: {

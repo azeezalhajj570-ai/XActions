@@ -106,6 +106,17 @@ No other project combines these:
 - Seventeen directories had no README.
 - `x_list_platforms` was declared in the MCP tool table with no handler.
 
+### Found and fixed by the new API contract test
+
+`tests/api/contract.test.js` boots the real Express app and walks every path in `api/openapi.js`. It found four drifts on its first run, all now fixed:
+
+- **Twenty handlers under `api/routes/ai/` imported `getJobStatus` from `api/services/jobQueue.js`, which never exported it.** Every one threw `getJobStatus is not a function` on the first status poll, so no long-running AI operation could be polled at all. `getJob` is the function they meant and is now exported under both names.
+- **`/api/workflows`, `/api/streams`, `/api/schedule` and `/api/notifications` answered unauthenticated** while their siblings `/api/crm` and `/api/automations` require a token. The repo ships Railway, Fly, Render and Docker configs, so a public deployment let anyone list and trigger the owner's automations. All four now use the same `authMiddleware`.
+- **`GET /api/twitter/status`, `GET /api/admin/stats` and `GET /api/notifications` were documented in the spec and never implemented.** All three now serve real state: session presence, instance and payment stats, and configured channels plus recent signed webhook deliveries.
+- **`api/routes/ai.js` and `api/routes/x402-discovery.js` are dead files.** `routes/ai/index.js` superseded the first; `server.js` serves `/openapi.json` and `/.well-known/x402` inline, superseding the second. Both are left in place per the no-removals rule, and the contract test records them as deliberately superseded so a genuinely orphaned module still fails the build. Deleting them is a one-line change whenever the owner wants it.
+
+The walk runs 300+ requests eight at a time with a per-request deadline, so the whole contract suite finishes in about seven seconds.
+
 ### Still open
 - Browser scripts live twice: `src/*.js` (131) and `scripts/*.js` (139) share 78 basenames and every sampled pair has diverged; `archive/` holds a third generation. Pick `browser-scripts/` as the single home, keep `scripts/` for tooling, keep `src/` for the library. This is a move, not a deletion, but it touches docs and the dashboard generator, so it is its own change.
 - `dashboard/docs`, `dashboard/scripts` and `dashboard/blog` (665 generated files) are committed, and `deploy-cloudflare.yml` deploys them without running `site:build`. Build in the workflow and gitignore the output.

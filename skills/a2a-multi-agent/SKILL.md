@@ -123,7 +123,7 @@ curl 'http://localhost:3100/a2a/skills?query=scrape'
 Every A2A agent publishes a JSON document at `/.well-known/agent.json` describing its capabilities, skills, and supported protocols.
 
 ### Skills
-XActions converts its 149 MCP tools into A2A skills, each with a unique ID (`xactions.<tool_name>`), description, input schema, and category tags.
+XActions converts its 150 MCP tools into A2A skills, each with a unique ID (`xactions.<tool_name>`), description, input schema, and category tags.
 
 ### Task Lifecycle
 ```
