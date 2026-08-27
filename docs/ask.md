@@ -90,7 +90,7 @@ Index size and digest, the lanes configured on this deployment, and the suggeste
 
 - **Cloudflare Worker** (`worker/index.js`): `/api/ask` is answered at the edge. The index is read from the static assets bundle and the lanes are called with `fetch`, so no origin server is needed.
 - **Express** (`api/routes/ask.js`): mounted at `/api/ask` in both `api/server.js` and the Vercel `api/serverless.js`.
-- **Browser fallback** (`dashboard/js/ask.js`): if `POST /api/ask` does not answer with an event stream (for example a static-only deploy), the page downloads `/data/ask-index.json`, runs the same engine from `/js/ask/engine.js`, and calls the keyless lanes directly. The answer is labelled "in-browser".
+- **Browser fallback** (`dashboard/js/ask.js`): if `POST /api/ask` does not answer with an event stream (for example a static-only deploy, which is what xactions.app serves until the Worker is deployed), the page downloads `/data/ask-index.json` (about 650 KB gzipped, fetched only on this path and then cached), runs the same engine from `/js/ask/engine.js`, and calls the keyless lanes directly. A toast says so and the answer is labelled "in-browser".
 
 ## Development
 
