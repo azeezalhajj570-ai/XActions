@@ -49,6 +49,7 @@ export const GROUPS = [
     title: 'Write and grow',
     hint: 'Draft, sharpen, schedule, and recycle posts',
     commands: [
+      'engage',
       'ai',
       'optimize',
       'hashtags',

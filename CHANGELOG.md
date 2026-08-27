@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Sweep a whole profile: like, repost, and reply to every post.** Doing this by hand on a hundred-post account is twenty minutes of clicking. [`scripts/engageProfile.js`](scripts/engageProfile.js) does it from the console with a floating panel: per-action toggles, speed presets, a 90-second rest every 20 posts, automatic back-off after three failures, DOM-verified actions, progress saved per profile so a reload resumes, undo for likes and reposts, and a JSON export. Replies come from templates (`{author}`, `{name}`, never the same one twice in a row) or from an LLM given a one-line brief. Grok works straight from the console because x.com's CSP allows `api.x.ai`; every other provider goes through the extension.
+- **`xactions engage <username>`.** The same sweep from the terminal over the HTTP client: `--like --repost --comment`, `--prompt` for AI replies with any provider (OpenRouter, OpenAI, xAI, Anthropic, Ollama, custom URL), `--template`/`--templates-file`, `--since`, `--dry-run`, `--json`, and resumable progress in `~/.xactions/engage/`. Rate limits pause the run and continue.
+- **Extension LLM relay.** The browser extension now answers `LLM_REQUEST` messages from page scripts by calling the provider from its service worker, which is not bound by x.com's Content-Security-Policy. Host permissions were added for OpenRouter, OpenAI, Anthropic, xAI, and localhost.
+- **`POST /api/ai/writer/comment`** and `createCommentGenerator()` in `xactions/ai`: prompt-driven reply generation with no voice profile, shared by the CLI, the API, and the extension. Replies are sanitised and regenerated once when they open with boilerplate.
+
+
 ## [3.5.0] - 2026-08-04
 
 ### Added

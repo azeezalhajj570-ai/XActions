@@ -267,6 +267,7 @@ router.get('/', (req, res) => {
         'POST /api/ai/writer/rewrite': 'Rewrite tweet',
         'POST /api/ai/writer/calendar': 'Content calendar',
         'POST /api/ai/writer/reply': 'Generate reply',
+        'POST /api/ai/writer/comment': 'Generate comment from a brief (no voice profile)',
       },
       utility: {
         'POST /api/ai/download/video': 'Download video',

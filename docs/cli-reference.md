@@ -692,6 +692,41 @@ xactions media artist -l 200 -o artist-media.json
 
 ---
 
+### xactions engage
+
+Like, repost, and reply to every post on a profile, with replies from templates or from an LLM given a brief. Needs a logged-in session (`xactions connect`) for anything but `--dry-run`.
+
+```bash
+xactions engage <username> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--like` / `--repost` / `--comment` | Actions to take (at least one) |
+| `-l, --limit <n>` | Posts to engage this run (default 100) |
+| `--replies` / `--reposts` | Include the account's replies / its reposts of others |
+| `--since <date>` | Only posts on or after this date |
+| `--template <text>` | Reply template, repeatable (`{author}`, `{name}`) |
+| `--templates-file <path>` | One template per line |
+| `--prompt <brief>` | AI replies: how they should sound |
+| `--persona <text>` | Optional persona line for the model |
+| `--provider <name>` | `openrouter` (default), `openai`, `xai`, `anthropic`, `ollama`, `custom` |
+| `--model <name>` | Model override |
+| `--api-key <key>` | Or the provider's env var (`OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `XAI_API_KEY`, `ANTHROPIC_API_KEY`) |
+| `--base-url <url>` | Chat-completions URL for `custom` |
+| `--delay <s>` / `--jitter <s>` | Pacing between posts (default 20 ± 10) |
+| `--dry-run` | Preview, including generated replies, post nothing |
+| `--reset` / `--no-resume` | Forget saved progress / ignore it for this run |
+| `--json` | Report as JSON on stdout |
+
+```bash
+xactions engage nasa --like --repost --dry-run
+xactions engage nasa --like --comment --template "Solid work on this, {name}."
+xactions engage nasa --like --repost --comment --prompt "supportive, specific, one honest question, no hype"
+```
+
+Full guide, including the browser-console version: [engage.md](engage.md).
+
 ### xactions info
 
 Display XActions information, version, and links.

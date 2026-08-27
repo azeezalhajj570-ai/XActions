@@ -24,6 +24,7 @@ import { registerDoctorCommand } from './commands/doctor.js';
 import { registerReportCommand } from './commands/report.js';
 import { registerQuickstartCommand } from './commands/quickstart.js';
 import { registerCompletionCommand } from './commands/completion.js';
+import { registerEngageCommand } from './commands/engage.js';
 import { renderRootHelp } from './help-groups.js';
 
 const program = new Command();
@@ -209,6 +210,7 @@ program
 registerConnectCommand(program);
 registerDoctorCommand(program);
 registerReportCommand(program, { createHttpScraper, smartOutput });
+registerEngageCommand(program, { createHttpScraper, loadConfig, configDir: CONFIG_DIR });
 registerQuickstartCommand(program, { version: VERSION });
 registerCompletionCommand(program);
 

@@ -21,3 +21,17 @@ export {
 
 // Content Optimizer (09-J)
 export { suggestHashtags, optimizeTweet, predictPerformance, generateVariations, analyzeVoice as analyzeContentVoice } from './contentOptimizer.js';
+
+// Prompt-driven comment generator (shared by `xactions engage`, the API, and the extension bridge)
+export {
+  createCommentGenerator,
+  chatCompletion,
+  resolveProvider,
+  buildSystemPrompt,
+  buildUserPrompt,
+  sanitizeComment,
+  isGenericComment,
+  GENERIC_OPENERS,
+  PROVIDER_URLS,
+  DEFAULT_MODELS,
+} from './commentGenerator.js';

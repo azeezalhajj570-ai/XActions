@@ -755,3 +755,52 @@ export declare function buildGraphQLUrl(
   features?: Record<string, boolean>,
   fieldToggles?: Record<string, boolean>,
 ): string;
+
+// ============================================================================
+// AI: prompt-driven comment generator (src/ai/commentGenerator.js)
+// ============================================================================
+
+export type CommentProvider = 'openrouter' | 'openai' | 'xai' | 'anthropic' | 'ollama' | 'custom';
+
+export interface CommentGeneratorConfig {
+  /** How the replies should sound. Required. */
+  prompt: string;
+  /** Optional first line of the system prompt, e.g. "You are @you, a founder building X". */
+  persona?: string;
+  provider?: CommentProvider;
+  apiKey?: string;
+  /** Full chat-completions URL; required for provider "custom". */
+  baseUrl?: string;
+  model?: string;
+  temperature?: number;
+  maxLength?: number;
+  allowHashtags?: boolean;
+  allowEmoji?: boolean;
+  fetchImpl?: typeof fetch;
+}
+
+export interface CommentTweetInput {
+  text: string;
+  author?: string;
+  authorName?: string;
+  quotedText?: string;
+  hasMedia?: boolean;
+}
+
+export interface GeneratedComment {
+  text: string;
+  model: string;
+  /** 1 when the first completion was usable, 2 when it was regenerated for being generic. */
+  attempts: number;
+}
+
+export interface CommentGenerator {
+  generate(tweet: CommentTweetInput): Promise<GeneratedComment>;
+  /** Replies produced so far in this session, fed back to the model for variety. */
+  history: string[];
+  target: { provider: string; url: string; model: string };
+}
+
+export function createCommentGenerator(config: CommentGeneratorConfig): CommentGenerator;
+export function sanitizeComment(raw: string, opts?: { allowHashtags?: boolean; maxLength?: number }): string;
+export function isGenericComment(text: string): boolean;

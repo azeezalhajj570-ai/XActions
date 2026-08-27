@@ -1,6 +1,6 @@
 ---
 name: engagement-interaction
-description: Automates X/Twitter engagement actions — like, unlike, reply, bookmark, hide replies, and auto-like by keyword. Also bulk-unlikes all posts. Use when users want to automate likes, send replies, manage bookmarks on tweets, hide replies, or clear their entire likes history.
+description: Automates X/Twitter engagement actions — like, unlike, reply, bookmark, hide replies, auto-like by keyword, and sweeping an entire profile (like + repost + reply to every post, with template or LLM-written replies). Also bulk-unlikes all posts. Use when users want to automate likes, send replies, manage bookmarks on tweets, hide replies, or clear their entire likes history.
 license: Apache-2.0
 metadata:
   author: nichxbt
@@ -20,6 +20,7 @@ Browser automation for X/Twitter engagement — liking, replying, bookmarking, h
 | Get engagement analytics for a post | `src/engagementManager.js` | Tweet URL |
 | Hide replies on your posts | `src/engagementManager.js` | Reply URL |
 | Unlike ALL liked posts | `src/unlikeAllPosts.js` | `x.com/USERNAME/likes` |
+| Like + repost + reply to EVERY post on a profile (templates or AI replies) | `scripts/engageProfile.js` or `xactions engage USERNAME --like --repost --comment --prompt "..."` | `x.com/USERNAME` |
 
 ## Engagement Manager
 

@@ -117,6 +117,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 
 | Area | What changed |
 |------|-------------|
+| **Sweep a whole profile** | [`scripts/engageProfile.js`](scripts/engageProfile.js) likes, reposts, and replies to every post on an account from the console, with a floating panel, dry run, resume, undo, and replies from your templates or from an LLM given a one-line brief (Grok works straight from the console; any provider through the extension). `xactions engage USERNAME --like --repost --comment --prompt "..."` does the same from the terminal with any provider. [Docs](docs/engage.md). |
 | **A CLI you can find your way around** | Fifty-plus commands are now grouped by task instead of listed alphabetically. `xactions quickstart` gives a guided first run that adapts to what you already have set up. |
 | **Tab completion** | `xactions completion bash\|zsh\|fish` prints a completion script generated from the live command tree, so every command, sub-command, and flag completes. |
 | **`--json` everywhere** | Every read command accepts `--json` and puts data on stdout and nothing else. It outranks `--output`, so a pipe is never silently turned into a file write. |
@@ -246,6 +247,16 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 })();
 ```
 Or use the [CLI](docs/cli-reference.md) or [MCP server](docs/mcp-setup.md) for more options.
+</details>
+
+<details>
+<summary><strong>How do I like, repost, and reply to every post on a profile?</strong></summary>
+
+1. Go to `https://x.com/USERNAME`
+2. Open the Developer Console. (<kbd>COMMAND</kbd>+<kbd>ALT</kbd>+<kbd>I</kbd> on Mac)
+3. Paste [`scripts/engageProfile.js`](scripts/engageProfile.js) and run it. A panel appears: pick like / repost / reply, leave dry run on, press Start, read the log, then turn dry run off.
+
+Replies come from your own templates or from an LLM given a brief like "supportive, specific, one honest question". From the terminal: `npx xactions engage USERNAME --like --repost --comment --prompt "..."`. Full guide: [docs/engage.md](docs/engage.md).
 </details>
 
 <details>
