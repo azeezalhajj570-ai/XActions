@@ -280,7 +280,7 @@ describe('createPooledClient', () => {
     const client = createPooledClient(pool, { onRotate: (e) => rotations.push(e) });
 
     const result = await client.graphql('QID', 'Followers', { userId: '1' });
-    expect(result.data.data.user.result.rest_id).toBe('1');
+    expect(result.data.user.result.rest_id).toBe('1');
     expect(fetch.calls.map((c) => c.account)).toEqual(['a', 'b']);
     expect(rotations).toHaveLength(1);
     expect(rotations[0]).toMatchObject({ from: 'a', operation: 'Followers', reason: 'rate-limited' });

@@ -98,15 +98,22 @@ export function parseTweetData(rawTweet) {
   const core = tweet.core || {};
 
   // ---- Author -----------------------------------------------------------
+  // The embedded user carries the same shape migration as a standalone
+  // profile: name/screen_name moved to `core`, the avatar to `avatar`, the
+  // verified flag to `verification`. `legacy` is still sent on some
+  // authenticated responses, so it stays as the fallback.
   const authorResult = core.user_results?.result || {};
   const authorLegacy = authorResult.legacy || {};
+  const authorCore = authorResult.core || {};
   const author = {
     id: authorResult.rest_id || null,
-    username: authorLegacy.screen_name || '',
-    name: authorLegacy.name || '',
-    avatar: authorLegacy.profile_image_url_https || null,
+    username: authorCore.screen_name ?? authorLegacy.screen_name ?? '',
+    name: authorCore.name ?? authorLegacy.name ?? '',
+    avatar: authorResult.avatar?.image_url ?? authorLegacy.profile_image_url_https ?? null,
     verified: Boolean(
-      authorResult.is_blue_verified || authorLegacy.verified,
+      authorResult.is_blue_verified ||
+        authorResult.verification?.verified ||
+        authorLegacy.verified,
     ),
   };
 
@@ -201,6 +208,27 @@ export function parseTweetData(rawTweet) {
 // ---------------------------------------------------------------------------
 // parseTimelineInstructions — Parse Twitter's timeline response format
 // ---------------------------------------------------------------------------
+
+/**
+ * Read the instruction list out of a user timeline payload.
+ *
+ * x.com renamed the container from `timeline_v2` to `timeline`, and a guest
+ * response uses the new name while some authenticated responses still send the
+ * old one. Reading only `timeline_v2` silently yields zero tweets, so both are
+ * accepted here and every user-timeline caller goes through this.
+ *
+ * @param {object} payload - `response.data` from client.graphql()
+ * @returns {object[]} Timeline instructions, empty when the payload has none.
+ */
+export function userTimelineInstructions(payload) {
+  const result = payload?.user?.result;
+  return (
+    result?.timeline?.timeline?.instructions ??
+    result?.timeline_v2?.timeline?.instructions ??
+    result?.timeline?.instructions ??
+    []
+  );
+}
 
 /**
  * Parse the `instructions` array from a Twitter timeline GraphQL response.
@@ -349,8 +377,7 @@ export async function scrapeTweets(client, username, options = {}) {
 
     const resp = await client.graphql(queryId, operationName, variables);
 
-    const instructions =
-      resp?.data?.user?.result?.timeline_v2?.timeline?.instructions ?? [];
+    const instructions = userTimelineInstructions(resp?.data);
 
     const { tweets, cursor: bottomCursor } = parseTimelineInstructions(instructions);
 
@@ -413,8 +440,7 @@ export async function scrapeTweetsAndReplies(client, username, options = {}) {
 
     const resp = await client.graphql(queryId, operationName, variables);
 
-    const instructions =
-      resp?.data?.user?.result?.timeline_v2?.timeline?.instructions ?? [];
+    const instructions = userTimelineInstructions(resp?.data);
 
     const { tweets, cursor: bottomCursor } = parseTimelineInstructions(instructions);
 

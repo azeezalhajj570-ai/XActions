@@ -358,9 +358,16 @@ export class TwitterHttpClient {
     const url = buildGraphQLUrl(queryId, operationName, variables, features);
     const json = await this.request(url);
 
+    // x.com answers every GraphQL query with the envelope { data, errors }.
+    // Consumers read `response.data.user`, `response.data.tweetResult` and so
+    // on, so the envelope is stripped here. Returning the raw body would put
+    // the payload one level too deep and every parser would see undefined.
+    // A body with no `data` key is passed through unchanged.
+    const payload = json && typeof json === 'object' && 'data' in json ? json.data : json;
+
     // Extract bottom cursor for pagination (queries only)
     const cursor = this._extractCursor(json);
-    return { data: json, cursor };
+    return { data: payload, errors: json?.errors, cursor };
   }
 
   /**

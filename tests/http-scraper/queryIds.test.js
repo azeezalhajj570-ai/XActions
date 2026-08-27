@@ -391,7 +391,8 @@ describe('TwitterHttpClient stale query ID handling', () => {
     const client = new TwitterHttpClient({ fetch: routed, maxRetries: 0, autoRefreshQueryIds: true });
     const result = await client.graphql(stale('UserByScreenName'), 'UserByScreenName', { screen_name: 'nichxbt' });
 
-    expect(result.data).toEqual(payload);
+    // graphql() strips x.com's { data } envelope: result.data is the payload
+    expect(result.data).toEqual(payload.data);
     const graphqlCalls = routed.mock.calls.map(([u]) => u.split('?')[0]).filter((u) => u.includes('/i/api/graphql/'));
     expect(graphqlCalls).toEqual([staleUrl('UserByScreenName'), liveUrl('UserByScreenName')]);
     expect(routed.mock.calls.filter(([u]) => u === 'https://x.com/home').length).toBe(1);
@@ -410,7 +411,7 @@ describe('TwitterHttpClient stale query ID handling', () => {
     const client = new TwitterHttpClient({ fetch: routed, maxRetries: 0, autoRefreshQueryIds: true });
 
     const result = await client.graphql(stale('TweetDetail'), 'TweetDetail', { focalTweetId: '1' });
-    expect(result.data).toEqual(payload);
+    expect(result.data).toEqual(payload.data);
     const graphqlCalls = routed.mock.calls.map(([u]) => u.split('?')[0]).filter((u) => u.includes('/i/api/graphql/'));
     expect(graphqlCalls).toEqual([staleUrl('TweetDetail'), liveUrl('TweetDetail')]);
   });

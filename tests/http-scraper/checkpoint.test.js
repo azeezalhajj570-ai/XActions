@@ -98,11 +98,11 @@ const searchPage = (ids, cursor) => ({
 const userLookup = { data: { user: { result: { __typename: 'User', rest_id: '42', legacy: { screen_name: 'someone' } } } } };
 
 /**
- * client.graphql() wraps the fetched JSON as { data: json, cursor }, so the
- * fake fetch serves the inner content (the same convention as integration.test.js).
+ * The fake fetch serves the full x.com body, envelope included; client.graphql()
+ * strips it (the same convention as integration.test.js).
  */
 function ok(body) {
-  return { status: 200, headers: { get: () => null }, json: async () => body.data ?? body };
+  return { status: 200, headers: { get: () => null }, json: async () => body };
 }
 
 /**

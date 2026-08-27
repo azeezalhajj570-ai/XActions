@@ -12,7 +12,12 @@
 import { GRAPHQL_ENDPOINTS, DEFAULT_FEATURES, buildGraphQLUrl } from './graphqlQueries.js';
 import { Tweet } from '../models/Tweet.js';
 import { NotFoundError, ScraperError } from '../errors.js';
-import { parseTimelineEntries, parseTweetEntry, parseModuleEntry } from './parsers.js';
+import {
+  parseTimelineEntries,
+  parseTweetEntry,
+  parseModuleEntry,
+  USER_TIMELINE_PATHS,
+} from './parsers.js';
 
 /** @private Random delay between paginated requests */
 function randomDelay(min = 1000, max = 2000) {
@@ -109,7 +114,7 @@ export async function* getTweets(http, userId, count = 40) {
 
     const { entries, cursor: nextCursor } = parseTimelineEntries(
       data,
-      'data.user.result.timeline_v2.timeline',
+      USER_TIMELINE_PATHS,
     );
 
     let foundAny = false;
@@ -158,7 +163,7 @@ export async function* getTweetsAndReplies(http, userId, count = 40) {
 
     const { entries, cursor: nextCursor } = parseTimelineEntries(
       data,
-      'data.user.result.timeline_v2.timeline',
+      USER_TIMELINE_PATHS,
     );
 
     let foundAny = false;
@@ -219,7 +224,7 @@ export async function* getLikedTweets(http, userId, count = 40) {
 
     const { entries, cursor: nextCursor } = parseTimelineEntries(
       data,
-      'data.user.result.timeline_v2.timeline',
+      USER_TIMELINE_PATHS,
     );
 
     let foundAny = false;

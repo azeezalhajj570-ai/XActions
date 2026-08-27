@@ -15,6 +15,7 @@ import { readFile, writeFile, stat } from 'node:fs/promises';
 import { createWriteStream, createReadStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { extname, resolve } from 'node:path';
+import { userTimelineInstructions } from './tweets.js';
 
 // ---------------------------------------------------------------------------
 // GraphQL endpoint constants — will be imported from endpoints.js (Build 01-01)
@@ -531,8 +532,7 @@ export async function scrapeMedia(client, username, options = {}) {
       DEFAULT_FEATURES,
     );
 
-    const instructions =
-      resp?.data?.user?.result?.timeline_v2?.timeline?.instructions ?? [];
+    const instructions = userTimelineInstructions(resp?.data);
 
     let foundTweets = false;
     nextCursor = null;

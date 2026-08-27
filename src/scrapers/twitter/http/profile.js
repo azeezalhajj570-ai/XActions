@@ -63,26 +63,27 @@ function toISODate(raw) {
 }
 
 /**
- * Safely extract the expanded website URL from legacy entity data.
+ * Safely extract the expanded website URL.
  *
- * @param {object} legacy — The `legacy` object from a User result.
+ * @param {object} entities - `entities` from `profile_bio` or `legacy`.
+ * @param {string|null} rawUrl - The unexpanded t.co URL.
  * @returns {string|null}
  */
-function extractWebsite(legacy) {
-  const urlEntities = legacy?.entities?.url?.urls;
-  if (!urlEntities || !urlEntities.length) return legacy?.url || null;
+function extractWebsite(entities, rawUrl) {
+  const urlEntities = entities?.url?.urls;
+  if (!urlEntities || !urlEntities.length) return rawUrl || null;
   // Prefer the expanded URL (resolves the t.co redirect)
-  return urlEntities[0].expanded_url || urlEntities[0].url || legacy.url || null;
+  return urlEntities[0].expanded_url || urlEntities[0].url || rawUrl || null;
 }
 
 /**
  * Extract bio entity metadata (URLs, hashtags, mentions).
  *
- * @param {object} legacy
+ * @param {object} entities - `entities` from `profile_bio` or `legacy`.
  * @returns {{ urls: object[], hashtags: object[], mentions: object[] }}
  */
-function extractBioEntities(legacy) {
-  const desc = legacy?.entities?.description || {};
+function extractBioEntities(entities) {
+  const desc = entities?.description || {};
   return {
     urls: (desc.urls || []).map((u) => ({
       display: u.display_url,
@@ -130,31 +131,48 @@ export function parseUserData(rawUser) {
     throw new NotFoundError(`User unavailable: ${reason}`);
   }
 
+  // x.com is migrating User fields out of `legacy` into typed sub-objects
+  // (core, avatar, banner, location, privacy, website, profile_bio,
+  // relationship_counts, tweet_counts, action_counts, verification,
+  // pinned_items). Guest responses no longer carry `legacy` at all, so read
+  // the typed shape first and fall back to `legacy` for authenticated
+  // responses and older fixtures that still return it.
   const legacy = rawUser.legacy || {};
-  const descriptionUrls = legacy.entities?.description?.urls || [];
+  const core = rawUser.core || {};
+  const bio = rawUser.profile_bio || {};
+  const entities = bio.entities || legacy.entities || {};
+  const counts = rawUser.relationship_counts || {};
+  const tweetCounts = rawUser.tweet_counts || {};
+  const actionCounts = rawUser.action_counts || {};
+  const birthdate = rawUser.legacy_extended_profile?.birthdate || legacy.birthdate || null;
+  const description = bio.description ?? legacy.description ?? '';
+  const descriptionUrls = entities.description?.urls || [];
 
   return {
     id: rawUser.rest_id || null,
-    name: legacy.name || '',
-    username: legacy.screen_name || '',
-    bio: expandTcoUrls(legacy.description, descriptionUrls),
-    location: legacy.location || '',
-    website: extractWebsite(legacy),
-    joined: toISODate(legacy.created_at),
-    birthday: legacy.birthdate
-      ? `${legacy.birthdate.year || ''}${legacy.birthdate.month ? '-' + String(legacy.birthdate.month).padStart(2, '0') : ''}${legacy.birthdate.day ? '-' + String(legacy.birthdate.day).padStart(2, '0') : ''}`.trim() || null
+    name: core.name ?? legacy.name ?? '',
+    username: core.screen_name ?? legacy.screen_name ?? '',
+    bio: expandTcoUrls(description, descriptionUrls),
+    location: rawUser.location?.location ?? legacy.location ?? '',
+    website: extractWebsite(entities, rawUser.website?.url ?? legacy.url ?? null),
+    joined: toISODate(core.created_at ?? legacy.created_at ?? null),
+    birthday: birthdate
+      ? `${birthdate.year || ''}${birthdate.month ? '-' + String(birthdate.month).padStart(2, '0') : ''}${birthdate.day ? '-' + String(birthdate.day).padStart(2, '0') : ''}`.trim() || null
       : null,
-    following: legacy.friends_count ?? 0,
-    followers: legacy.followers_count ?? 0,
-    tweets: legacy.statuses_count ?? 0,
-    likes: legacy.favourites_count ?? 0,
-    media: legacy.media_count ?? 0,
-    avatar: upgradeAvatarUrl(legacy.profile_image_url_https),
-    header: legacy.profile_banner_url || null,
-    verified: Boolean(rawUser.is_blue_verified || legacy.verified),
-    protected: Boolean(legacy.protected),
-    pinnedTweetId: (legacy.pinned_tweet_ids_str || [])[0] || null,
-    bioEntities: extractBioEntities(legacy),
+    following: counts.following ?? legacy.friends_count ?? 0,
+    followers: counts.followers ?? legacy.followers_count ?? 0,
+    tweets: tweetCounts.tweets ?? legacy.statuses_count ?? 0,
+    likes: actionCounts.favorites_count ?? legacy.favourites_count ?? 0,
+    media: tweetCounts.media_tweets ?? legacy.media_count ?? 0,
+    avatar: upgradeAvatarUrl(rawUser.avatar?.image_url ?? legacy.profile_image_url_https ?? null),
+    header: rawUser.banner?.image_url ?? legacy.profile_banner_url ?? null,
+    verified: Boolean(
+      rawUser.is_blue_verified || rawUser.verification?.verified || legacy.verified
+    ),
+    protected: Boolean(rawUser.privacy?.protected ?? legacy.protected),
+    pinnedTweetId:
+      (rawUser.pinned_items?.tweet_ids_str || legacy.pinned_tweet_ids_str || [])[0] || null,
+    bioEntities: extractBioEntities(entities),
     platform: 'twitter',
   };
 }
@@ -200,7 +218,7 @@ export async function scrapeProfile(client, username) {
   }
 
   // Protected account without auth → surface a clear error
-  if (result.__typename === 'User' && result.legacy?.protected && !client.isAuthenticated()) {
+  if (result.__typename === 'User' && (result.privacy?.protected ?? result.legacy?.protected) && !client.isAuthenticated()) {
     // We can still return the partial profile data — but callers should know
     // the bio / tweets may be restricted.
   }
