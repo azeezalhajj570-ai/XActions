@@ -6,8 +6,47 @@
  */
 
 import { Router } from 'express';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
+
+// Notification channels are the owner's own Slack, Discord, Telegram and
+// email hooks, so reading or firing them needs the same authentication as
+// /api/crm and /api/automations.
+router.use(authMiddleware);
+
+// GET /api/notifications
+// Documented in api/openapi.js and, until now, never served. Reports the
+// channels that are switched on and the most recent signed webhook
+// deliveries, so a dashboard can show notification state without sending one.
+router.get('/', async (req, res) => {
+  try {
+    const { getNotifier } = await import('../../src/notifications/notifier.js');
+    const notifier = await getNotifier();
+    const channels = Object.entries(notifier.config || {}).map(([name, config]) => ({
+      name,
+      enabled: Boolean(config?.enabled),
+    }));
+
+    let deliveries = [];
+    try {
+      const { listDeliveries } = await import('../../src/notifications/webhook.js');
+      const limit = Math.min(Number(req.query.limit) || 20, 100);
+      deliveries = listDeliveries({ status: req.query.status || 'all', limit });
+    } catch {
+      // The webhook delivery log is optional: no log yet means no deliveries.
+    }
+
+    res.json({
+      channels,
+      enabled: channels.filter((c) => c.enabled).map((c) => c.name),
+      deliveries,
+      count: deliveries.length,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // POST /api/notifications/send
 router.post('/send', async (req, res) => {

@@ -84,6 +84,25 @@ async function exchangeCodeForUser(code, codeVerifier) {
   };
 }
 
+// GET /api/twitter/status
+// Documented in api/openapi.js and, until now, never served. Reports whether
+// this instance holds a usable X session and which account it belongs to,
+// without exposing the cookie itself.
+router.get('/status', authMiddleware, async (req, res) => {
+  try {
+    const { getActiveSession, listSessions } = await import('../../src/client/auth/storage.js');
+    const [active, sessions] = await Promise.all([getActiveSession(), listSessions()]);
+    res.json({
+      connected: Boolean(active?.username),
+      username: active?.username || null,
+      savedSessions: Array.isArray(sessions) ? sessions.map((s) => s.username || s).filter(Boolean) : [],
+      oauthConfigured: Boolean(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Sign in with X — no auth required, redirects to Twitter OAuth
 router.get('/login', (req, res) => {
   const codeVerifier = crypto.randomBytes(32).toString('base64url');

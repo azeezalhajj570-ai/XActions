@@ -480,6 +480,11 @@ export {
   addJob,
   queueJob,
   getJob,
+  // Twenty route handlers across api/routes/ai/ import getJobStatus, which
+  // was never exported: every one of them threw "getJobStatus is not a
+  // function" on the first status poll. getJob already returns the status,
+  // progress, result and error, so it is the function they meant.
+  getJob as getJobStatus,
   getHistory,
   cancelJob,
   isJobCancelled,

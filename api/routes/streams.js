@@ -19,6 +19,7 @@
  */
 
 import express from 'express';
+import { authMiddleware } from '../middleware/auth.js';
 import {
   createStream,
   stopStream,
@@ -36,6 +37,13 @@ import {
 } from '../../src/streaming/index.js';
 
 const router = express.Router();
+
+// Automation routes control the owner's account, so they carry the same
+// authentication as /api/crm and /api/automations. A public deployment
+// (the repo ships Railway, Fly, Render and Docker configs) would
+// otherwise let anyone list and trigger the owner's automations.
+router.use(authMiddleware);
+
 
 // ============================================================================
 // POST /api/streams — Create a new stream
