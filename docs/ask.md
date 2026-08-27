@@ -26,7 +26,7 @@ question ──► BM25 search over dashboard/data/ask-index.json  ─┐
                        system prompt + sources + question ──► free LLM chain ──► streamed answer
 ```
 
-1. **Index.** `npm run ask:index` (`scripts/build-ask-index.mjs`) chunks `docs/**/*.md`, `skills/*/SKILL.md`, `tutorials/**/*.md`, the top-level README/CHANGELOG, the header comments of every browser script in `src/` and `scripts/`, and the text of the dashboard pages (FAQ, pricing, features, ...). Each chunk carries the live URL it came from: the rendered docs page when one exists (via `dashboard/docs/_pages-manifest.json`), the `/scripts/<slug>` page for a script, or the GitHub blob URL. The result is `dashboard/data/ask-index.json`, served at `/data/ask-index.json`. `npm run docs:check` fails when the committed index is stale.
+1. **Index.** `npm run ask:index` (`scripts/build-ask-index.mjs`) strips YAML frontmatter and SEO keyword lists (both matched queries while teaching the reader nothing), then chunks `docs/**/*.md`, `skills/*/SKILL.md`, `tutorials/**/*.md`, the top-level README/CHANGELOG, the header comments of every browser script in `src/` and `scripts/`, and the text of the dashboard pages (FAQ, pricing, features, ...). Each chunk carries the live URL it came from: the rendered docs page when one exists (via `dashboard/docs/_pages-manifest.json`), the `/scripts/<slug>` page for a script, or the GitHub blob URL. The result is `dashboard/data/ask-index.json`, served at `/data/ask-index.json`. `npm run docs:check` fails when the committed index is stale.
 2. **Retrieval.** `src/ask/engine.js` builds a BM25 searcher over the chunks at startup (about 20 ms per query), with a small synonym map bridging how people ask ("all", "twitter", "retweet") to how the docs are written ("everyone", "X", "repost"). Titles are boosted, results are capped per document, and a live GitHub issues/PR search is merged in so recent bug reports show up too.
 3. **Answer.** The sources and the question go to the first lane that accepts the request in `src/ask/lanes.js`; the reply streams back as Server-Sent Events.
 
@@ -49,6 +49,15 @@ Every lane is an OpenAI-compatible chat endpoint reached with `fetch`, so the sa
 | 11 | OVH AI Endpoints (anonymous) | nothing | Meta-Llama-3.3-70B |
 
 Lanes 9 to 11 need no key, so a deployment with an empty environment still answers. Add any of the keyed free tiers to get a stronger model and a separate quota pool. `GITHUB_TOKEN` is optional and only raises the GitHub search rate limit and enables code search.
+
+Two facts about the keyless tier worth knowing before you rely on it:
+
+- **Its quota is per IP and it is shared with everyone else on that address.** All three keyless lanes can be rate limited at once. Configure one keyed free tier (Groq is the easiest) if you want a lane that is reliably yours.
+- **LLM7 refuses browser calls.** It answers `401` to any request carrying an `Origin` header, so it is server-side only and the in-browser fallback skips it (`browserSafe` in `buildLaneChain`). Pollinations and OVH send permissive CORS headers and do work from the page, as does any provider you supply your own key for.
+
+### When every lane is busy
+
+Rather than showing an error, the engine falls back to a **documentation digest**: the passages that matched the question, quoted from the index, with their links. It is labelled "Answered via the documentation index, no model lane was free" so nobody mistakes it for a written answer, and it is real retrieved text, never generated. This runs on every surface, so a question is never answered with nothing when the index already found the material.
 
 ## API
 
@@ -73,6 +82,8 @@ data: {"type":"delta","text":"To unfollow everyone"}
 data: {"type":"delta","text":" on X, paste"}
 data: {"type":"done","lane":"llm7","model":"gemini-3.1-flash-lite","partial":false,"sources":[...]}
 ```
+
+`done` carries `partial: true` when a lane died mid-answer and what had already streamed was kept, and `digest: true` with `lane: "docs"` when every lane was busy and the answer is the documentation digest described above.
 
 An `error` event carries `message` when every lane failed. From a terminal:
 

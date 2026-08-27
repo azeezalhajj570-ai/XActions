@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createSearcher, tokenize, publicSources, mergeSources, searchGitHub, SUGGESTED_QUESTIONS } from '../../src/ask/engine.js';
+import { createSearcher, tokenize, publicSources, mergeSources, docsDigest, searchGitHub, SUGGESTED_QUESTIONS } from '../../src/ask/engine.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -29,11 +29,26 @@ describe('ask engine: retrieval over the real index', () => {
     expect(tokenize('How do I unfollow all the users?')).toEqual(['unfollow', 'all', 'user']);
   });
 
-  it('answers "unfollow all users" with the unfollow-everyone material first', () => {
+  it('puts the unfollow-everyone material and the unfollow skill at the top of "unfollow all users"', () => {
     const hits = searcher.search('how do i unfollow all users');
     expect(hits.length).toBeGreaterThan(3);
-    expect(hits[0].t.toLowerCase()).toContain('unfollow everyone');
-    expect(hits.some((h) => h.p === 'skills/unfollow-management/SKILL.md')).toBe(true);
+    const top = hits.slice(0, 3);
+    expect(top.some((h) => h.p === 'skills/unfollow-management/SKILL.md')).toBe(true);
+    expect(top.some((h) => h.t.toLowerCase().includes('unfollow everyone'))).toBe(true);
+  });
+
+  it('keeps frontmatter and keyword stuffing out of the indexed passages', () => {
+    const skill = index.chunks.find((c) => c.p === 'skills/unfollow-management/SKILL.md');
+    expect(skill.x).not.toMatch(/license:\s*Apache-2\.0/);
+    expect(skill.x).not.toMatch(/^---/);
+    // A keyword dump is one run-on line of short comma-separated phrases with
+    // no code punctuation; comma-heavy code blocks are legitimate content.
+    const stuffed = index.chunks.filter((c) => {
+      if (c.x.includes('\n') || /[{};=()<>[\]`]/.test(c.x)) return false;
+      const parts = c.x.split(',');
+      return parts.length >= 12 && parts.filter((p) => p.trim().split(/\s+/).length <= 6).length / parts.length > 0.9;
+    });
+    expect(stuffed).toHaveLength(0);
   });
 
   it('routes MCP questions to the MCP setup docs', () => {
@@ -59,6 +74,15 @@ describe('ask engine: retrieval over the real index', () => {
 
   it('every suggested question resolves to at least three sources', () => {
     for (const q of SUGGESTED_QUESTIONS) expect(searcher.search(q).length, q).toBeGreaterThanOrEqual(3);
+  });
+
+  it('docsDigest answers from the retrieved passages when no lane is free', () => {
+    const hits = searcher.search('how do i unfollow all users').slice(0, 3);
+    const digest = docsDigest('how do i unfollow all users', hits);
+    expect(digest).toContain('[1] [');
+    expect(digest).toContain(hits[0].u);
+    expect(digest.toLowerCase()).toContain('unfollow');
+    expect(docsDigest('anything', [])).toBe('');
   });
 
   it('mergeSources folds chunks of one URL into one numbered source', () => {

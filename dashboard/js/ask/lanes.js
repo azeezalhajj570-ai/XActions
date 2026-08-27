@@ -7,8 +7,11 @@
  * and in the browser. Lanes are tried in order until one streams an answer;
  * a 402/429/5xx or a network error moves the chain to the next lane.
  *
- * Three lanes need no key at all (OVH anonymous tier, Pollinations, LLM7), so a
- * deployment with an empty env still answers. Keyed lanes are all free tiers
+ * Three lanes need no key at all (LLM7, Pollinations, OVH anonymous tier), so a
+ * deployment with an empty env still answers. Lanes marked `browser: false`
+ * refuse requests that carry an `Origin` header (LLM7 answers 401 for any
+ * browser call), so the in-browser fallback filters them out rather than
+ * spending a round trip on a guaranteed rejection. Keyed lanes are all free tiers
  * (Groq, Cerebras, OpenRouter `:free` models, Gemini AI Studio, Mistral,
  * Cloudflare Workers AI) and are only added when their env var is present.
  * xAI is included so a self-host that already pays for Grok can lead with it.
@@ -60,8 +63,8 @@ export const BYOK_PROVIDERS = {
  * Build the ordered lane chain for one request.
  *
  * @param {Record<string, string|undefined>} env  process.env, the Worker env, or {} in the browser
- * @param {{ byok?: { provider: string, apiKey: string, model?: string } }} [opts]
- * @returns {Array<{ name: string, url: string, model: string|(() => Promise<string>), key?: string, headers?: Record<string,string>, keyless?: boolean, noStream?: boolean }>}
+ * @param {{ byok?: { provider: string, apiKey: string, model?: string }, browserSafe?: boolean }} [opts]
+ * @returns {Array<{ name: string, url: string, model: string|(() => Promise<string>), key?: string, headers?: Record<string,string>, keyless?: boolean, noStream?: boolean, browser?: boolean }>}
  */
 export function buildLaneChain(env = {}, opts = {}) {
   const chain = [];
@@ -106,9 +109,12 @@ export function buildLaneChain(env = {}, opts = {}) {
   // Pollinations' legacy anonymous endpoint answers only non-streamed requests
   // (stream:true returns a 402), so it is called with one JSON body; OVH is
   // last because its anonymous tier allows only 2 requests per minute per IP.
-  chain.push({ name: 'llm7', url: 'https://api.llm7.io/v1/chat/completions', model: 'gemini-3.1-flash-lite', keyless: true });
+  chain.push({ name: 'llm7', url: 'https://api.llm7.io/v1/chat/completions', model: 'gemini-3.1-flash-lite', keyless: true, browser: false });
   chain.push({ name: 'pollinations', url: 'https://text.pollinations.ai/openai', model: 'openai-fast', keyless: true, noStream: true });
   chain.push({ name: 'ovh', url: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions', model: 'Meta-Llama-3_3-70B-Instruct', keyless: true });
+  // A BYOK lane always stays: the user's own key authenticates the call, and
+  // every BYOK provider here sends permissive CORS headers.
+  if (opts.browserSafe) return chain.filter((lane) => lane.browser !== false);
   return chain;
 }
 

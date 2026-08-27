@@ -189,6 +189,28 @@ export async function searchGitHub(question, { token, timeoutMs = 5000 } = {}) {
   }
 }
 
+/**
+ * Format retrieved sources as a plain digest of what the documentation says.
+ *
+ * Used when every LLM lane is exhausted (all the keyless lanes are rate limited
+ * per IP, so this is reachable in practice). The user still gets the real
+ * passages that matched their question and the links to read further, which is
+ * strictly more useful than an error. It is generated text from the index, not
+ * a model answer, and the caller labels it as such.
+ */
+export function docsDigest(question, sources) {
+  if (!sources.length) return '';
+  const lines = sources.slice(0, 5).map((s, i) => {
+    const body = s.x
+      .split(/\n\[\.\.\.\]\n/)[0]
+      .replace(/\s+/g, ' ')
+      .slice(0, 420)
+      .trim();
+    return `**[${i + 1}] [${s.t}](${s.u})**\n\n${body}${body.length >= 420 ? '...' : ''}`;
+  });
+  return `The model lanes are all busy right now, so here are the passages that match **${question.replace(/[*_`]/g, '')}**, straight from the documentation:\n\n${lines.join('\n\n')}\n\nOpen a source above for the full page, or ask again in a moment for a written answer.`;
+}
+
 const SYSTEM_PROMPT = `You are Ask XActions, the assistant for XActions (https://xactions.app), the open-source X/Twitter automation toolkit by @nichxbt: 94 browser console scripts, a CLI (npx xactions), an MCP server for AI agents, a Node.js library, a REST API and a browser extension. No X API fees.
 
 Answer the user's question using the numbered SOURCES. Rules:
@@ -240,10 +262,11 @@ export function publicSources(sources) {
  * @param {{ search: Function }} args.searcher
  * @param {Record<string, string|undefined>} [args.env]
  * @param {{ provider: string, apiKey: string, model?: string }} [args.byok]
+ * @param {boolean} [args.browserSafe]  drop lanes that reject browser origins
  * @param {(event: object) => void} args.onEvent
  * @param {AbortSignal} [args.signal]
  */
-export async function ask({ question, history = [], searcher, env = {}, byok, onEvent, signal }) {
+export async function ask({ question, history = [], searcher, env = {}, byok, browserSafe = false, onEvent, signal }) {
   const q = String(question || '').trim().slice(0, 2000);
   if (!q) throw new Error('question is required');
   const [local, live] = await Promise.all([
@@ -267,12 +290,24 @@ export async function ask({ question, history = [], searcher, env = {}, byok, on
       : `No sources matched. Answer from general XActions knowledge only if you are certain, otherwise point to https://xactions.app/docs.\n\nQUESTION: ${q}`,
   });
 
-  const chain = buildLaneChain(env, { byok });
-  const result = await streamCompletion(chain, messages, {
-    signal,
-    onLane: (lane) => onEvent({ type: 'lane', lane }),
-    onDelta: (text) => onEvent({ type: 'delta', text }),
-  });
+  const chain = buildLaneChain(env, { byok, browserSafe });
+  let result;
+  try {
+    result = await streamCompletion(chain, messages, {
+      signal,
+      onLane: (lane) => onEvent({ type: 'lane', lane }),
+      onDelta: (text) => onEvent({ type: 'delta', text }),
+    });
+  } catch (error) {
+    // Never answer a question with nothing when the index already found the
+    // passages: fall back to the documentation digest.
+    const digest = signal?.aborted ? '' : docsDigest(q, sources);
+    if (!digest) throw error;
+    onEvent({ type: 'lane', lane: 'docs' });
+    onEvent({ type: 'delta', text: digest });
+    onEvent({ type: 'done', lane: 'docs', model: 'retrieval', digest: true, sources: pub });
+    return { lane: 'docs', model: 'retrieval', text: digest, digest: true, sources: pub };
+  }
   onEvent({ type: 'done', lane: result.lane, model: result.model, partial: Boolean(result.partial), sources: pub });
   return { ...result, sources: pub };
 }

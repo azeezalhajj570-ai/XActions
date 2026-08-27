@@ -180,7 +180,11 @@ function paintAssistant(el, message, { live = false } = {}) {
   el.querySelector('.sources').innerHTML = sources.map(sourceChip).join('');
   const meta = el.querySelector('.meta');
   if (message.lane && !live) {
-    const via = message.lane.startsWith('byok:') ? `your ${BYOK_PROVIDERS[message.lane.slice(5)]?.label || message.lane.slice(5)} key` : `${message.lane}${message.local ? ' (in-browser)' : ''}`;
+    const via = message.digest
+      ? 'the documentation index, no model lane was free'
+      : message.lane.startsWith('byok:')
+        ? `your ${BYOK_PROVIDERS[message.lane.slice(5)]?.label || message.lane.slice(5)} key`
+        : `${message.lane}${message.local ? ' (in-browser)' : ''}`;
     meta.innerHTML = `<span>Answered via ${escapeHtml(via)}${message.partial ? ', partial' : ''}</span><span class="meta-actions"><button type="button" class="meta-btn" data-copy title="Copy answer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button><button type="button" class="meta-btn" data-regen title="Ask again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Retry</button></span>`;
   } else {
     meta.innerHTML = '';
@@ -249,7 +253,7 @@ async function loadEngine() {
 
 async function askLocally(question, history, byok, onEvent, signal) {
   const { ask, searcher } = await loadEngine();
-  await ask({ question, history, searcher, env: {}, byok, onEvent: (e) => onEvent(e.type === 'done' ? { ...e, local: true } : e), signal });
+  await ask({ question, history, searcher, env: {}, byok, browserSafe: true, onEvent: (e) => onEvent(e.type === 'done' ? { ...e, local: true } : e), signal });
 }
 
 async function submit(question) {
@@ -291,7 +295,7 @@ async function submit(question) {
     if (e.type === 'sources') message.sources = e.sources;
     else if (e.type === 'lane') message.lane = e.lane;
     else if (e.type === 'delta') message.content += e.text;
-    else if (e.type === 'done') { message.lane = e.lane; message.partial = e.partial; message.local = Boolean(e.local); }
+    else if (e.type === 'done') { message.lane = e.lane; message.partial = e.partial; message.digest = Boolean(e.digest); message.local = Boolean(e.local); }
     else if (e.type === 'error') message.error = e.message;
     repaint();
   };

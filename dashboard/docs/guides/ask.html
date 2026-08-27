@@ -281,7 +281,7 @@
                        system prompt + sources + question ──► free LLM chain ──► streamed answer
 </code></pre>
 <ol>
-<li><strong>Index.</strong> <code>npm run ask:index</code> (<code>scripts/build-ask-index.mjs</code>) chunks <code>docs/**/*.md</code>, <code>skills/*/SKILL.md</code>, <code>tutorials/**/*.md</code>, the top-level README/CHANGELOG, the header comments of every browser script in <code>src/</code> and <code>scripts/</code>, and the text of the dashboard pages (FAQ, pricing, features, ...). Each chunk carries the live URL it came from: the rendered docs page when one exists (via <code>dashboard/docs/_pages-manifest.json</code>), the <code>/scripts/&lt;slug&gt;</code> page for a script, or the GitHub blob URL. The result is <code>dashboard/data/ask-index.json</code>, served at <code>/data/ask-index.json</code>. <code>npm run docs:check</code> fails when the committed index is stale.</li>
+<li><strong>Index.</strong> <code>npm run ask:index</code> (<code>scripts/build-ask-index.mjs</code>) strips YAML frontmatter and SEO keyword lists (both matched queries while teaching the reader nothing), then chunks <code>docs/**/*.md</code>, <code>skills/*/SKILL.md</code>, <code>tutorials/**/*.md</code>, the top-level README/CHANGELOG, the header comments of every browser script in <code>src/</code> and <code>scripts/</code>, and the text of the dashboard pages (FAQ, pricing, features, ...). Each chunk carries the live URL it came from: the rendered docs page when one exists (via <code>dashboard/docs/_pages-manifest.json</code>), the <code>/scripts/&lt;slug&gt;</code> page for a script, or the GitHub blob URL. The result is <code>dashboard/data/ask-index.json</code>, served at <code>/data/ask-index.json</code>. <code>npm run docs:check</code> fails when the committed index is stale.</li>
 <li><strong>Retrieval.</strong> <code>src/ask/engine.js</code> builds a BM25 searcher over the chunks at startup (about 20 ms per query), with a small synonym map bridging how people ask (&quot;all&quot;, &quot;twitter&quot;, &quot;retweet&quot;) to how the docs are written (&quot;everyone&quot;, &quot;X&quot;, &quot;repost&quot;). Titles are boosted, results are capped per document, and a live GitHub issues/PR search is merged in so recent bug reports show up too.</li>
 <li><strong>Answer.</strong> The sources and the question go to the first lane that accepts the request in <code>src/ask/lanes.js</code>; the reply streams back as Server-Sent Events.</li>
 </ol>
@@ -364,6 +364,13 @@
 </tr>
 </tbody></table>
 <p>Lanes 9 to 11 need no key, so a deployment with an empty environment still answers. Add any of the keyed free tiers to get a stronger model and a separate quota pool. <code>GITHUB_TOKEN</code> is optional and only raises the GitHub search rate limit and enables code search.</p>
+<p>Two facts about the keyless tier worth knowing before you rely on it:</p>
+<ul>
+<li><strong>Its quota is per IP and it is shared with everyone else on that address.</strong> All three keyless lanes can be rate limited at once. Configure one keyed free tier (Groq is the easiest) if you want a lane that is reliably yours.</li>
+<li><strong>LLM7 refuses browser calls.</strong> It answers <code>401</code> to any request carrying an <code>Origin</code> header, so it is server-side only and the in-browser fallback skips it (<code>browserSafe</code> in <code>buildLaneChain</code>). Pollinations and OVH send permissive CORS headers and do work from the page, as does any provider you supply your own key for.</li>
+</ul>
+<h3 id="when-every-lane-is-busy">When every lane is busy</h3>
+<p>Rather than showing an error, the engine falls back to a <strong>documentation digest</strong>: the passages that matched the question, quoted from the index, with their links. It is labelled &quot;Answered via the documentation index, no model lane was free&quot; so nobody mistakes it for a written answer, and it is real retrieved text, never generated. This runs on every surface, so a question is never answered with nothing when the index already found the material.</p>
 <h2 id="api">API</h2>
 <h3 id="post-apiask"><code>POST /api/ask</code></h3>
 <pre><code class="language-json">{
@@ -380,6 +387,7 @@ data: {&quot;type&quot;:&quot;delta&quot;,&quot;text&quot;:&quot;To unfollow eve
 data: {&quot;type&quot;:&quot;delta&quot;,&quot;text&quot;:&quot; on X, paste&quot;}
 data: {&quot;type&quot;:&quot;done&quot;,&quot;lane&quot;:&quot;llm7&quot;,&quot;model&quot;:&quot;gemini-3.1-flash-lite&quot;,&quot;partial&quot;:false,&quot;sources&quot;:[...]}
 </code></pre>
+<p><code>done</code> carries <code>partial: true</code> when a lane died mid-answer and what had already streamed was kept, and <code>digest: true</code> with <code>lane: &quot;docs&quot;</code> when every lane was busy and the answer is the documentation digest described above.</p>
 <p>An <code>error</code> event carries <code>message</code> when every lane failed. From a terminal:</p>
 <pre><code class="language-bash">curl -N https://xactions.app/api/ask \
   -H &#39;content-type: application/json&#39; \
@@ -391,19 +399,19 @@ data: {&quot;type&quot;:&quot;done&quot;,&quot;lane&quot;:&quot;llm7&quot;,&quot
 <ul>
 <li><strong>Cloudflare Worker</strong> (<code>worker/index.js</code>): <code>/api/ask</code> is answered at the edge. The index is read from the static assets bundle and the lanes are called with <code>fetch</code>, so no origin server is needed.</li>
 <li><strong>Express</strong> (<code>api/routes/ask.js</code>): mounted at <code>/api/ask</code> in both <code>api/server.js</code> and the Vercel <code>api/serverless.js</code>.</li>
-<li><strong>Browser fallback</strong> (<code>dashboard/js/ask.js</code>): if <code>POST /api/ask</code> does not answer with an event stream (for example a static-only deploy), the page downloads <code>/data/ask-index.json</code>, runs the same engine from <code>/js/ask/engine.js</code>, and calls the keyless lanes directly. The answer is labelled &quot;in-browser&quot;.</li>
+<li><strong>Browser fallback</strong> (<code>dashboard/js/ask.js</code>): if <code>POST /api/ask</code> does not answer with an event stream (for example a static-only deploy, which is what xactions.app serves until the Worker is deployed), the page downloads <code>/data/ask-index.json</code> (about 650 KB gzipped, fetched only on this path and then cached), runs the same engine from <code>/js/ask/engine.js</code>, and calls the keyless lanes directly. A toast says so and the answer is labelled &quot;in-browser&quot;.</li>
 </ul>
 <h2 id="development">Development</h2>
 <pre><code class="language-bash">npm run ask:index          # rebuild dashboard/data/ask-index.json and mirror src/ask/ into dashboard/js/ask/
 npm run ask:index:check    # exit 1 if the committed index or the browser mirror is stale (part of npm run docs:check)
 npx vitest run tests/ask   # retrieval on the real index, chain construction, one live keyless completion
 </code></pre>
-<p>Rebuild the index whenever you change docs, skills, tutorials, a script header, or a dashboard page. Related: <a href="mcp-setup.md">MCP setup</a>, <a href="browser-scripts.md">Browser scripts</a>, <a href="rest-api.md">REST API</a>.</p>
+<p>Rebuild the index whenever you change docs, skills, tutorials, a script header, or a dashboard page. Related: <a href="/docs/guides/mcp-setup">MCP setup</a>, <a href="/docs/guides/browser-scripts">Browser scripts</a>, <a href="/docs/guides/rest-api">REST API</a>.</p>
 
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/ask.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Ask%20XActions" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -52,6 +52,39 @@ function* walk(dir, ext) {
 
 const rel = (p) => relative(ROOT, p).split('\\').join('/');
 
+/**
+ * Pull YAML frontmatter off a markdown file. Raw frontmatter used to land in
+ * the index verbatim, so a retrieved passage could read
+ * "--- name: x description: y license: Apache-2.0 metadata: author: n..."
+ * instead of prose. The description is real content, so it is kept as a
+ * sentence; the rest of the keys are dropped.
+ */
+function stripFrontmatter(md) {
+  const match = md.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) return md;
+  const description = match[1].match(/^description:\s*(.+)$/m)?.[1]?.replace(/^["']|["']$/g, '').trim();
+  const body = md.slice(match[0].length);
+  return description ? `${description}\n\n${body}` : body;
+}
+
+/**
+ * Keyword stuffing (the long comma-separated runs in SEO meta tags) matches
+ * many queries and teaches the reader nothing, so it never becomes a chunk.
+ * Code is comma-heavy too, which is why anything with code punctuation or
+ * line breaks is exempt: this only catches a single run-on line of short
+ * comma-separated phrases.
+ */
+function isKeywordDump(text) {
+  if (text.includes('\n') || /[{};=()<>[\]`]/.test(text)) return false;
+  const parts = text.split(',');
+  if (parts.length < 12) return false;
+  const short = parts.filter((p) => {
+    const words = p.trim().split(/\s+/).length;
+    return words >= 1 && words <= 6;
+  }).length;
+  return short / parts.length > 0.9;
+}
+
 function cleanMarkdown(text) {
   return text
     .replace(/<!--[\s\S]*?-->/g, ' ')
@@ -69,13 +102,14 @@ function titleOf(md, fallback) {
 }
 
 /** Split markdown into heading-scoped sections, then into MAX_CHUNK pieces at paragraph boundaries. */
-function chunkMarkdown(md, docTitle) {
+function chunkMarkdown(rawMd, docTitle) {
+  const md = stripFrontmatter(rawMd);
   const sections = [];
   let heading = '';
   let buf = [];
   const flush = () => {
     const body = cleanMarkdown(buf.join('\n'));
-    if (body.length > 40) sections.push({ heading, body });
+    if (body.length > 40 && !isKeywordDump(body)) sections.push({ heading, body });
     buf = [];
   };
   for (const line of md.split('\n')) {
@@ -104,6 +138,7 @@ function chunkMarkdown(md, docTitle) {
         for (let i = 0; i < para.length; i += MAX_CHUNK) chunks.push({ t: title, x: para.slice(i, i + MAX_CHUNK) });
         continue;
       }
+      if (isKeywordDump(para)) continue;
       current = current ? `${current}\n\n${para}` : para;
     }
     if (current) chunks.push({ t: title, x: current });
