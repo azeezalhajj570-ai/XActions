@@ -353,7 +353,7 @@ xactions profile elonmusk --json
 xactions followers elonmusk --count 500 --output followers.csv
 xactions non-followers myhandle
 </code></pre>
-<p>See the full <a href="cli-reference.md">CLI Reference</a> for all 111 commands.</p>
+<p>See the full <a href="/docs/guides/cli-reference">CLI Reference</a> for all 111 commands.</p>
 <hr>
 <h2 id="quick-start-nodejs-library">Quick Start: Node.js Library</h2>
 <pre><code class="language-bash">npm install xactions
@@ -370,7 +370,7 @@ const tweets = await searchTweets(&#39;javascript&#39;, { count: 50, cookie: pro
 const profile = await scrape(&#39;bluesky&#39;, &#39;profile&#39;, &#39;user.bsky.social&#39;);
 const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mastodon.social&#39;);
 </code></pre>
-<p>See the full <a href="api-reference.md">API Reference</a> and <a href="xactions-reference.md">XActions Reference</a>.</p>
+<p>See the full <a href="/docs/guides/api-reference">API Reference</a> and <a href="/docs/guides/xactions-reference">XActions Reference</a>.</p>
 <hr>
 <h2 id="quick-start-mcp-server-ai-agents">Quick Start: MCP Server (AI Agents)</h2>
 <p>Add XActions to Claude Desktop, Cursor, or any MCP-compatible client:</p>
@@ -389,11 +389,11 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 <p>Generate this config automatically:</p>
 <pre><code class="language-bash">xactions mcp-config
 </code></pre>
-<p>149 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See <a href="mcp-setup.md">MCP Setup</a>.</p>
+<p>149 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See <a href="/docs/guides/mcp-setup">MCP Setup</a>.</p>
 <hr>
 <h2 id="quick-start-dashboard">Quick Start: Dashboard</h2>
 <ol>
-<li>Deploy the API server (see <a href="deployment.md">Deployment</a>)</li>
+<li>Deploy the API server (see <a href="/docs/guides/deployment">Deployment</a>)</li>
 <li>Open the dashboard at your deployment URL</li>
 <li>Connect your browser by pasting the bridge script into your x.com tab</li>
 <li>Run operations from the visual interface</li>
@@ -406,7 +406,7 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 <li>Click <strong>Load unpacked</strong> → select the <code>extension/</code> folder</li>
 <li>Navigate to x.com — the extension icon activates automatically</li>
 </ol>
-<p>See <a href="extension.md">Extension Guide</a>.</p>
+<p>See <a href="/docs/guides/extension">Extension Guide</a>.</p>
 <hr>
 <h2 id="authentication">Authentication</h2>
 <p>All interfaces need an X/Twitter session cookie (<code>auth_token</code>, plus <code>ct0</code> for
@@ -483,51 +483,51 @@ and <code>ct0</code> values.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="cli-reference.md">CLI Reference</a></td>
+<td><a href="/docs/guides/cli-reference">CLI Reference</a></td>
 <td>All 111 CLI commands</td>
 </tr>
 <tr>
-<td><a href="api-reference.md">API Reference</a></td>
+<td><a href="/docs/guides/api-reference">API Reference</a></td>
 <td>Node.js library functions</td>
 </tr>
 <tr>
-<td><a href="mcp-setup.md">MCP Setup</a></td>
+<td><a href="/docs/guides/mcp-setup">MCP Setup</a></td>
 <td>AI agent integration</td>
 </tr>
 <tr>
-<td><a href="browser-scripts.md">Browser Scripts</a></td>
+<td><a href="/docs/guides/browser-scripts">Browser Scripts</a></td>
 <td>Complete script catalog</td>
 </tr>
 <tr>
-<td><a href="automation.md">Automation</a></td>
+<td><a href="/docs/guides/automation">Automation</a></td>
 <td>Advanced browser automation framework</td>
 </tr>
 <tr>
-<td><a href="analytics.md">Analytics</a></td>
+<td><a href="/docs/guides/analytics">Analytics</a></td>
 <td>Sentiment, reputation, history tracking</td>
 </tr>
 <tr>
-<td><a href="workflows.md">Workflows</a></td>
+<td><a href="/docs/guides/workflows">Workflows</a></td>
 <td>Automated multi-step workflows</td>
 </tr>
 <tr>
-<td><a href="streaming.md">Streaming</a></td>
+<td><a href="/docs/guides/streaming">Streaming</a></td>
 <td>Real-time tweet/follower/mention streams</td>
 </tr>
 <tr>
-<td><a href="social-graph.md">Social Graph</a></td>
+<td><a href="/docs/guides/social-graph">Social Graph</a></td>
 <td>Network analysis and visualization</td>
 </tr>
 <tr>
-<td><a href="plugins.md">Plugins</a></td>
+<td><a href="/docs/guides/plugins">Plugins</a></td>
 <td>Extend XActions with plugins</td>
 </tr>
 <tr>
-<td><a href="deployment.md">Deployment</a></td>
+<td><a href="/docs/guides/deployment">Deployment</a></td>
 <td>Deploy to Railway, Fly.io, Docker</td>
 </tr>
 <tr>
-<td><a href="troubleshooting.md">Troubleshooting</a></td>
+<td><a href="/docs/guides/troubleshooting">Troubleshooting</a></td>
 <td>Common issues and fixes</td>
 </tr>
 </tbody></table>
@@ -537,11 +537,11 @@ and <code>ct0</code> values.</p>
 <h2 id="where-to-go-next">Where to go next</h2>
 <ul>
 <li><strong><a href="../tutorials/">Tutorials</a></strong> — guided walkthroughs, starting with
-<a href="../tutorials/01-your-first-scrape.md">your first scrape</a></li>
+<a href="https://github.com/nirholas/XActions/blob/main/tutorials/01-your-first-scrape.md">your first scrape</a></li>
 <li><strong><a href="../examples/">Examples</a></strong> — runnable Node.js programs, each verified
 against the live API</li>
-<li><strong><a href="browser-scripts.md">Browser scripts</a></strong> — the full catalog of console scripts</li>
-<li><strong><a href="troubleshooting.md">Troubleshooting</a></strong> — when something does not work</li>
+<li><strong><a href="/docs/guides/browser-scripts">Browser scripts</a></strong> — the full catalog of console scripts</li>
+<li><strong><a href="/docs/guides/troubleshooting">Troubleshooting</a></strong> — when something does not work</li>
 </ul>
 
     </article>

@@ -501,6 +501,13 @@ const summary = await migrate({
   dryRun: true,
 });
 </code></pre>
+<h3 id="from-the-command-line">From the command line</h3>
+<p>All three flows are on the CLI as <code>xactions archive</code>, with no code to write:</p>
+<pre><code class="language-bash">xactions archive summary twitter-2026-01-01-abc123.zip            # the report above, or --json
+xactions archive export twitter-2026-01-01-abc123.zip --out exports/me --formats json,csv,md,html
+xactions archive migrate twitter-2026-01-01-abc123.zip --to bluesky # dry run; add --execute --handle --password to post
+</code></pre>
+<p><code>export</code> writes the same layout <code>xactions export</code> produces, so <code>xactions diff</code> and <code>xactions migrate</code> accept the directory. A spinner reports each section as it is scanned; under <code>--json</code> on a pipe it stays silent. Flags and sample output: <a href="/docs/guides/cli-reference#archive-the-x-data-export-without-scraping">cli-reference.md</a>.</p>
 <hr>
 <h2 id="export-formats">Export Formats</h2>
 <table>

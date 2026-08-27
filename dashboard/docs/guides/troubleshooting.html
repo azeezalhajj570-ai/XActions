@@ -397,7 +397,7 @@ session-tier endpoints.</p>
 <p>For browser console scripts, throttling looks different: buttons quietly stop
 responding and the progress count stops climbing while the page keeps
 scrolling. Stop the run, wait an hour, and raise <code>delay</code> in the script&#39;s
-<code>CONFIG</code> block. See <a href="browser-scripts.md#rate-limits-and-not-getting-locked-out">browser-scripts.md</a>.</p>
+<code>CONFIG</code> block. See <a href="/docs/guides/browser-scripts#rate-limits-and-not-getting-locked-out">browser-scripts.md</a>.</p>
 <p>Rough guidance for write actions (unfollows, follows, likes, deletes): keep
 <code>delay</code> at 2000ms or more and stay under a few hundred actions a day. Limits
 vary by account age and standing, and X does not publish them.</p>
@@ -429,7 +429,7 @@ configuration.</p>
 <p><strong>Config file location.</strong> Claude Desktop reads
 <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS and
 <code>%APPDATA%\Claude\claude_desktop_config.json</code> on Windows. Cursor and Windsurf
-use their own paths. See <a href="mcp-setup.md">mcp-setup.md</a>.</p>
+use their own paths. See <a href="/docs/guides/mcp-setup">mcp-setup.md</a>.</p>
 <p><strong>JSON validity.</strong> A trailing comma silently disables the whole file. Paste it
 into a validator.</p>
 <p><strong>Restart the client.</strong> MCP servers are spawned at startup. Config changes do
@@ -491,7 +491,7 @@ before it accepts pasted code the first time.</p>
 <p><strong>It ran but did nothing.</strong> Almost always <code>dryRun: true</code>, which is the default
 for every destructive script. Read the preview output, then set it to <code>false</code>.</p>
 <p><strong>Wrong page.</strong> Each script names the page it expects in its header comment and
-in the <a href="browser-scripts.md#the-catalog">catalog</a>. A follower script on the home
+in the <a href="/docs/guides/browser-scripts#the-catalog">catalog</a>. A follower script on the home
 timeline finds nothing.</p>
 <p><strong><code>Identifier has already been declared</code>.</strong> You pasted the same script twice.
 Reload the page and paste once.</p>
@@ -509,10 +509,10 @@ that are not bugs.</li>
 </ul>
 <h2 id="related">Related</h2>
 <ul>
-<li><a href="getting-started.md">Getting Started</a></li>
-<li><a href="configuration.md">Configuration</a></li>
-<li><a href="mcp-setup.md">MCP Setup</a></li>
-<li><a href="browser-scripts.md">Browser Scripts</a></li>
+<li><a href="/docs/guides/getting-started">Getting Started</a></li>
+<li><a href="/docs/guides/configuration">Configuration</a></li>
+<li><a href="/docs/guides/mcp-setup">MCP Setup</a></li>
+<li><a href="/docs/guides/browser-scripts">Browser Scripts</a></li>
 </ul>
 
     </article>

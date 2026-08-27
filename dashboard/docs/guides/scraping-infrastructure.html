@@ -774,6 +774,61 @@ for (const e of Object.values(GRAPHQL)) {
 <p>On 2026-08-27 this found 148 operations and 22 of the 26 hardcoded IDs had
 rotated, including <code>UserByScreenName</code>, <code>TweetDetail</code> and <code>SearchTimeline</code>.</p>
 <hr>
+<h2 id="account-pool-and-resumable-scrapes-http-scraper">Account Pool and Resumable Scrapes (HTTP scraper)</h2>
+<p>One X session gets roughly 50 GraphQL calls per operation per 15-minute window, which caps a single-account follower scrape at about 1,000 users before it stalls. The HTTP scraper solves this the way <a target="_blank" rel="noopener noreferrer" href="https://github.com/vladkens/twscrape">twscrape</a> does: a pool of accounts in SQLite, per-account per-operation rate-limit tracking from the <code>x-rate-limit-*</code> headers, and automatic rotation. Interrupted scrapes resume from a saved cursor, the idea behind <a target="_blank" rel="noopener noreferrer" href="https://github.com/Altimis/Scweet">Scweet</a>&#39;s resume mode.</p>
+<p>Both live in <code>src/scrapers/twitter/http/</code> and are exported from <code>xactions/src/scrapers/twitter/http/index.js</code>.</p>
+<h3 id="account-pool">Account pool</h3>
+<pre><code class="language-javascript">import { createAccountPool, createPooledClient, createCheckpoint, scrapeFollowers } from &#39;xactions/src/scrapers/twitter/http/index.js&#39;;
+import fs from &#39;node:fs&#39;;
+
+// Accounts persist in $XACTIONS_HOME/accounts.db (default ~/.xactions/accounts.db).
+// Cookies accept a header string, Netscape cookies.txt text, a Cookie-Editor JSON
+// export, Playwright storageState, an array of { name, value }, or authToken + ct0.
+const pool = createAccountPool({
+  accounts: [
+    { name: &#39;main&#39;, authToken: process.env.X_AUTH_TOKEN_1, ct0: process.env.X_CT0_1 },
+    { name: &#39;alt&#39;, cookies: fs.readFileSync(&#39;./alt-cookies.txt&#39;, &#39;utf8&#39;), proxy: &#39;socks5://127.0.0.1:1080&#39; },
+  ],
+});
+
+// Manage it like a CLI would
+pool.add({ name: &#39;third&#39;, cookies: &#39;auth_token=...; ct0=...&#39; });
+pool.importCookies(&#39;fourth&#39;, fs.readFileSync(&#39;./cookies.json&#39;, &#39;utf8&#39;));
+pool.remove(&#39;third&#39;);
+console.log(pool.list());   // [{ name, proxy, locked, lockReason, lastUsed, limits: { Followers: { remaining, resetAt, coolingDown } } }]
+console.log(pool.stats());  // { total, locked, leased, available, coolingDown, nextResetAt, accounts }
+</code></pre>
+<p>Each account gets its own <code>TwitterHttpClient</code> with its cookies and proxy (proxies route through undici&#39;s <code>ProxyAgent</code>). <code>acquire(operation)</code> leases the least-recently-used account that is unlocked and outside its rate-limit window for that operation; when every account is cooling down it waits for the earliest reset (bounded by <code>maxWaitMs</code>, default 15 minutes) and throws an <code>AccountPoolError</code> naming the next reset when the wait would exceed the budget.</p>
+<pre><code class="language-javascript">const lease = await pool.acquire(&#39;Followers&#39;, { maxWaitMs: 60_000 });
+try {
+  const page = await lease.client.graphql(queryId, &#39;Followers&#39;, variables);
+} finally {
+  lease.release();
+}
+pool.markLocked(&#39;alt&#39;, &#39;challenge required&#39;); // skipped by acquire until pool.unlock(&#39;alt&#39;)
+</code></pre>
+<h3 id="pooled-client">Pooled client</h3>
+<p><code>createPooledClient(pool)</code> exposes the same <code>graphql()</code>, <code>request()</code>, <code>rest()</code>, and <code>graphqlPaginate()</code> as a single client and passes as the <code>client</code> argument of every scraper. A 429 (or a response whose <code>x-rate-limit-remaining</code> reaches 0) records the window and retries the same call on the next account; a 401/403 locks the account and moves on. After every account has been tried the last error is rethrown.</p>
+<pre><code class="language-javascript">const client = createPooledClient(pool, {
+  maxAccounts: 3,                    // most accounts one call may try (default: pool size)
+  onRotate: ({ from, operation, reason }) =&gt; console.log(`${operation}: ${from} ${reason}`),
+});
+
+const followers = await scrapeFollowers(client, &#39;elonmusk&#39;, { limit: 5000 });
+</code></pre>
+<h3 id="resumable-scrapes">Resumable scrapes</h3>
+<p>A checkpoint is a small JSON file (<code>{ cursor, count, updatedAt, meta }</code>) written atomically after every page under <code>$XACTIONS_HOME/checkpoints/</code>. Pass it as the <code>checkpoint</code> option of <code>scrapeFollowers</code>, <code>scrapeFollowing</code>, <code>scrapeLikers</code>, <code>scrapeRetweeters</code>, <code>scrapeListMembers</code>, <code>scrapeTweets</code>, <code>scrapeTweetsAndReplies</code>, or <code>searchTweets</code>. A run that starts with a saved checkpoint continues from its cursor, and the <code>count</code> already collected is subtracted from <code>limit</code>, so re-running the same command finishes the job. The file is deleted when the scrape completes.</p>
+<pre><code class="language-javascript">const checkpoint = createCheckpoint({ key: &#39;followers:elonmusk&#39; });
+
+// Run 1 dies at page 400 (rate-limit wall, network drop, Ctrl-C).
+// Run 2, same call, starts at the page-400 cursor with the remaining budget.
+const rest = await scrapeFollowers(client, &#39;elonmusk&#39;, { limit: 50000, checkpoint });
+
+console.log(checkpoint.resume()); // null once finished; otherwise { cursor, count, updatedAt, meta }
+checkpoint.clear();               // start over
+</code></pre>
+<p>Because a resumed run returns only the users fetched after the cursor, write results out as they arrive (for example from <code>onProgress</code>, or by appending each run&#39;s output) rather than relying on a single final array.</p>
+<hr>
 <h2 id="environment-variables">Environment Variables</h2>
 <table>
 <thead>
@@ -813,7 +868,7 @@ rotated, including <code>UserByScreenName</code>, <code>TweetDetail</code> and <
     </article>
 
     <div class="page-meta">
-      <span>5 min read</span>
+      <span>7 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scraping-infrastructure.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scraping%20Infrastructure" target="_blank" rel="noopener">Report a problem</a>
     </div>

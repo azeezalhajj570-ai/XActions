@@ -650,6 +650,15 @@ curl -s -X POST http://127.0.0.1:8787/mcp \
 }
 </code></pre>
 <p>A typical exchange: the agent calls <code>x_post_tweet</code>, gets draft <code>3f9c1a2b</code> back, and shows you the text. You say &quot;approve it&quot;, the agent calls <code>x_approve_draft {&quot;id&quot;:&quot;3f9c1a2b&quot;}</code>, and only then does the tweet go out.</p>
+<h3 id="approve-drafts-from-the-terminal">Approve drafts from the terminal</h3>
+<p>You do not have to go back through the agent to release a draft. <code>xactions drafts</code> reads the same <code>mcp-drafts.json</code> the server writes:</p>
+<pre><code class="language-bash">xactions drafts list                # id, status, age, tool, argument summary
+xactions drafts show 3f9c1a2b       # the full arguments
+xactions drafts approve 3f9c1a2b    # runs it through the server&#39;s own dispatcher
+xactions drafts approve --all       # every pending draft, oldest first
+xactions drafts discard 3f9c1a2b    # drop it
+</code></pre>
+<p>This is the setup for a read-only agent session where a person releases posts from a shell: give the agent <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code>, and review the queue with <code>xactions drafts list</code> whenever you like. Both sides honour <code>XACTIONS_HOME</code>, so point them at the same directory if you have moved it. Full reference: <a href="/docs/guides/cli-reference#drafts-approve-mcp-write-calls-from-the-terminal">cli-reference.md</a>.</p>
 <hr>
 <h2 id="available-tools">Available Tools</h2>
 <h3 id="scraping-free-no-api-key-needed">Scraping (free, no API key needed)</h3>

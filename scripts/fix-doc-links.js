@@ -8,10 +8,16 @@
  * 404s on the website. This rewrites every .md href in dashboard/ to the URL
  * of the generated page:
  *   1. resolved path with .md -> .html exists in dashboard/  => clean URL
- *   2. basename slug found in dashboard/docs/_pages-manifest  => its urlPath
- *   3. same-slug page exists at /docs/<slug>.html            => /docs/<slug>
- *   4. target file exists in the repo (source, no page)      => GitHub blob
- *   5. unique basename match anywhere in the repo            => GitHub blob
+ *   2. resolved AGAINST THE PAGE'S MARKDOWN SOURCE, found in the manifest
+ *      => its urlPath. A relative link is written relative to the .md file it
+ *      lives in, not to the page that .md renders into, so
+ *      skills/a/SKILL.md linking ../skills/b/SKILL.md means skills/b/SKILL.md.
+ *      Resolving against the rendered page's directory instead misses every
+ *      one of those, and their basename ("SKILL") is too generic for step 3.
+ *   3. basename slug found in dashboard/docs/_pages-manifest  => its urlPath
+ *   4. same-slug page exists at /docs/<slug>.html            => /docs/<slug>
+ *   5. target file exists in the repo (source, no page)      => GitHub blob
+ *   6. unique basename match anywhere in the repo            => GitHub blob
  *   else leave and report.
  *
  * Run after the doc generators:  node scripts/fix-doc-links.js
@@ -28,6 +34,16 @@ const manifestPath = path.join(DASH, 'docs', '_pages-manifest.json');
 const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) : [];
 const bySlug = new Map();
 for (const e of manifest) if (e.slug && e.urlPath && !bySlug.has(e.slug.toLowerCase())) bySlug.set(e.slug.toLowerCase(), e.urlPath);
+const bySourcePath = new Map();
+for (const e of manifest) if (e.sourcePath && e.urlPath) bySourcePath.set(e.sourcePath.toLowerCase(), e.urlPath);
+// Output page -> the markdown it was rendered from, so relative links can be
+// resolved the way their author wrote them.
+const sourceOfPage = new Map();
+for (const e of manifest) {
+  if (!e.sourcePath || !e.slug) continue;
+  const out = path.join(DASH, 'docs', e.outSubdir || '', `${e.slug}.html`);
+  sourceOfPage.set(out, e.sourcePath);
+}
 
 let mdIndex = null;
 function findByBasename(base) {
@@ -64,6 +80,8 @@ let filesChanged = 0, linksFixed = 0;
 
 for (const file of htmlFiles(DASH)) {
   const pageDir = path.dirname(file);
+  const sourcePath = sourceOfPage.get(file);
+  const sourceDir = sourcePath ? path.join(ROOT, path.dirname(sourcePath)) : null;
   let html = fs.readFileSync(file, 'utf-8');
   let changed = false;
   html = html.replace(/(href\s*=\s*")([^"]+\.md)((?:#[^"]*)?")/gi, (whole, pre, target, post) => {
@@ -71,6 +89,17 @@ for (const file of htmlFiles(DASH)) {
     const resolved = target.startsWith('/') ? path.join(DASH, target.slice(1)) : path.resolve(pageDir, target);
     const asHtml = resolved.replace(/\.md$/i, '.html');
     if (asHtml.startsWith(DASH) && fs.existsSync(asHtml)) { linksFixed++; changed = true; return pre + cleanUrl(path.relative(DASH, asHtml)) + post; }
+    if (sourceDir && !target.startsWith('/')) {
+      const fromSource = path
+        .relative(ROOT, path.resolve(sourceDir, target.split('#')[0]))
+        .split(path.sep)
+        .join('/')
+        .toLowerCase();
+      if (bySourcePath.has(fromSource)) { linksFixed++; changed = true; return pre + bySourcePath.get(fromSource) + post; }
+      if (fs.existsSync(path.join(ROOT, fromSource))) { linksFixed++; changed = true; return pre + `${GITHUB_BLOB}/${fromSource}` + post; }
+    }
+    const repoPath = (target.startsWith('/') ? target.slice(1) : path.relative(ROOT, resolved).split(path.sep).join('/')).toLowerCase();
+    if (bySourcePath.has(repoPath)) { linksFixed++; changed = true; return pre + bySourcePath.get(repoPath) + post; }
     const slug = path.basename(resolved, path.extname(resolved)).toLowerCase();
     if (bySlug.has(slug)) { linksFixed++; changed = true; return pre + bySlug.get(slug) + post; }
     if (fs.existsSync(path.join(DASH, 'docs', `${slug}.html`))) { linksFixed++; changed = true; return pre + `/docs/${slug}` + post; }

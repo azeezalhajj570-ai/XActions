@@ -1209,7 +1209,7 @@ xactions media artist -l 200 -o artist-media.json
 xactions engage nasa --like --comment --template &quot;Solid work on this, {name}.&quot;
 xactions engage nasa --like --repost --comment --prompt &quot;supportive, specific, one honest question, no hype&quot;
 </code></pre>
-<p>Full guide, including the browser-console version: <a href="engage.md">engage.md</a>.</p>
+<p>Full guide, including the browser-console version: <a href="/docs/guides/engage">engage.md</a>.</p>
 <h3 id="xactions-info">xactions info</h3>
 <p>Display XActions information, version, and links.</p>
 <p><strong>Syntax:</strong></p>
@@ -3605,7 +3605,7 @@ xactions skills list
 #   account-backup                 claude (global)
 #                                  Export and backup your X/Twitter account data ...
 </code></pre>
-<p>Names match a skill id (<code>account-backup</code>) or its display name, case-insensitively. Every run is idempotent; <code>doctor</code> counts installs per target. The full target table and what each wrapper contains are in <a href="skills.md#install-into-your-agent">skills.md</a>.</p>
+<p>Names match a skill id (<code>account-backup</code>) or its display name, case-insensitively. Every run is idempotent; <code>doctor</code> counts installs per target. The full target table and what each wrapper contains are in <a href="/docs/guides/skills#install-into-your-agent">skills.md</a>.</p>
 <hr>
 <h2 id="compact-output-for-agents">Compact output for agents</h2>
 <p><code>--compact</code> is a global flag for the read commands: <code>profile</code>, <code>tweets</code>, <code>search</code>, <code>thread</code>, <code>followers</code>, <code>following</code>, <code>non-followers</code>, <code>hashtag</code>, <code>media</code>, and <code>analyze</code>. It prints one record per line as tab-separated <code>key=value</code> pairs with only the essential fields, no colours, no spinner, no box drawing. It costs a fraction of the tokens of <code>--json</code> and is trivial to <code>cut</code> or <code>awk</code>.</p>
@@ -3650,11 +3650,82 @@ xactions analyze nasa --compact
 </tbody></table>
 <p>Any raw field of the underlying record can also be named in <code>--fields</code> (for example <code>permanentUrl</code> or <code>isRetweet</code>); a field the record lacks is skipped rather than printed empty. Newlines and tabs inside a value become single spaces so a line is always one record. Dates print as ISO 8601.</p>
 <p><code>--compact</code> outranks <code>--output</code> and <code>--google-sheets</code>, the same way <code>--json</code> does. When stdout is a pipe, both <code>--json</code> and <code>--compact</code> keep the spinner completely silent, so nothing lands on stderr but a real error.</p>
+<hr>
+<h2 id="drafts-approve-mcp-write-calls-from-the-terminal">Drafts (approve MCP write calls from the terminal)</h2>
+<p>When an MCP client runs with <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code>, every write tool call (post, reply, like, follow, DM, delete, ...) is held in <code>~/.xactions/mcp-drafts.json</code> instead of running. <code>xactions drafts</code> is the terminal side of that queue: read exactly what the agent wanted to do, release it, or drop it. <code>XACTIONS_HOME</code> moves the store; the MCP server and this command read the same file.</p>
+<pre><code class="language-bash">xactions drafts list                    # newest first: id, status, age, tool, args
+xactions drafts list --status pending   # pending, executed, failed, or all
+xactions drafts show 3f9c1a2b           # full arguments, and the result or error once it ran
+xactions drafts approve 3f9c1a2b        # run it now, exactly as submitted
+xactions drafts approve --all           # every pending draft, oldest first
+xactions drafts discard 3f9c1a2b        # delete without running
+xactions drafts clear                   # drop executed and failed drafts, keep pending ones
+</code></pre>
+<pre><code>  ID        STATUS    AGE       TOOL                      ARGS
+  3f9c1a2b  pending   4m        x_post_tweet              text=&quot;Shipping approval mode today.&quot;
+  a81d02c7  executed  2h        x_follow_user             username=&quot;nasa&quot;
+
+  2 drafts, 1 pending. Approve one with `xactions drafts approve &lt;id&gt;`, everything with `--all`.
+</code></pre>
+<p>Approval replays the call through the MCP server&#39;s own dispatcher, so an approved draft runs the same code path the live tool would have. A draft that already ran is refused, so nothing posts twice; a failed run keeps the draft with its error so you can read it with <code>show</code> and retry by re-creating it. Every sub-command takes <code>--json</code>; errors under <code>--json</code> come back as <code>{&quot;error&quot;: &quot;...&quot;}</code> with exit code 1. The MCP server is only loaded by <code>approve</code>, so <code>list</code>, <code>show</code>, <code>discard</code> and <code>clear</code> are instant.</p>
+<h2 id="archive-the-x-data-export-without-scraping">Archive (the X data export, without scraping)</h2>
+<p>X hands you your full history as a zip (Settings &gt; Your account &gt; Download an archive of your data). <code>xactions archive</code> reads that zip, or the folder you extracted it to, straight from disk. Nothing here needs a login or the network.</p>
+<pre><code class="language-bash">xactions archive summary twitter-2026-01-01-abc123.zip
+xactions archive summary ./twitter-export --sections tweets,likes --top 5 --json
+xactions archive export twitter-2026-01-01-abc123.zip --out exports/me
+xactions archive export twitter-2026-01-01-abc123.zip --out exports/me --formats json,csv
+xactions archive migrate twitter-2026-01-01-abc123.zip --to bluesky
+xactions archive migrate twitter-2026-01-01-abc123.zip --to bluesky --execute --handle me.bsky.social --password app-pass
+xactions archive migrate twitter-2026-01-01-abc123.zip --to mastodon --execute --instance https://fosstodon.org --token ...
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Sub-command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>summary &lt;zip-or-folder&gt;</code></td>
+<td>Counts per section, tweet date range, tweets per year, busiest year, top hashtags and mentions, likes and retweets received. <code>--sections</code> reads only the named sections (fast on a multi-gigabyte zip), <code>--top &lt;n&gt;</code> sizes the hashtag and mention lists.</td>
+</tr>
+<tr>
+<td><code>export &lt;zip-or-folder&gt; --out &lt;dir&gt;</code></td>
+<td>Writes the archive in the same layout <code>xactions export</code> produces: <code>profile.json</code>, <code>tweets.json</code>, <code>following.json</code>, ... plus CSV, Markdown and an <code>index.html</code> viewer. <code>--formats json,csv,md,html</code> picks a subset. The result works with <code>xactions diff</code> and <code>xactions migrate</code> unchanged.</td>
+</tr>
+<tr>
+<td><code>migrate &lt;zip-or-folder&gt; --to bluesky|mastodon</code></td>
+<td>Stages <code>tweets.json</code> and <code>following.json</code> from the archive (into <code>--out</code>, default <code>exports/&lt;archive&gt;_migration</code>) and runs the migration. Dry run by default; <code>--execute</code> needs <code>--handle</code> and <code>--password</code> (Bluesky app password) or <code>--token</code> and <code>--instance</code> (Mastodon).</td>
+</tr>
+</tbody></table>
+<pre><code>✔ Read twitter-2026-01-01-abc123.zip (zip)
+
+  X archive for @nichxbt (zip)
+  Account created: 2019-03-01
+  Tweets span:     2024-01-01 to 2025-03-16
+
+  Tweets       5 (3 original, 1 replies, 1 retweets, 2 with media)
+  Likes        2
+  Following    3
+  ...
+  Top hashtags
+    #xactions  3
+</code></pre>
+<p>A spinner tracks the scan (<code>Scanning 4/12 data/tweets.js</code>, <code>Parsed tweets (18,204 records) from data/tweets.js</code>). Under <code>--json</code> with stdout piped, the spinner is silent and only the document is printed, so <code>xactions archive summary me.zip --json | jq .counts</code> works as expected.</p>
+<h2 id="doctor-query-ids-and-account-pool">Doctor: query IDs and account pool</h2>
+<p><code>xactions doctor</code> has two extra lines beyond the environment and session checks:</p>
+<ul>
+<li><strong>GraphQL query IDs.</strong> X rotates the persisted query IDs of its GraphQL operations whenever it ships a new web bundle, and a stale one answers <code>404 Query not found</code>. The line reports how many discovered IDs are cached in <code>~/.xactions/query-ids.json</code>, how old they are, and warns past the 24 hour freshness window. <code>xactions doctor --refresh-ids</code> discovers the current IDs from x.com before running the checks and reports the refresh result. With no cache, the pinned table in <code>src/scrapers/twitter/http/endpoints.js</code> is in use, which is fine until X rotates.</li>
+<li><strong>Accounts.</strong> If a multi-account pool exists (<code>~/.xactions/accounts.db</code>), the line reports how many accounts are configured, how many can serve right now, how many are cooling down on a rate limit (with the next reset), and how many are locked after a 401/403. With no pool it says so as a warning and moves on; doctor never creates one.</li>
+</ul>
+<pre><code>  ✓ GraphQL query IDs   142 query IDs cached, 3h old (/home/me/.xactions/query-ids.json)
+  ! Accounts            No account pool at /home/me/.xactions/accounts.db; every call uses the single saved session
+</code></pre>
 
     </article>
 
     <div class="page-meta">
-      <span>30 min read</span>
+      <span>32 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/cli-reference.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20CLI%20Reference" target="_blank" rel="noopener">Report a problem</a>
     </div>

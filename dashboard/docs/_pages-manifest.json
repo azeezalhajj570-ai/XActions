@@ -225,7 +225,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/ask.md",
-    "minutes": 4
+    "minutes": 5
   },
   {
     "slug": "audience-overlap",
@@ -297,7 +297,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/cli-reference.md",
-    "minutes": 30
+    "minutes": 32
   },
   {
     "slug": "configuration",
@@ -669,7 +669,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/scraping-infrastructure.md",
-    "minutes": 5
+    "minutes": 7
   },
   {
     "slug": "scraping",
@@ -2109,7 +2109,7 @@
     "outSubdir": "project",
     "priority": 0.5,
     "sourcePath": "CHANGELOG.md",
-    "minutes": 21
+    "minutes": 22
   },
   {
     "slug": "roadmap",
