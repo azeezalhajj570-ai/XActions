@@ -59,11 +59,11 @@ This script provides the following capabilities:
  * ============================================================
  * 📋 USAGE:
  *
- * 1. Go to: https://x.com/YOUR_USERNAME
+ * 1. Go to: https://x.com/YOUR_USERNAME (its tabs work too, e.g. /with_replies)
  * 2. Open DevTools Console (F12)
- * 3. Configure the filters below
- * 4. Set dryRun = false when you're sure
- * 5. Paste this script and press Enter
+ * 3. Configure the filters below. This deletes for real: set dryRun = true
+ *    for a preview run that removes nothing.
+ * 4. Paste this script and press Enter
  *
  * ⚠️ DELETION IS PERMANENT. There is no undo. Export first!
  *    Use src/backupAccount.js to save your tweets before deleting.
@@ -98,13 +98,15 @@ This script provides the following capabilities:
     scrollCycles: 100,              // Maximum scroll attempts
 
     // ── Timing ──────────────────────────────────────────────
-    minDelay: 1500,
-    maxDelay: 3500,
-    scrollDelay: 2000,
-    menuDelay: 800,
+    // X throttles bursts of deletions and starts failing them silently, so
+    // these are deliberately unhurried.
+    minDelay: 3000,
+    maxDelay: 7000,
+    scrollDelay: 4000,
+    menuDelay: 1200,
 
     // ── Safety ──────────────────────────────────────────────
-    dryRun: true,                   // START WITH TRUE! Preview before deleting.
+    dryRun: false,                  // false = PERMANENT deletion. true = preview only.
     confirmEvery: 50,               // Pause for user confirmation every N deletes (0 = never)
 
     // ── Recovery ────────────────────────────────────────────
@@ -175,6 +177,11 @@ This script provides the following capabilities:
     };
   })();
 
+  // Expose the fallback so the documented XActionsUtils.pause() / .abort()
+  // work when core.js was never pasted. Without this, confirmEvery announces a
+  // pause that never happens and the run keeps deleting.
+  window.XActionsUtils = window.XActionsUtils || U;
+
   // ══════════════════════════════════════════════════════════
   // 🚀 Main
   // ══════════════════════════════════════════════════════════
@@ -186,6 +193,15 @@ This script provides the following capabilities:
     console.log('║  ' + (CONFIG.dryRun ? '🔍 DRY RUN — preview only' : '⚠️  LIVE MODE — tweets WILL be deleted!').padEnd(W - 2) + '║');
     console.log('║  by nichxbt — v1.0' + ' '.repeat(W - 21) + '║');
     console.log('╚' + '═'.repeat(W) + '╝');
+
+    // Live mode deletes for real, so give the run a stoppable head start.
+    if (!CONFIG.dryRun) {
+      for (let i = 5; i > 0; i--) {
+        console.warn(`⚠️  Starting in ${i}s. Call XActionsUtils.abort() now to stop.`);
+        await U.sleep(1000);
+      }
+      if (!(await U.shouldContinue())) { console.log('🛑 Aborted before deleting anything.'); return; }
+    }
 
     // Detect profile. X serves it at /<handle> and its tabs at /<handle>/<tab>,
     // so accept both; a feed, a single status, or a reserved section is not a

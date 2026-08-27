@@ -125,7 +125,7 @@
         <div class="meta-row">
           <span>v1.0.0</span>
           <span>Updated: 2026-02-24</span>
-          <span>412 lines</span>
+          <span>428 lines</span>
           <span>by <a href="https://x.com/nichxbt" rel="noopener">@nichxbt</a></span>
         </div>
 
@@ -134,10 +134,9 @@
         <div class="warning-box"><p>⚠️ DELETION IS PERMANENT. There is no undo. Export first!</p></div>
 
         <h2>How to Use</h2>
-        <ol class="usage-steps"><li>Go to: https://x.com/YOUR_USERNAME</li>
+        <ol class="usage-steps"><li>Go to: https://x.com/YOUR_USERNAME (its tabs work too, e.g. /with_replies)</li>
 <li>Open DevTools Console (F12)</li>
-<li>Configure the filters below</li>
-<li>Set dryRun = false when you're sure</li>
+<li>Configure the filters below. This deletes for real: set dryRun = true</li>
 <li>Paste this script and press Enter</li></ol>
         
 
@@ -165,7 +164,7 @@ XActionsUtils.abort()   — stop</code></pre>
 <tr><td><code>onlyReplies</code></td><td><code>false</code></td><td>Only delete replies</td></tr>
 <tr><td><code>maxDeletes</code></td><td><code>Infinity</code></td><td>Stop after this many deletions</td></tr>
 <tr><td><code>scrollCycles</code></td><td><code>100</code></td><td>Maximum scroll attempts</td></tr>
-<tr><td><code>dryRun</code></td><td><code>true</code></td><td>START WITH TRUE! Preview before deleting.</td></tr>
+<tr><td><code>dryRun</code></td><td><code>false</code></td><td>false = PERMANENT deletion. true = preview only.</td></tr>
 <tr><td><code>confirmEvery</code></td><td><code>50</code></td><td>Pause for user confirmation every N deletes (0 = never)</td></tr>
 <tr><td><code>rateLimitPauseMs</code></td><td><code>90000</code></td><td>90s when rate-limited</td></tr>
 <tr><td><code>exportDeleted</code></td><td><code>true</code></td><td>Save deleted tweet data before removal</td></tr>
@@ -197,13 +196,15 @@ XActionsUtils.abort()   — stop</code></pre>
     scrollCycles: 100,              // Maximum scroll attempts
 
     // ── Timing ──────────────────────────────────────────────
-    minDelay: 1500,
-    maxDelay: 3500,
-    scrollDelay: 2000,
-    menuDelay: 800,
+    // X throttles bursts of deletions and starts failing them silently, so
+    // these are deliberately unhurried.
+    minDelay: 3000,
+    maxDelay: 7000,
+    scrollDelay: 4000,
+    menuDelay: 1200,
 
     // ── Safety ──────────────────────────────────────────────
-    dryRun: true,                   // START WITH TRUE! Preview before deleting.
+    dryRun: false,                  // false = PERMANENT deletion. true = preview only.
     confirmEvery: 50,               // Pause for user confirmation every N deletes (0 = never)
 
     // ── Recovery ────────────────────────────────────────────
@@ -239,11 +240,11 @@ XActionsUtils.abort()   — stop</code></pre>
  * ============================================================
  * 📋 USAGE:
  *
- * 1. Go to: https://x.com/YOUR_USERNAME
+ * 1. Go to: https://x.com/YOUR_USERNAME (its tabs work too, e.g. /with_replies)
  * 2. Open DevTools Console (F12)
- * 3. Configure the filters below
- * 4. Set dryRun = false when you're sure
- * 5. Paste this script and press Enter
+ * 3. Configure the filters below. This deletes for real: set dryRun = true
+ *    for a preview run that removes nothing.
+ * 4. Paste this script and press Enter
  *
  * ⚠️ DELETION IS PERMANENT. There is no undo. Export first!
  *    Use src/backupAccount.js to save your tweets before deleting.
@@ -278,13 +279,15 @@ XActionsUtils.abort()   — stop</code></pre>
     scrollCycles: 100,              // Maximum scroll attempts
 
     // ── Timing ──────────────────────────────────────────────
-    minDelay: 1500,
-    maxDelay: 3500,
-    scrollDelay: 2000,
-    menuDelay: 800,
+    // X throttles bursts of deletions and starts failing them silently, so
+    // these are deliberately unhurried.
+    minDelay: 3000,
+    maxDelay: 7000,
+    scrollDelay: 4000,
+    menuDelay: 1200,
 
     // ── Safety ──────────────────────────────────────────────
-    dryRun: true,                   // START WITH TRUE! Preview before deleting.
+    dryRun: false,                  // false = PERMANENT deletion. true = preview only.
     confirmEvery: 50,               // Pause for user confirmation every N deletes (0 = never)
 
     // ── Recovery ────────────────────────────────────────────
@@ -355,6 +358,11 @@ XActionsUtils.abort()   — stop</code></pre>
     };
   })();
 
+  // Expose the fallback so the documented XActionsUtils.pause() / .abort()
+  // work when core.js was never pasted. Without this, confirmEvery announces a
+  // pause that never happens and the run keeps deleting.
+  window.XActionsUtils = window.XActionsUtils || U;
+
   // ══════════════════════════════════════════════════════════
   // 🚀 Main
   // ══════════════════════════════════════════════════════════
@@ -366,6 +374,15 @@ XActionsUtils.abort()   — stop</code></pre>
     console.log('║  ' + (CONFIG.dryRun ? '🔍 DRY RUN — preview only' : '⚠️  LIVE MODE — tweets WILL be deleted!').padEnd(W - 2) + '║');
     console.log('║  by nichxbt — v1.0' + ' '.repeat(W - 21) + '║');
     console.log('╚' + '═'.repeat(W) + '╝');
+
+    // Live mode deletes for real, so give the run a stoppable head start.
+    if (!CONFIG.dryRun) {
+      for (let i = 5; i &gt; 0; i--) {
+        console.warn(`⚠️  Starting in ${i}s. Call XActionsUtils.abort() now to stop.`);
+        await U.sleep(1000);
+      }
+      if (!(await U.shouldContinue())) { console.log('🛑 Aborted before deleting anything.'); return; }
+    }
 
     // Detect profile. X serves it at /&lt;handle&gt; and its tabs at /&lt;handle&gt;/&lt;tab&gt;,
     // so accept both; a feed, a single status, or a reserved section is not a

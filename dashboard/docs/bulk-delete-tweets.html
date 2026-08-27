@@ -256,11 +256,11 @@
  * ============================================================
  * 📋 USAGE:
  *
- * 1. Go to: https://x.com/YOUR_USERNAME
+ * 1. Go to: https://x.com/YOUR_USERNAME (its tabs work too, e.g. /with_replies)
  * 2. Open DevTools Console (F12)
- * 3. Configure the filters below
- * 4. Set dryRun = false when you&#39;re sure
- * 5. Paste this script and press Enter
+ * 3. Configure the filters below. This deletes for real: set dryRun = true
+ *    for a preview run that removes nothing.
+ * 4. Paste this script and press Enter
  *
  * ⚠️ DELETION IS PERMANENT. There is no undo. Export first!
  *    Use src/backupAccount.js to save your tweets before deleting.
@@ -295,13 +295,15 @@
     scrollCycles: 100,              // Maximum scroll attempts
 
     // ── Timing ──────────────────────────────────────────────
-    minDelay: 1500,
-    maxDelay: 3500,
-    scrollDelay: 2000,
-    menuDelay: 800,
+    // X throttles bursts of deletions and starts failing them silently, so
+    // these are deliberately unhurried.
+    minDelay: 3000,
+    maxDelay: 7000,
+    scrollDelay: 4000,
+    menuDelay: 1200,
 
     // ── Safety ──────────────────────────────────────────────
-    dryRun: true,                   // START WITH TRUE! Preview before deleting.
+    dryRun: false,                  // false = PERMANENT deletion. true = preview only.
     confirmEvery: 50,               // Pause for user confirmation every N deletes (0 = never)
 
     // ── Recovery ────────────────────────────────────────────
@@ -372,6 +374,11 @@
     };
   })();
 
+  // Expose the fallback so the documented XActionsUtils.pause() / .abort()
+  // work when core.js was never pasted. Without this, confirmEvery announces a
+  // pause that never happens and the run keeps deleting.
+  window.XActionsUtils = window.XActionsUtils || U;
+
   // ══════════════════════════════════════════════════════════
   // 🚀 Main
   // ══════════════════════════════════════════════════════════
@@ -383,6 +390,15 @@
     console.log(&#39;║  &#39; + (CONFIG.dryRun ? &#39;🔍 DRY RUN — preview only&#39; : &#39;⚠️  LIVE MODE — tweets WILL be deleted!&#39;).padEnd(W - 2) + &#39;║&#39;);
     console.log(&#39;║  by nichxbt — v1.0&#39; + &#39; &#39;.repeat(W - 21) + &#39;║&#39;);
     console.log(&#39;╚&#39; + &#39;═&#39;.repeat(W) + &#39;╝&#39;);
+
+    // Live mode deletes for real, so give the run a stoppable head start.
+    if (!CONFIG.dryRun) {
+      for (let i = 5; i &gt; 0; i--) {
+        console.warn(`⚠️  Starting in ${i}s. Call XActionsUtils.abort() now to stop.`);
+        await U.sleep(1000);
+      }
+      if (!(await U.shouldContinue())) { console.log(&#39;🛑 Aborted before deleting anything.&#39;); return; }
+    }
 
     // Detect profile. X serves it at /&lt;handle&gt; and its tabs at /&lt;handle&gt;/&lt;tab&gt;,
     // so accept both; a feed, a single status, or a reserved section is not a
@@ -765,7 +781,7 @@ xactions --help
 <pre><code class="language-bash"># Start MCP server
 npm run mcp
 </code></pre>
-<p>See the <a href="../mcp-setup.md">MCP Setup Guide</a> for integration with Claude Desktop, Cursor, and other AI tools.</p>
+<p>See the <a href="/docs/guides/mcp-setup">MCP Setup Guide</a> for integration with Claude Desktop, Cursor, and other AI tools.</p>
 <hr>
 <h2>📁 Source Files</h2>
 <table>
@@ -790,7 +806,7 @@ npm run mcp
 </tr>
 </thead>
 <tbody><tr>
-<td>See <a href="README.md">all scripts</a></td>
+<td>See <a href="/docs/guides/readme">all scripts</a></td>
 <td>Browse the complete script catalog</td>
 </tr>
 </tbody></table>

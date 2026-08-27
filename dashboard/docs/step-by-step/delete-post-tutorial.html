@@ -256,8 +256,8 @@
 </tr>
 <tr>
 <td><code>dryRun</code></td>
-<td><code>true</code></td>
-<td><strong>Starts true!</strong> Preview before deleting.</td>
+<td><code>false</code></td>
+<td>Deletes for real. Set it to <code>true</code> for a preview run that removes nothing.</td>
 </tr>
 <tr>
 <td><code>confirmEvery</code></td>
@@ -286,25 +286,26 @@
 </thead>
 <tbody><tr>
 <td><code>minDelay</code></td>
-<td><code>1500</code></td>
+<td><code>3000</code></td>
 <td>Minimum ms between deletions</td>
 </tr>
 <tr>
 <td><code>maxDelay</code></td>
-<td><code>3500</code></td>
+<td><code>7000</code></td>
 <td>Maximum ms between deletions</td>
 </tr>
 <tr>
 <td><code>scrollDelay</code></td>
-<td><code>2000</code></td>
-<td>Delay after scrolling</td>
+<td><code>4000</code></td>
+<td>Delay after scrolling, so the next page of posts renders</td>
 </tr>
 <tr>
 <td><code>menuDelay</code></td>
-<td><code>800</code></td>
+<td><code>1200</code></td>
 <td>Wait after clicking menu</td>
 </tr>
 </tbody></table>
+<p>X throttles bursts of deletions and starts failing them silently, so the<br>defaults are unhurried. Lower them and you trade completed deletions for<br>speed you will not get.</p>
 <h2>Step-by-Step Guide</h2>
 <h3>Delete a Single Post</h3>
 <p>For a single tweet, the manual approach is simplest:</p>
@@ -320,7 +321,7 @@
     containsKeywords: [&#39;exact text of the tweet to delete&#39;],
   },
   maxDeletes: 1,
-  dryRun: true,
+  dryRun: true,   // preview; set false to delete
 };
 </code></pre>
 <h3>Bulk Delete with Filters</h3>
@@ -331,7 +332,7 @@
     maxLikes: 5,          // With 5 or fewer likes
     excludePinned: true,
   },
-  dryRun: true,           // Preview first!
+  dryRun: true,           // Preview first! false deletes for real.
 };
 </code></pre>
 <h4>Delete All Retweets</h4>
@@ -369,8 +370,8 @@
 };
 </code></pre>
 <h3>Step-by-Step Workflow</h3>
-<p><strong>Step 1: Always Dry Run First</strong></p>
-<p>Set <code>dryRun: true</code> (the default). Paste the script:</p>
+<p><strong>Step 1: Dry Run First</strong></p>
+<p>Set <code>dryRun: true</code> (it ships as <code>false</code>, which deletes for real). Paste the script:</p>
 <pre><code>BULK DELETE TWEETS
 DRY RUN -- preview only
 
@@ -422,7 +423,7 @@ XActionsUtils.abort();   // Stop
 </code></pre>
 <h2>Tips &amp; Tricks</h2>
 <ul>
-<li><strong>Always start with <code>dryRun: true</code>.</strong> Deletion is permanent.</li>
+<li><strong>Set <code>dryRun: true</code> for the first pass on a new filter.</strong> Deletion is permanent, and the default is a real run.</li>
 <li><strong>Export first</strong> using <code>src/backupAccount.js</code> to save your tweets before deleting.</li>
 <li><strong>Use <code>excludeKeywords</code></strong> to protect important tweets (e.g., <code>[&#39;thread&#39;, &#39;announcement&#39;, &#39;milestone&#39;]</code>).</li>
 <li><strong><code>excludePinned: true</code></strong> (default) prevents accidentally deleting your pinned tweet.</li>

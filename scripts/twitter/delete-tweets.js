@@ -7,7 +7,7 @@
  * @name         delete-tweets
  * @description  DESTRUCTIVE: bulk-delete your own posts by age, keywords, or performance. Defaults to a safe dry run.
  * @author       nichxbt
- * @version      1.1.0
+ * @version      1.2.0
  * @date         2026-08-27
  * @website      https://xactions.app
  *
@@ -15,17 +15,18 @@
  *   1. Go to YOUR OWN profile (x.com/YOUR_USERNAME). Its tabs work too:
  *      /with_replies, /media, /likes, /highlights, /articles
  *   2. Open the browser console (F12 or Cmd+Option+I -> Console)
- *   3. (Optional) edit the CONFIG options at the top of the script
- *   4. Paste this entire script and press Enter. It starts in DRY RUN and
- *      only LOGS what it would delete. Nothing is removed until you set
- *      CONFIG.dryRun = false and run it again.
+ *   3. Edit the CONFIG options at the top of the script. Set your filters
+ *      FIRST: this deletes for real, and CONFIG.maxDeletes is the only thing
+ *      standing between a loose filter and your whole timeline.
+ *   4. Paste this entire script and press Enter. It counts down 5 seconds
+ *      before the first deletion; set CONFIG.dryRun = true to preview
+ *      instead, which logs what it would delete and removes nothing.
  *
  * Example:
- *   olderThanDays: 365, minLikesToKeep: 25, maxDeletes: 50, dryRun: true.
- *   First run: lists up to 50 of your posts older than a year that have fewer
- *   than 25 likes, deleting nothing. Review the list, then set dryRun: false
- *   and re-run to permanently delete them. Deleted posts cannot be recovered.
- *   Run window.stopDeleteTweets() to halt after the current post.
+ *   olderThanDays: 365, minLikesToKeep: 25, maxDeletes: 50.
+ *   Deletes up to 50 of your posts older than a year that have fewer than 25
+ *   likes. Deleted posts cannot be recovered. Run window.stopDeleteTweets()
+ *   to halt after the current post.
  *
  * ============================================
  */
@@ -38,8 +39,9 @@
   // ============================================
   const CONFIG = {
     // 🔒 SAFETY: true = preview only (logs what WOULD be deleted, deletes nothing).
-    // You MUST set this to false yourself to actually delete. Keep it true first.
-    dryRun: true,
+    // false = posts are PERMANENTLY deleted. Set this to true for a preview run
+    // whenever you change the filters below.
+    dryRun: false,
 
     // Only delete posts older than this many days. 0 = any age.
     olderThanDays: 0,
@@ -55,11 +57,22 @@
     // Maximum number of posts to delete this run
     maxDeletes: 25,
 
-    // Minimum delay between deletions (ms)
-    minDelay: 1500,
+    // Minimum delay between deletions (ms). X throttles bursts of deletes and
+    // starts failing them silently, so these are deliberately unhurried.
+    minDelay: 3000,
 
     // Maximum delay between deletions (ms)
-    maxDelay: 4000,
+    maxDelay: 7000,
+
+    // Delay after each scroll, to let the next page of posts render (ms)
+    scrollDelay: 4000,
+
+    // Wait after opening a post's menu / clicking through it (ms)
+    menuDelay: 1200,
+
+    // Seconds to wait before the first real deletion, so a mistake is
+    // stoppable. 0 = start immediately.
+    countdownSeconds: 5,
 
     // Maximum scroll attempts to load more posts
     maxScrollAttempts: 60,
@@ -228,7 +241,7 @@
   const profileUser = ownHandle || pathUser;
   log.info(`Profile: @${profileUser}`);
   if (!ownHandle) {
-    log.warning('Could not confirm the signed-in account from the page. Make sure this is YOUR profile before turning off dryRun.');
+    log.warning('Could not confirm the signed-in account from the page. Make sure this is YOUR profile before letting the countdown finish.');
   }
 
   // Loud destructive warning.
@@ -237,6 +250,14 @@
     console.log('%c   To actually delete, set CONFIG.dryRun = false and run again.', 'color:#1d9bf0');
   } else {
     console.log('%c⚠️⚠️⚠️ LIVE MODE - posts WILL be PERMANENTLY DELETED. This CANNOT be undone. ⚠️⚠️⚠️', 'color:#f4212e;font-weight:bold;font-size:15px');
+    for (let i = CONFIG.countdownSeconds; i > 0 && !stopped; i--) {
+      log.warning(`Starting in ${i}s. Run window.stopDeleteTweets() now to abort.`);
+      await sleep(1000);
+    }
+    if (stopped) {
+      log.warning('Aborted before deleting anything.');
+      return stats;
+    }
   }
 
   const cutoff = CONFIG.olderThanDays > 0 ? new Date(Date.now() - CONFIG.olderThanDays * 86400000) : null;
@@ -325,9 +346,9 @@
         if (!caret) continue;
 
         caret.scrollIntoView({ block: 'center' });
-        await sleep(300);
+        await sleep(400);
         caret.click();
-        await sleep(800);
+        await sleep(CONFIG.menuDelay);
 
         const menuItems = document.querySelectorAll(SELECTORS.menuItem);
         let actionBtn = null;
@@ -340,20 +361,20 @@
 
         if (!actionBtn) {
           document.body.click();
-          await sleep(300);
+          await sleep(600);
           continue;
         }
 
         const wasRepost = /undo repost/i.test(actionBtn.textContent);
         actionBtn.click();
-        await sleep(800);
+        await sleep(CONFIG.menuDelay);
 
         // Deleting an original post asks for confirmation; undo-repost is instant.
         if (!wasRepost) {
           const confirm = document.querySelector(SELECTORS.confirm);
           if (!confirm) {
             document.body.click();
-            await sleep(400);
+            await sleep(600);
             continue;
           }
           confirm.click();
@@ -368,7 +389,7 @@
         log.error(`Error processing post: ${error.message}`);
         stats.errors++;
         document.body.click();
-        await sleep(800);
+        await sleep(1500);
       }
     }
 
@@ -385,7 +406,7 @@
     scrollDown();
     scrollAttempts++;
     log.info(`Scrolling for more posts... (attempt ${scrollAttempts}/${CONFIG.maxScrollAttempts})`);
-    await sleep(2000);
+    await sleep(CONFIG.scrollDelay);
   }
 
   // ============================================
@@ -419,6 +440,8 @@
 
   if (CONFIG.dryRun && stats.wouldDelete > 0) {
     console.log(`%c⚡ Reviewed ${stats.wouldDelete} post(s). Set CONFIG.dryRun = false and re-run to PERMANENTLY delete them.`, 'color:#f4212e;font-weight:bold');
+  } else if (!CONFIG.dryRun && stats.deleted >= CONFIG.maxDeletes) {
+    log.info('Hit maxDeletes for this run. Re-run the script to continue where it stopped.');
   } else if (CONFIG.dryRun) {
     log.info('Nothing matched your filters. Loosen olderThanDays / keywords / minLikesToKeep.');
   }
