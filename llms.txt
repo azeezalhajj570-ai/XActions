@@ -20,6 +20,7 @@ XActions automates X/Twitter without needing API access. It provides 94 browser 
 - Algorithm cultivation / thought leader training
 - Agent-to-Agent (A2A) protocol support
 - Browser extension (Chrome/Edge)
+- Ask XActions (https://xactions.app/ask): sourced answers about the toolkit, streamed from free LLM lanes; POST /api/ask returns Server-Sent Events
 
 ## Tech Stack
 

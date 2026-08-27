@@ -7,6 +7,7 @@
 | Guide | Description |
 |-------|-------------|
 | [Getting Started](getting-started.md) | Install, authenticate, run your first command |
+| [Ask XActions](ask.md) | Ask anything at xactions.app/ask: sourced answers from the docs and the repo over free LLM lanes |
 | [CLI Reference](cli-reference.md) | All `xactions` CLI commands |
 | [API Reference](api-reference.md) | REST API endpoints (170+) |
 | [MCP Server](mcp-setup.md) | Set up MCP for Claude, Cursor, GPT |

@@ -89,6 +89,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://xactions.app/docs/guides/ask</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://xactions.app/docs/guides/audience-overlap</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -155,6 +160,11 @@
   </url>
   <url>
     <loc>https://xactions.app/docs/guides/dom-selectors</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/guides/engage</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -365,6 +375,16 @@
   </url>
   <url>
     <loc>https://xactions.app/docs/learn/build-a-brand-monitor</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/learn/competitive-intelligence</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/learn/everything-is-json</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

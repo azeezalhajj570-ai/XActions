@@ -124,6 +124,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | **`--json` everywhere** | Every read command accepts `--json` and puts data on stdout and nothing else. It outranks `--output`, so a pipe is never silently turned into a file write. |
 | **Reliability** | Public reads no longer need a browser at all. Profiles and timelines come from the internal GraphQL API in about a second, with no Chromium download. |
 | **Honest failures** | Nothing reports empty results as success anymore. A read that cannot complete says why, and says what to do about it. |
+| **Ask XActions** | [xactions.app/ask](https://xactions.app/ask) answers "how do I..." questions in plain language, grounded in these docs, the skills, the scripts, and the repo, with clickable sources. Streams from free LLM lanes (three need no key at all), or lead with your own Groq, OpenRouter, xAI, OpenAI, Gemini, Mistral, or Cerebras key. [Docs](docs/ask.md). |
 | **Examples** | [`examples/`](examples/) — 8 runnable programs, each verified against the live API. |
 | **Tutorials** | [`tutorials/`](tutorials/) — six guided walkthroughs, from a first scrape with no account to scripting XActions inside your own pipelines. |
 | **Docs that stay true** | `npm run docs:check` fails the build on a dead link, a stale version, a wrong tool count, or a documented command that does not exist. |

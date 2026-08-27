@@ -56,6 +56,14 @@
       "dest": "/dashboard/manifest.json"
     },
     {
+      "src": "/ask",
+      "dest": "/dashboard/ask.html"
+    },
+    {
+      "src": "/data/(.*)",
+      "dest": "/dashboard/data/$1"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/serverless.js"
     },

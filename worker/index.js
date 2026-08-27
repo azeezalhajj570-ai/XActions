@@ -9,6 +9,8 @@
  *   /openapi.json, /.well-known/x402              -> x402 discovery, at the edge
  *   /api/ai/<cat>/<op> without an X-PAYMENT header -> 402 payment challenge
  *   /thread/*                                     -> rewritten to /thread
+ *   /api/ask, /api/ask/health                     -> Ask XActions, answered at the
+ *                                                    edge (docs index + free LLM lanes)
  *   every other /api/*                            -> proxied to API_ORIGIN
  *                                                    (the Node backend: Railway,
  *                                                    Fly, or Docker self-host)
@@ -20,6 +22,8 @@
  */
 
 import { Buffer } from 'node:buffer';
+import { ask, createSearcher, SUGGESTED_QUESTIONS } from '../src/ask/engine.js';
+import { buildLaneChain } from '../src/ask/lanes.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://xactions.app',
@@ -174,6 +178,73 @@ async function proxyToOrigin(request, url, env) {
   return response;
 }
 
+
+// Ask XActions runs entirely at the edge: the retrieval index is a static
+// asset (/data/ask-index.json) and every LLM lane is reached with fetch.
+let askSearcher = null;
+async function loadAskSearcher(env, url) {
+  if (!askSearcher) {
+    askSearcher = env.ASSETS.fetch(new Request(new URL('/data/ask-index.json', url)))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`ask index asset HTTP ${res.status}`);
+        const index = await res.json();
+        return { searcher: createSearcher(index), digest: index.digest, counts: index.counts };
+      });
+    askSearcher.catch(() => { askSearcher = null; });
+  }
+  return askSearcher;
+}
+
+async function handleAsk(request, url, env) {
+  const cors = corsHeaders(request);
+  if (url.pathname === '/api/ask/health') {
+    try {
+      const { searcher, digest, counts } = await loadAskSearcher(env, url);
+      return json({ status: 'ok', edge: 'cloudflare', index: { chunks: searcher.size, digest, counts }, lanes: buildLaneChain(env).map((l) => l.name), suggested: SUGGESTED_QUESTIONS }, 200, cors);
+    } catch (error) {
+      return json({ status: 'error', message: error.message }, 503, cors);
+    }
+  }
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, cors);
+  let body;
+  try { body = await request.json(); } catch { body = {}; }
+  const { question, history, byok } = body || {};
+  if (typeof question !== 'string' || !question.trim()) {
+    return json({ error: 'INVALID_INPUT', message: 'question is required' }, 400, cors);
+  }
+  let searcher;
+  try {
+    ({ searcher } = await loadAskSearcher(env, url));
+  } catch (error) {
+    return json({ error: 'INDEX_UNAVAILABLE', message: error.message }, 503, cors);
+  }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      try {
+        await ask({
+          question,
+          history: Array.isArray(history) ? history : [],
+          searcher,
+          env,
+          byok: byok && typeof byok === 'object' ? byok : undefined,
+          onEvent: send,
+          signal: request.signal,
+        });
+      } catch (error) {
+        send({ type: 'error', message: error.message });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', ...cors },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -196,6 +267,8 @@ export default {
     }
 
     const api = await loadApiModules(env);
+
+    if (path === '/api/ask' || path === '/api/ask/health') return handleAsk(request, url, env);
 
     if (path === '/openapi.json') return json(api.generateSpec());
     if (path === '/.well-known/x402') return json(api.generateWellKnown());

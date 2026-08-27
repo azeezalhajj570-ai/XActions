@@ -22,6 +22,7 @@
 /run /run.html 200
 /admin /admin.html 200
 /ai /ai.html 200
+/ask /ask.html 200
 /ai-api /ai-api.html 200
 /mcp /mcp.html 200
 /monitor /monitor.html 200

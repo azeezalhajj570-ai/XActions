@@ -61,7 +61,7 @@ export const BYOK_PROVIDERS = {
  *
  * @param {Record<string, string|undefined>} env  process.env, the Worker env, or {} in the browser
  * @param {{ byok?: { provider: string, apiKey: string, model?: string } }} [opts]
- * @returns {Array<{ name: string, url: string, model: string|(() => Promise<string>), key?: string, headers?: Record<string,string>, keyless?: boolean }>}
+ * @returns {Array<{ name: string, url: string, model: string|(() => Promise<string>), key?: string, headers?: Record<string,string>, keyless?: boolean, noStream?: boolean }>}
  */
 export function buildLaneChain(env = {}, opts = {}) {
   const chain = [];
@@ -102,10 +102,12 @@ export function buildLaneChain(env = {}, opts = {}) {
       key: env.CLOUDFLARE_AI_API_TOKEN,
     });
   }
-  // Keyless lanes: always present, so the chain never runs dry. OVH is last
-  // because its anonymous tier allows only 2 requests per minute per IP.
-  chain.push({ name: 'pollinations', url: 'https://text.pollinations.ai/openai', model: 'openai-fast', keyless: true });
+  // Keyless lanes: always present, so the chain never runs dry. LLM7 streams;
+  // Pollinations' legacy anonymous endpoint answers only non-streamed requests
+  // (stream:true returns a 402), so it is called with one JSON body; OVH is
+  // last because its anonymous tier allows only 2 requests per minute per IP.
   chain.push({ name: 'llm7', url: 'https://api.llm7.io/v1/chat/completions', model: 'gemini-3.1-flash-lite', keyless: true });
+  chain.push({ name: 'pollinations', url: 'https://text.pollinations.ai/openai', model: 'openai-fast', keyless: true, noStream: true });
   chain.push({ name: 'ovh', url: 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions', model: 'Meta-Llama-3_3-70B-Instruct', keyless: true });
   return chain;
 }
@@ -160,7 +162,7 @@ export async function streamCompletion(chain, messages, opts = {}) {
         method: 'POST',
         headers,
         signal: controller.signal,
-        body: JSON.stringify({ model, messages, stream: true, temperature: 0.2, max_tokens: opts.maxTokens ?? 1200 }),
+        body: JSON.stringify({ model, messages, stream: !lane.noStream, temperature: 0.2, max_tokens: opts.maxTokens ?? 1200 }),
       });
       if (!res.ok) {
         const detail = (await res.text().catch(() => '')).slice(0, 200);

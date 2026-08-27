@@ -14,6 +14,7 @@ import userRoutes from './routes/user.js';
 import twitterRoutes from './routes/twitter.js';
 import videoRoutes from './routes/video.js';
 import unfollowersRoutes from './routes/unfollowers.js';
+import askRoutes from './routes/ask.js';
 import { generateSpec, generateWellKnown } from './openapi.js';
 import {
   PAY_TO_ADDRESS,
@@ -153,6 +154,9 @@ app.get('/api/ai/health', (req, res) => {
 app.get('/api/ai/pricing', (req, res) => {
   res.json({ pricing: AI_OPERATION_PRICES });
 });
+
+// Ask XActions: keyless free LLM lanes, so it runs on the serverless tier too
+app.use('/api/ask', askRoutes);
 
 // x402 payment gate — intercepts unpaid POST requests to /api/ai/*
 app.use(x402Gate);

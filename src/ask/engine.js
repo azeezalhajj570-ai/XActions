@@ -205,15 +205,26 @@ function sourcesBlock(sources) {
 }
 
 /**
- * Strip a source list to what the client needs and dedupe by URL.
+ * Merge chunks that share a URL into one numbered source, so the numbers the
+ * model cites are exactly the chips the client renders. Text from the merged
+ * chunks is joined, best-scoring first, up to a cap.
  */
+export function mergeSources(sources, { maxChars = 2600 } = {}) {
+  const byUrl = new Map();
+  for (const s of sources) {
+    const existing = byUrl.get(s.u);
+    if (!existing) {
+      byUrl.set(s.u, { ...s, t: s.t.split(' › ')[0] || s.t });
+    } else if (existing.x.length < maxChars) {
+      existing.x = `${existing.x}\n[...]\n${s.x}`.slice(0, maxChars);
+    }
+  }
+  return [...byUrl.values()];
+}
+
+/** Strip a merged source list to what the client needs. */
 export function publicSources(sources) {
-  const seen = new Set();
-  return sources.map((s, i) => ({ n: i + 1, title: s.t, url: s.u, kind: s.k, path: s.p })).filter((s) => {
-    if (seen.has(s.url)) return false;
-    seen.add(s.url);
-    return true;
-  });
+  return sources.map((s, i) => ({ n: i + 1, title: s.t, url: s.u, kind: s.k, path: s.p }));
 }
 
 /**
@@ -239,7 +250,7 @@ export async function ask({ question, history = [], searcher, env = {}, byok, on
     Promise.resolve(searcher.search(q, { limit: 8 })),
     searchGitHub(q, { token: env.GITHUB_TOKEN }),
   ]);
-  const sources = [...local, ...live.slice(0, 3)];
+  const sources = mergeSources([...local, ...live.slice(0, 3)]);
   const pub = publicSources(sources);
   onEvent({ type: 'sources', sources: pub });
 

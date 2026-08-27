@@ -119,7 +119,13 @@ function add(kind, path, url, list) {
 }
 
 // 1. Markdown that has a live docs page (docs/, skills/, tutorials/, prompts).
-const SKIP_MD = /^(docs\/(audits|pr-reviews|research|seo|seo-articles|launch)\/|docs\/GROWTH_STRATEGY|node_modules|archive)/;
+const SKIP_MD = /^(docs\/(audits|pr-reviews|research|seo|seo-articles|launch|articles)\/|docs\/GROWTH_STRATEGY|node_modules|archive)/;
+// docs/examples/*.md run to 40 KB each (152 files): the first sections carry the
+// what/where/how a question needs, the long tail is configuration tables.
+const EXAMPLE_CHUNK_CAP = 6;
+// Any single document is capped so one sprawling reference cannot crowd the
+// index (and the browser fallback download) on its own.
+const DOC_CHUNK_CAP = 40;
 const mdRoots = ['docs', 'skills', 'tutorials'];
 for (const root of mdRoots) {
   for (const file of walk(join(ROOT, root), '.md')) {
@@ -129,7 +135,9 @@ for (const root of mdRoots) {
     const page = pageBySource.get(path);
     const title = page ? page.title : titleOf(md, basename(path, '.md'));
     const url = page ? `https://xactions.app${page.urlPath}` : `${BLOB}${path}`;
-    add(page ? (root === 'skills' ? 'skill' : 'doc') : 'repo', path, url, chunkMarkdown(md, title));
+    let list = chunkMarkdown(md, title);
+    list = list.slice(0, path.startsWith('docs/examples/') ? EXAMPLE_CHUNK_CAP : DOC_CHUNK_CAP);
+    add(page ? (root === 'skills' ? 'skill' : 'doc') : 'repo', path, url, list);
   }
 }
 
@@ -194,8 +202,9 @@ for (const page of PAGES) {
 
 chunks.sort((a, b) => a.p.localeCompare(b.p) || a.t.localeCompare(b.t) || a.x.localeCompare(b.x));
 const digest = createHash('sha256').update(JSON.stringify(chunks)).digest('hex').slice(0, 16);
-const index = { version: 1, digest, counts, chunks };
-const json = JSON.stringify(index);
+// One chunk per line: a doc edit then shows up as a few changed lines in git
+// instead of rewriting a single multi-megabyte line.
+const json = `{"version":1,"digest":${JSON.stringify(digest)},"counts":${JSON.stringify(counts)},"chunks":[\n${chunks.map((c) => JSON.stringify(c)).join(',\n')}\n]}`;
 
 const engineFiles = readdirSync(ENGINE_SRC).filter((f) => f.endsWith('.js'));
 const stale = [];
