@@ -118,6 +118,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 
 | Area | What changed |
 |------|-------------|
+| **Delete every reply you sent one account** | [`scripts/searchSweep.js`](scripts/searchSweep.js) turns any X search into a bulk action. Open `x.com/search?q=from:you @someone&f=live`, paste it, and delete, like, repost, or reply to every result, with a floating panel, a dry run, filters that protect posts that did numbers, and multiple passes because X search returns a slice at a time. Deletes only ever touch your own posts. [Docs](docs/search-sweep.md). |
 | **Sweep a whole profile** | [`scripts/engageProfile.js`](scripts/engageProfile.js) likes, reposts, and replies to every post on an account from the console, with a floating panel, dry run, resume, undo, and replies from your templates or from an LLM given a one-line brief (Grok works straight from the console; any provider through the extension). `xactions engage USERNAME --like --repost --comment --prompt "..."` does the same from the terminal with any provider. [Docs](docs/engage.md). |
 | **A CLI you can find your way around** | Fifty-plus commands are now grouped by task instead of listed alphabetically. `xactions quickstart` gives a guided first run that adapts to what you already have set up. |
 | **Tab completion** | `xactions completion bash\|zsh\|fish` prints a completion script generated from the live command tree, so every command, sub-command, and flag completes. |

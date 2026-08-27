@@ -11,6 +11,7 @@
 | Download Twitter video | `scripts/videoDownloader.js` |
 | Detect unfollowers | `src/detectUnfollowers.js` |
 | Like + repost + reply to every post on a profile | `scripts/engageProfile.js` (browser, panel, Grok or extension for AI replies) or `xactions engage <user> --like --repost --comment --prompt "..."` (CLI, any LLM). Docs: `docs/engage.md` |
+| Delete / like / repost / reply to every result of a search (e.g. `from:me @someone`) | `scripts/searchSweep.js` (browser, panel, multi-pass). Docs: `docs/search-sweep.md` |
 | Train algorithm for a niche | `src/automation/algorithmBuilder.js` (browser) or `xactions persona create` (CLI) |
 | Become a thought leader / grow account | `skills/algorithm-cultivation/SKILL.md` |
 | 24/7 LLM-powered growth agent | `src/algorithmBuilder.js` + `src/personaEngine.js` — run via `xactions persona run <id>` |

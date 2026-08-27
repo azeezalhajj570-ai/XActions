@@ -5,6 +5,12 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://xactions.app/scripts/search-sweep</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://xactions.app/scripts/account-health-monitor</loc>
     <lastmod>2026-03-30</lastmod>
     <changefreq>monthly</changefreq>

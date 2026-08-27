@@ -8,6 +8,14 @@
     "sourceDir": "scripts"
   },
   {
+    "slug": "search-sweep",
+    "title": "A toast that means X is pushing back",
+    "description": "scripts/searchSweep.js",
+    "category": "Other Tools",
+    "icon": "⚡",
+    "sourceDir": "scripts"
+  },
+  {
     "slug": "account-health-monitor",
     "title": "Account Health Monitor",
     "description": "Comprehensive health check for your X/Twitter account.",

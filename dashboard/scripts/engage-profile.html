@@ -125,7 +125,7 @@
         <div class="meta-row">
           
           
-          <span>1080 lines</span>
+          <span>1081 lines</span>
           <span>by <a href="https://x.com/nichxbt" rel="noopener">@nichxbt</a></span>
         </div>
 
@@ -560,9 +560,10 @@
     if (!raw) return '';
     let t = String(raw).trim();
     t = t.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim();
+    const unquote = (s) =&gt; { const m = s.match(/^[&quot;“'‘](.*)[&quot;”'’]$/s); return m ? m[1].trim() : s; };
+    t = unquote(t);
     t = t.replace(/^(reply|comment|response|answer)\s*[:\-]\s*/i, '').trim();
-    const q = t.match(/^[&quot;“'‘](.*)[&quot;”'’]$/s);
-    if (q) t = q[1].trim();
+    t = unquote(t);
     if (!CONFIG.comments.allowHashtags) t = t.replace(/(^|\s)#[\w]+/g, '$1');
     t = t.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
     if ([...t].length &gt; 280) {
@@ -1324,7 +1325,8 @@
     <aside class="sidebar-right">
       <div class="sidebar-card">
         <h3>⚡ Other Tools</h3>
-        <a href="/scripts/account-misc">⚡ Account Misc</a>
+        <a href="/scripts/search-sweep">⚡ A toast that means X is pushing back</a>
+<a href="/scripts/account-misc">⚡ Account Misc</a>
 <a href="/scripts/ad-campaign-manager">⚡ Ad Campaign Manager</a>
 <a href="/scripts/advanced-creator">⚡ Advanced Creator</a>
 <a href="/scripts/advanced-dm">⚡ Advanced DM</a>
@@ -1333,7 +1335,6 @@
 <a href="/scripts/advanced-premium">⚡ Advanced Premium</a>
 <a href="/scripts/advanced-settings">⚡ Advanced Settings</a>
 <a href="/scripts/audit-console-errors">⚡ Audit Console Errors</a>
-<a href="/scripts/community-manager">⚡ Community Manager</a>
       </div>
       <div class="sidebar-card">
         <h3>🔗 Quick Links</h3>

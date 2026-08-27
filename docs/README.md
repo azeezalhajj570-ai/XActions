@@ -12,6 +12,7 @@
 | [API Reference](api-reference.md) | REST API endpoints (170+) |
 | [MCP Server](mcp-setup.md) | Set up MCP for Claude, Cursor, GPT |
 | [Browser Scripts](browser-scripts.md) | Run scripts in DevTools console |
+| [Search Sweep](search-sweep.md) | Delete, like, repost, or reply to every result of an X search |
 | [Automation Framework](automation.md) | Browser automation system |
 | [Dashboard](dashboard.md) | Web dashboard guide |
 | [Video Downloader](video-downloader.md) | Download X/Twitter videos |
