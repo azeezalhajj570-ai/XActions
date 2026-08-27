@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>XActions Documentation — XActions Docs</title>
-<meta name="description" content="Complete documentation for XActions v3.4.4 — The X/Twitter Automation Toolkit">
+<meta name="description" content="Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit">
 <meta name="keywords" content="xactions, twitter automation, x automation, free, open source, readme, documentation, guides &amp; reference">
 <meta name="author" content="nich (@nichxbt)">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="XActions Documentation — XActions">
-<meta property="og:description" content="Complete documentation for XActions v3.4.4 — The X/Twitter Automation Toolkit">
+<meta property="og:description" content="Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit">
 <meta property="og:url" content="https://xactions.app/docs/guides/readme">
 <meta property="og:image" content="https://xactions.app/og-docs.png">
 <meta property="og:site_name" content="XActions">
@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@nichxbt">
 <meta name="twitter:title" content="XActions Documentation — XActions">
-<meta name="twitter:description" content="Complete documentation for XActions v3.4.4 — The X/Twitter Automation Toolkit">
+<meta name="twitter:description" content="Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit">
 <meta name="twitter:image" content="https://xactions.app/og-docs.png">
 
 <link rel="canonical" href="https://xactions.app/docs/guides/readme">
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "XActions Documentation — XActions Docs",
-  "description": "Complete documentation for XActions v3.4.4 — The X/Twitter Automation Toolkit",
+  "description": "Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit",
   "url": "https://xactions.app/docs/guides/readme",
   "image": "https://xactions.app/og-docs.png",
   "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -257,7 +261,7 @@
     <article class="prose">
 <h1 id="xactions-documentation">XActions Documentation</h1>
 <blockquote>
-<p>Complete documentation for XActions v3.4.4 — The X/Twitter Automation Toolkit</p>
+<p>Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit</p>
 </blockquote>
 <h2 id="quick-links">Quick Links</h2>
 <table>
@@ -268,82 +272,94 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="/docs/guides/getting-started">Getting Started</a></td>
+<td><a href="getting-started.md">Getting Started</a></td>
 <td>Install, authenticate, run your first command</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/cli-reference">CLI Reference</a></td>
+<td><a href="ask.md">Ask XActions</a></td>
+<td>Ask anything at xactions.app/ask: sourced answers from the docs and the repo over free LLM lanes</td>
+</tr>
+<tr>
+<td><a href="cli-reference.md">CLI Reference</a></td>
 <td>All <code>xactions</code> CLI commands</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/api-reference">API Reference</a></td>
+<td><a href="api-reference.md">API Reference</a></td>
 <td>REST API endpoints (170+)</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/mcp-setup">MCP Server</a></td>
+<td><a href="mcp-setup.md">MCP Server</a></td>
 <td>Set up MCP for Claude, Cursor, GPT</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/browser-scripts">Browser Scripts</a></td>
+<td><a href="browser-scripts.md">Browser Scripts</a></td>
 <td>Run scripts in DevTools console</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/automation">Automation Framework</a></td>
+<td><a href="automation.md">Automation Framework</a></td>
 <td>Browser automation system</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/dashboard">Dashboard</a></td>
+<td><a href="dashboard.md">Dashboard</a></td>
 <td>Web dashboard guide</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/video-downloader">Video Downloader</a></td>
+<td><a href="video-downloader.md">Video Downloader</a></td>
 <td>Download X/Twitter videos</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/configuration">Configuration</a></td>
+<td><a href="configuration.md">Configuration</a></td>
 <td>Personas, niches, environment</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/database">Database Schema</a></td>
+<td><a href="database.md">Database Schema</a></td>
 <td>PostgreSQL models (Prisma)</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/extension">Browser Extension</a></td>
+<td><a href="extension.md">Browser Extension</a></td>
 <td>Chrome/Edge extension</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/deployment">Deployment</a></td>
+<td><a href="deployment.md">Deployment</a></td>
 <td>Deploy to Railway, Fly.io, Docker, etc.</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/architecture">Architecture</a></td>
+<td><a href="architecture.md">Architecture</a></td>
 <td>System design and project structure</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/analytics">Analytics &amp; Monitoring</a></td>
+<td><a href="analytics.md">Analytics &amp; Monitoring</a></td>
 <td>Sentiment, reputation, follower tracking</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/ai-api">AI Features</a></td>
+<td><a href="ai-api.md">AI Features</a></td>
 <td>AI tweet writer, voice analysis, Grok</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/skills">Skills Reference</a></td>
-<td>31 agent skills for AI assistants</td>
+<td><a href="skills.md">Skills Reference</a></td>
+<td>49 agent skills for AI assistants</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/dom-selectors">DOM Selectors</a></td>
+<td><a href="dom-selectors.md">DOM Selectors</a></td>
 <td>X/Twitter DOM selector reference</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/troubleshooting">Troubleshooting</a></td>
+<td><a href="troubleshooting.md">Troubleshooting</a></td>
 <td>Common issues and fixes</td>
+</tr>
+<tr>
+<td><a href="portability.md">Portability</a></td>
+<td>Import your X data archive, export and migrate to Bluesky or Mastodon</td>
+</tr>
+<tr>
+<td><a href="audits/2026-08-27-competitive-and-structural-audit.md">Audits</a></td>
+<td>Competitive gap analysis and repo health, with the open backlog</td>
 </tr>
 </tbody></table>
 <h2 id="interfaces">Interfaces</h2>
 <p>XActions provides <strong>5 interfaces</strong> to the same underlying toolkit:</p>
 <pre><code>┌─────────────────────────────────────────────────────┐
-│                   XActions v3.4.4                    │
+│                   XActions v3.5.0                    │
 ├──────────┬──────────┬───────┬──────────┬────────────┤
 │  CLI     │  MCP     │  API  │ Dashboard│  Browser   │
 │ xactions │ server   │ REST  │   Web UI │  Scripts   │
@@ -353,7 +369,7 @@
 </code></pre>
 <ol>
 <li><strong>CLI</strong> — <code>xactions &lt;command&gt;</code> from your terminal</li>
-<li><strong>MCP Server</strong> — 144 tools for Claude, Cursor, Windsurf, GPT</li>
+<li><strong>MCP Server</strong> — 149 tools for Claude, Cursor, Windsurf, GPT</li>
 <li><strong>REST API</strong> — 170+ endpoints at <code>localhost:3001/api</code></li>
 <li><strong>Web Dashboard</strong> — Full-featured UI at <code>localhost:3001</code></li>
 <li><strong>Browser Scripts</strong> — Paste into DevTools on x.com</li>
@@ -399,14 +415,14 @@
 </tr>
 </tbody></table>
 <h2 id="version">Version</h2>
-<p>Current version: <strong>v3.1.0</strong> (February 2026)</p>
+<p>Current version: <strong>v3.5.0</strong> (August 2026)</p>
 <hr>
 <p><em>by nichxbt — <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/xactions">github.com/nirholas/xactions</a></em></p>
 
     </article>
 
     <div class="page-meta">
-      <span>1 min read</span>
+      <span>2 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/README.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20Documentation" target="_blank" rel="noopener">Report a problem</a>
     </div>

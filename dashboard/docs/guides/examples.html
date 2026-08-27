@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples" aria-current="page">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -281,7 +285,7 @@ npx xactions login                                        # unlock search, follo
 npx xactions search &quot;your brand&quot; --limit 50               # what people are saying
 npx xactions non-followers YOUR_USERNAME                  # who does not follow back
 </code></pre>
-<p>Every command is documented in the <a href="/docs/guides/cli-reference">CLI reference</a>.</p>
+<p>Every command is documented in the <a href="cli-reference.md">CLI reference</a>.</p>
 <hr>
 <h2 id="nodejs-library">Node.js library</h2>
 <pre><code class="language-bash">npm install xactions
@@ -332,7 +336,7 @@ what it would do and changes nothing:</p>
   delay: 3000,               // ms between actions
 };
 </code></pre>
-<p>All 93 scripts are catalogued in <a href="/docs/guides/browser-scripts">browser-scripts.md</a>.</p>
+<p>All 93 scripts are catalogued in <a href="browser-scripts.md">browser-scripts.md</a>.</p>
 <hr>
 <h2 id="docker">Docker</h2>
 <pre><code class="language-bash">docker build -t xactions .
@@ -366,7 +370,7 @@ tools:</p>
 <p>Look up @nasa and @spacex. Compare their follower counts, posting frequency,
 and which one gets more engagement per post.</p>
 </blockquote>
-<p>Setup details and troubleshooting: <a href="/docs/guides/mcp-setup">mcp-setup.md</a>.</p>
+<p>Setup details and troubleshooting: <a href="mcp-setup.md">mcp-setup.md</a>.</p>
 <hr>
 <h2 id="guest-tier-vs-session-tier">Guest tier vs session tier</h2>
 <p>The one distinction that explains most questions about this tool:</p>
@@ -394,14 +398,14 @@ those failures look like missing resources until you know to look for it.
 XActions turns them into an <code>AUTH_REQUIRED</code> error that says what to do about it.</p>
 <p>Getting cookies: DevTools, then <strong>Application</strong> then <strong>Cookies</strong> then
 <code>https://x.com</code>, and copy <code>auth_token</code> <strong>and</strong> <code>ct0</code>. Both are required. See
-<a href="/docs/guides/configuration">configuration.md</a>.</p>
+<a href="configuration.md">configuration.md</a>.</p>
 <hr>
 <h2 id="next">Next</h2>
 <ul>
-<li><a href="/docs/guides/getting-started">Getting started</a> — pick an interface and set it up</li>
+<li><a href="getting-started.md">Getting started</a> — pick an interface and set it up</li>
 <li><a href="../examples/">Runnable examples</a> — complete programs</li>
 <li><a href="../tutorials/">Tutorials</a> — guided walkthroughs</li>
-<li><a href="/docs/guides/troubleshooting">Troubleshooting</a> — when something does not work</li>
+<li><a href="troubleshooting.md">Troubleshooting</a> — when something does not work</li>
 </ul>
 
     </article>

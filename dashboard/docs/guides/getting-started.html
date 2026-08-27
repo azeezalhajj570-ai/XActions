@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -344,12 +348,12 @@
 <hr>
 <h2 id="quick-start-cli">Quick Start: CLI</h2>
 <pre><code class="language-bash">npm install -g xactions
-xactions login          # Saves your auth_token cookie
+xactions login --from-browser firefox  # Import your session (or: --cookies-file, connect, login)
 xactions profile elonmusk --json
 xactions followers elonmusk --count 500 --output followers.csv
 xactions non-followers myhandle
 </code></pre>
-<p>See the full <a href="/docs/guides/cli-reference">CLI Reference</a> for all 111 commands.</p>
+<p>See the full <a href="cli-reference.md">CLI Reference</a> for all 111 commands.</p>
 <hr>
 <h2 id="quick-start-nodejs-library">Quick Start: Node.js Library</h2>
 <pre><code class="language-bash">npm install xactions
@@ -366,7 +370,7 @@ const tweets = await searchTweets(&#39;javascript&#39;, { count: 50, cookie: pro
 const profile = await scrape(&#39;bluesky&#39;, &#39;profile&#39;, &#39;user.bsky.social&#39;);
 const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mastodon.social&#39;);
 </code></pre>
-<p>See the full <a href="/docs/guides/api-reference">API Reference</a> and <a href="/docs/guides/xactions-reference">XActions Reference</a>.</p>
+<p>See the full <a href="api-reference.md">API Reference</a> and <a href="xactions-reference.md">XActions Reference</a>.</p>
 <hr>
 <h2 id="quick-start-mcp-server-ai-agents">Quick Start: MCP Server (AI Agents)</h2>
 <p>Add XActions to Claude Desktop, Cursor, or any MCP-compatible client:</p>
@@ -385,11 +389,11 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 <p>Generate this config automatically:</p>
 <pre><code class="language-bash">xactions mcp-config
 </code></pre>
-<p>144 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See <a href="/docs/guides/mcp-setup">MCP Setup</a>.</p>
+<p>149 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See <a href="mcp-setup.md">MCP Setup</a>.</p>
 <hr>
 <h2 id="quick-start-dashboard">Quick Start: Dashboard</h2>
 <ol>
-<li>Deploy the API server (see <a href="/docs/guides/deployment">Deployment</a>)</li>
+<li>Deploy the API server (see <a href="deployment.md">Deployment</a>)</li>
 <li>Open the dashboard at your deployment URL</li>
 <li>Connect your browser by pasting the bridge script into your x.com tab</li>
 <li>Run operations from the visual interface</li>
@@ -402,15 +406,35 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 <li>Click <strong>Load unpacked</strong> → select the <code>extension/</code> folder</li>
 <li>Navigate to x.com — the extension icon activates automatically</li>
 </ol>
-<p>See <a href="/docs/guides/extension">Extension Guide</a>.</p>
+<p>See <a href="extension.md">Extension Guide</a>.</p>
 <hr>
 <h2 id="authentication">Authentication</h2>
-<p>All interfaces need an X/Twitter session cookie (<code>auth_token</code>):</p>
-<ol>
-<li>Open <a target="_blank" rel="noopener noreferrer" href="https://x.com">x.com</a> and log in</li>
-<li>Open DevTools → Application → Cookies → <code>https://x.com</code></li>
-<li>Find the <code>auth_token</code> cookie and copy its value</li>
-</ol>
+<p>All interfaces need an X/Twitter session cookie (<code>auth_token</code>, plus <code>ct0</code> for
+search, bookmarks, and DMs). The CLI gives you four ways to capture it, fastest
+first:</p>
+<pre><code class="language-bash"># 1. Read cookies straight out of your browser (no DevTools, no copy/paste)
+xactions login --from-browser firefox     # also: chrome, chromium, brave, edge, arc
+
+# 2. Import a cookies file you already exported
+xactions login --cookies-file cookies.txt # Netscape, Cookie-Editor/EditThisCookie JSON,
+                                          # Playwright/Puppeteer storageState, or a raw
+                                          # &quot;auth_token=...; ct0=...&quot; string
+
+# 3. Log in through a real browser window and let XActions capture the session
+xactions connect
+
+# 4. Paste the two cookies by hand
+xactions login
+</code></pre>
+<p><code>--from-browser</code> works headlessly for Firefox on every platform, and for
+Chromium-family browsers on Linux (default keyring-less key) and macOS (via the
+Keychain). If your browser seals its cookies with the system keyring (GNOME
+Keyring / KWallet) or you are on Windows, XActions tells you the exact export
+path to use with <code>--cookies-file</code> instead.</p>
+<p>To export a cookies file by hand: install the &quot;Get cookies.txt LOCALLY&quot; or
+Cookie-Editor extension, open <a target="_blank" rel="noopener noreferrer" href="https://x.com">x.com</a> while logged in, and export.
+Or, in DevTools → Application → Cookies → <code>https://x.com</code>, copy the <code>auth_token</code>
+and <code>ct0</code> values.</p>
 <table>
 <thead>
 <tr>
@@ -420,7 +444,7 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 </thead>
 <tbody><tr>
 <td>CLI</td>
-<td><code>xactions login</code> (interactive prompt)</td>
+<td><code>xactions login --from-browser &lt;name&gt;</code>, <code>--cookies-file &lt;path&gt;</code>, <code>xactions connect</code>, or <code>xactions login</code> (paste)</td>
 </tr>
 <tr>
 <td>Node.js</td>
@@ -459,51 +483,51 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="/docs/guides/cli-reference">CLI Reference</a></td>
+<td><a href="cli-reference.md">CLI Reference</a></td>
 <td>All 111 CLI commands</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/api-reference">API Reference</a></td>
+<td><a href="api-reference.md">API Reference</a></td>
 <td>Node.js library functions</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/mcp-setup">MCP Setup</a></td>
+<td><a href="mcp-setup.md">MCP Setup</a></td>
 <td>AI agent integration</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/browser-scripts">Browser Scripts</a></td>
+<td><a href="browser-scripts.md">Browser Scripts</a></td>
 <td>Complete script catalog</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/automation">Automation</a></td>
+<td><a href="automation.md">Automation</a></td>
 <td>Advanced browser automation framework</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/analytics">Analytics</a></td>
+<td><a href="analytics.md">Analytics</a></td>
 <td>Sentiment, reputation, history tracking</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/workflows">Workflows</a></td>
+<td><a href="workflows.md">Workflows</a></td>
 <td>Automated multi-step workflows</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/streaming">Streaming</a></td>
+<td><a href="streaming.md">Streaming</a></td>
 <td>Real-time tweet/follower/mention streams</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/social-graph">Social Graph</a></td>
+<td><a href="social-graph.md">Social Graph</a></td>
 <td>Network analysis and visualization</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/plugins">Plugins</a></td>
+<td><a href="plugins.md">Plugins</a></td>
 <td>Extend XActions with plugins</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/deployment">Deployment</a></td>
+<td><a href="deployment.md">Deployment</a></td>
 <td>Deploy to Railway, Fly.io, Docker</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/troubleshooting">Troubleshooting</a></td>
+<td><a href="troubleshooting.md">Troubleshooting</a></td>
 <td>Common issues and fixes</td>
 </tr>
 </tbody></table>
@@ -513,17 +537,17 @@ const tweets = await scrape(&#39;mastodon&#39;, &#39;tweets&#39;, &#39;user@mast
 <h2 id="where-to-go-next">Where to go next</h2>
 <ul>
 <li><strong><a href="../tutorials/">Tutorials</a></strong> — guided walkthroughs, starting with
-<a href="https://github.com/nirholas/XActions/blob/main/tutorials/01-your-first-scrape.md">your first scrape</a></li>
+<a href="../tutorials/01-your-first-scrape.md">your first scrape</a></li>
 <li><strong><a href="../examples/">Examples</a></strong> — runnable Node.js programs, each verified
 against the live API</li>
-<li><strong><a href="/docs/guides/browser-scripts">Browser scripts</a></strong> — the full catalog of console scripts</li>
-<li><strong><a href="/docs/guides/troubleshooting">Troubleshooting</a></strong> — when something does not work</li>
+<li><strong><a href="browser-scripts.md">Browser scripts</a></strong> — the full catalog of console scripts</li>
+<li><strong><a href="troubleshooting.md">Troubleshooting</a></strong> — when something does not work</li>
 </ul>
 
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>4 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/getting-started.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Getting%20Started%20with%20XActions" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -301,6 +305,7 @@ unfollowx diff exports/user_jan2026 exports/user_feb2026
 ├── exporter.js        → Full account export orchestrator with checkpoint resume
 ├── archive-viewer.js  → Self-contained HTML archive generator
 ├── importer.js        → Bluesky &amp; Mastodon migration (user matching via Dice coefficient)
+├── twitter-archive.js → Official X data export (zip or folder) importer, summary, export bridge
 ├── differ.js          → Export comparison engine (followers, tweets, engagement)
 └── index.js           → Barrel re-exports
 
@@ -394,6 +399,109 @@ Content-Type: application/json
 </blockquote>
 <p>The AI agent calls <code>x_export_account</code> with <code>{ username: &quot;nichxbt&quot;, formats: [&quot;json&quot;], authToken: &quot;...&quot; }</code>.</p>
 <hr>
+<h2 id="import-your-x-archive">Import your X archive</h2>
+<p>You do not need to scrape your own account. X will hand you everything as a zip (<strong>Settings &gt; Your account &gt; Download an archive of your data</strong>; it arrives a day or so later). <code>importTwitterArchive</code> reads that download, either the <code>.zip</code> itself or the folder you extracted it to, and returns the same normalised records the rest of the portability toolkit works with. Zips are streamed entry by entry, so a multi-gigabyte archive with years of media is fine on a laptop: only one <code>data/*.js</code> section file is held in memory at a time, and media files are indexed, not read.</p>
+<pre><code class="language-js">import {
+  importTwitterArchive,
+  summarizeArchive,
+  formatArchiveReport,
+  exportArchive,
+  openArchiveMedia,
+} from &#39;./src/portability/index.js&#39;;
+import { pipeline } from &#39;node:stream/promises&#39;;
+import { createWriteStream } from &#39;node:fs&#39;;
+
+const archive = await importTwitterArchive(&#39;twitter-2026-01-01-abc123.zip&#39;, {
+  onProgress: (p) =&gt; process.stderr.write(`${p.phase} ${p.file}\n`),
+});
+
+console.log(formatArchiveReport(summarizeArchive(archive)));
+
+// tweets, likes, following, followers, blocks, mutes, dms, lists, media, account, profile
+const replies = archive.tweets.filter((t) =&gt; t.inReplyTo);
+console.log(`${replies.length} of ${archive.tweets.length} tweets are replies`);
+
+// Write it out in the same layout `export` produces (JSON, CSV, Markdown, HTML viewer)
+const { dir } = await exportArchive(archive, { outputDir: &#39;exports/me_archive&#39; });
+console.log(`open ${dir}/index.html`);
+
+// Pull a photo straight out of the zip
+const first = archive.media[0];
+await pipeline(await openArchiveMedia(archive, first.path), createWriteStream(first.file));
+</code></pre>
+<p>Save that as <code>archive.mjs</code> in the repo root and run <code>node archive.mjs</code> (from an installed package, import from <code>xactions/src/portability/index.js</code>).</p>
+<h3 id="what-you-get">What you get</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Shape</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>account</code></td>
+<td><code>{ id, username, name, email, createdAt, createdVia }</code></td>
+</tr>
+<tr>
+<td><code>profile</code></td>
+<td><code>{ username, name, bio, website, location, avatarUrl, headerUrl }</code></td>
+</tr>
+<tr>
+<td><code>tweets[]</code></td>
+<td><code>{ id, text, createdAt, url, inReplyTo: { tweetId, userId, username } | null, retweeted, media: [{ id, type, url, previewUrl, file }], metrics: { likes, retweets }, hashtags, mentions, links, lang, source }</code> plus the flat <code>timestamp</code>, <code>likes</code>, <code>retweets</code> fields the exporter and differ read</td>
+</tr>
+<tr>
+<td><code>likes[]</code></td>
+<td><code>{ id, text, url }</code></td>
+</tr>
+<tr>
+<td><code>following[]</code>, <code>followers[]</code>, <code>blocks[]</code>, <code>mutes[]</code></td>
+<td><code>{ id, url }</code> (the archive only carries account ids)</td>
+</tr>
+<tr>
+<td><code>dms[]</code></td>
+<td>one entry per conversation: <code>{ id, kind: &#39;direct&#39; | &#39;group&#39;, participants, messageCount, firstMessageAt, lastMessageAt, messages: [{ id, senderId, recipientId, text, createdAt, media, links, reactions }], events }</code></td>
+</tr>
+<tr>
+<td><code>lists[]</code></td>
+<td><code>{ kind: &#39;created&#39; | &#39;member&#39; | &#39;subscribed&#39;, name, url, description }</code></td>
+</tr>
+<tr>
+<td><code>media[]</code></td>
+<td><code>{ path, file, dir, size, tweetId, kind }</code> for every file under <code>data/*_media/</code></td>
+</tr>
+<tr>
+<td><code>sections</code></td>
+<td><code>{ present, missing }</code> so you can tell an empty section from one the archive does not include</td>
+</tr>
+</tbody></table>
+<p>Multi-part files (<code>tweets.js</code>, <code>tweets-part1.js</code>, ...) are merged in part order. Pass <code>sections: [&#39;tweets&#39;, &#39;likes&#39;]</code> to skip everything else, which is the fast path on a large archive.</p>
+<h3 id="summary-report">Summary report</h3>
+<p><code>summarizeArchive(archive)</code> returns counts per section, the tweet date range, tweets per year, the busiest year, top hashtags and mentions, and likes and retweets received. <code>formatArchiveReport(summary)</code> renders it as terminal text:</p>
+<pre><code>X archive for @nichxbt (zip)
+Account created: 2019-03-01
+Tweets span:     2024-01-01 to 2025-03-16
+
+Tweets       5 (3 original, 1 replies, 1 retweets, 2 with media)
+Likes        2
+Following    3
+...
+Top hashtags
+  #xactions  3
+</code></pre>
+<h3 id="migrate-straight-from-the-archive">Migrate straight from the archive</h3>
+<p><code>migrate</code> accepts <code>source: &#39;twitterArchive&#39;</code>; it imports the archive, writes <code>tweets.json</code> and <code>following.json</code> to <code>exportDir</code>, then runs the normal dry-run or live flow:</p>
+<pre><code class="language-js">import { migrate } from &#39;./src/portability/index.js&#39;;
+
+const summary = await migrate({
+  platform: &#39;bluesky&#39;,
+  source: &#39;twitterArchive&#39;,
+  archivePath: &#39;twitter-2026-01-01-abc123.zip&#39;,
+  exportDir: &#39;exports/me_archive&#39;,
+  dryRun: true,
+});
+</code></pre>
+<hr>
 <h2 id="export-formats">Export Formats</h2>
 <table>
 <thead>
@@ -486,7 +594,7 @@ Content-Type: application/json
     </article>
 
     <div class="page-meta">
-      <span>2 min read</span>
+      <span>4 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/portability.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Account%20Portability%20%E2%80%94%20Export%2C%20Migrate%20%26%20Diff" target="_blank" rel="noopener">Report a problem</a>
     </div>

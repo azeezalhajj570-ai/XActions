@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 65 more…</a>
+      <a class="sidebar__link" href="/docs">+ 67 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -101,6 +101,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following" aria-current="page">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -205,7 +207,7 @@ is built around not doing that.</p>
 </code></pre>
 <p>Follower and following lists are session-tier: X will not serve them to a
 logged-out request. You need both <code>auth_token</code> and <code>ct0</code>. See
-<a href="https://github.com/nirholas/XActions/blob/main/tutorials/01-your-first-scrape.md#step-4--log-in">Tutorial 01, step 4</a> if you have not
+<a href="01-your-first-scrape.md#step-4--log-in">Tutorial 01, step 4</a> if you have not
 done this.</p>
 <hr>
 <h2 id="step-1--look-before-you-touch">Step 1 — Look before you touch</h2>
@@ -314,7 +316,7 @@ npx xactions bulk unfollow cut-list.json --delay 3000 --resume
 <p>It accepts JSON, CSV, or a plain text file of handles, so you can hand-edit the
 list before running it. That is usually worth doing.</p>
 <h3 id="ask-an-assistant">Ask an assistant</h3>
-<p>With the <a href="https://github.com/nirholas/XActions/blob/main/tutorials/02-mcp-with-claude.md">MCP server</a> configured:</p>
+<p>With the <a href="02-mcp-with-claude.md">MCP server</a> configured:</p>
 <blockquote>
 <p>Find who I follow that doesn&#39;t follow me back. Exclude anyone with more than
 10,000 followers and anyone in this list: alice_dev, bob_designs. Show me the
@@ -373,7 +375,7 @@ writeFileSync(&#39;followers.json&#39;, JSON.stringify([...current]));
 <pre><code>0 9 * * *  cd /path/to/project &amp;&amp; node track-followers.js &gt;&gt; followers.log 2&gt;&amp;1
 </code></pre>
 <p>The self-hosted API server does this for you, storing snapshots and diffs in
-PostgreSQL. See <a href="/docs/guides/database#follower-history">docs/database.md</a>.</p>
+PostgreSQL. See <a href="../docs/database.md#follower-history">docs/database.md</a>.</p>
 <hr>
 <h2 id="what-you-learned">What you learned</h2>
 <ul>
@@ -386,8 +388,8 @@ PostgreSQL. See <a href="/docs/guides/database#follower-history">docs/database.m
 </ul>
 <h2 id="next">Next</h2>
 <ul>
-<li><strong><a href="https://github.com/nirholas/XActions/blob/main/tutorials/04-build-a-brand-monitor.md">Tutorial 04 — Build a brand monitor</a></strong></li>
-<li><a href="/docs/guides/browser-scripts">Browser scripts</a> — the full catalog</li>
+<li><strong><a href="04-build-a-brand-monitor.md">Tutorial 04 — Build a brand monitor</a></strong></li>
+<li><a href="../docs/browser-scripts.md">Browser scripts</a> — the full catalog</li>
 <li><a href="../examples/06-find-non-followers.js">Example 06</a> — this analysis as a program</li>
 </ul>
 

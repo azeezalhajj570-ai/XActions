@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 65 more…</a>
+      <a class="sidebar__link" href="/docs">+ 67 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -101,6 +101,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -191,9 +193,9 @@
     <span class="eyebrow">📄 Project Info</span>
 
     <article class="prose">
-<div align="center">    
+<div align="center">     
   
-<pre align="center">
+<pre align="center"> 
 ██╗  ██╗ █████╗  ██████╗████████╗██╗ ██████╗ ███╗   ██╗███████╗
 ╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔════╝
  ╚███╔╝ ███████║██║        ██║   ██║██║   ██║██╔██╗ ██║███████╗
@@ -221,7 +223,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 </p>
 
 <p>
-  <a href="/docs/guides/mcp-setup"><img src="https://img.shields.io/badge/MCP_Tools-144-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="144 MCP Tools"></a>&nbsp;
+  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-149-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="149 MCP Tools"></a>&nbsp;
   <a href="https://smithery.ai/server/xactions"><img src="https://smithery.ai/badge/xactions" alt="Smithery"></a>&nbsp;
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP_Registry-deployed-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="MCP Registry"></a>&nbsp;
   <a href="Dockerfile"><img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>&nbsp;
@@ -236,7 +238,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 <p>  <a href="https://xactions.app">https://xactions.app</a></p>
 <br>
 
-<p><a href="https://xactions.app"><strong>Website</strong></a> &nbsp;·&nbsp; <a target="_blank" rel="noopener noreferrer" href="https://www.npmjs.com/package/xactions"><strong>npm</strong></a> &nbsp;·&nbsp; <a href="/docs/guides/getting-started"><strong>Docs</strong></a> &nbsp;·&nbsp; <a href="/docs/guides/mcp-setup"><strong>MCP Server</strong></a> &nbsp;·&nbsp; <a href="Dockerfile"><strong>Docker</strong></a> &nbsp;·&nbsp; <a href="/docs/guides/api-reference"><strong>API Ref</strong></a></p>
+<p><a href="https://xactions.app"><strong>Website</strong></a> &nbsp;·&nbsp; <a target="_blank" rel="noopener noreferrer" href="https://www.npmjs.com/package/xactions"><strong>npm</strong></a> &nbsp;·&nbsp; <a href="docs/getting-started.md"><strong>Docs</strong></a> &nbsp;·&nbsp; <a href="docs/mcp-setup.md"><strong>MCP Server</strong></a> &nbsp;·&nbsp; <a href="Dockerfile"><strong>Docker</strong></a> &nbsp;·&nbsp; <a href="docs/api-reference.md"><strong>API Ref</strong></a></p>
 </div>
 
 <hr>
@@ -286,33 +288,41 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <th>Feature</th>
 <th align="center"><strong>XActions</strong></th>
 <th align="center">twikit</th>
-<th align="center">twitter-mcp</th>
-<th align="center">agent-twitter-client</th>
-<th align="center">twit</th>
-<th align="center">twitter-scraper</th>
+<th align="center">twscrape</th>
+<th align="center">x-use</th>
+<th align="center">xmcp (official)</th>
+<th align="center">bird</th>
+<th align="center">twitter-cli</th>
+<th align="center">Agent-Reach</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>No API Key Required</strong></td>
 <td align="center">✅</td>
-<td align="center">✅</td>
-<td align="center">❌ Needs keys</td>
-<td align="center">✅</td>
-<td align="center">❌ Needs keys</td>
+<td align="center">✅ Cookies</td>
+<td align="center">✅ Account pool</td>
+<td align="center">✅ Browser</td>
+<td align="center">❌ X API keys</td>
+<td align="center">✅ Cookies</td>
+<td align="center">❌ X API keys</td>
 <td align="center">✅</td>
 </tr>
 <tr>
 <td><strong>MCP Server (AI agents)</strong></td>
-<td align="center">✅ <strong>144 tools</strong></td>
-<td align="center">❌</td>
-<td align="center">✅ 2 tools</td>
+<td align="center">✅ <strong>149 tools</strong></td>
 <td align="center">❌</td>
 <td align="center">❌</td>
+<td align="center">✅ (33-tool server)</td>
+<td align="center">✅ (140-tool, metered)</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌ Skills, not MCP</td>
 </tr>
 <tr>
 <td><strong>Browser Console Scripts</strong></td>
-<td align="center">✅ 50+</td>
+<td align="center">✅ 94</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
@@ -327,15 +337,30 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 </tr>
 <tr>
 <td><strong>CLI</strong></td>
-<td align="center">✅ 12 commands</td>
+<td align="center">✅ 50+ commands</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
-<td align="center">❌</td>
-<td align="center">❌</td>
-<td align="center">❌</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td><strong>Language</strong></td>
+<td align="center">JavaScript</td>
+<td align="center">Python</td>
+<td align="center">Python</td>
+<td align="center">TypeScript</td>
+<td align="center">TypeScript</td>
+<td align="center">TypeScript</td>
+<td align="center">Python</td>
+<td align="center">Python</td>
 </tr>
 </tbody></table>
 <p><strong>XActions is the only toolkit that works in the browser, terminal, and with AI agents — all without an API key.</strong></p>
@@ -349,6 +374,22 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 </tr>
 </thead>
 <tbody><tr>
+<td><strong>Sweep a whole profile</strong></td>
+<td><a href="scripts/engageProfile.js"><code>scripts/engageProfile.js</code></a> likes, reposts, and replies to every post on an account from the console, with a floating panel, dry run, resume, undo, and replies from your templates or from an LLM given a one-line brief (Grok works straight from the console; any provider through the extension). <code>xactions engage USERNAME --like --repost --comment --prompt &quot;...&quot;</code> does the same from the terminal with any provider. <a href="docs/engage.md">Docs</a>.</td>
+</tr>
+<tr>
+<td><strong>A CLI you can find your way around</strong></td>
+<td>Fifty-plus commands are now grouped by task instead of listed alphabetically. <code>xactions quickstart</code> gives a guided first run that adapts to what you already have set up.</td>
+</tr>
+<tr>
+<td><strong>Tab completion</strong></td>
+<td><code>xactions completion bash|zsh|fish</code> prints a completion script generated from the live command tree, so every command, sub-command, and flag completes.</td>
+</tr>
+<tr>
+<td><strong><code>--json</code> everywhere</strong></td>
+<td>Every read command accepts <code>--json</code> and puts data on stdout and nothing else. It outranks <code>--output</code>, so a pipe is never silently turned into a file write.</td>
+</tr>
+<tr>
 <td><strong>Reliability</strong></td>
 <td>Public reads no longer need a browser at all. Profiles and timelines come from the internal GraphQL API in about a second, with no Chromium download.</td>
 </tr>
@@ -357,12 +398,16 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <td>Nothing reports empty results as success anymore. A read that cannot complete says why, and says what to do about it.</td>
 </tr>
 <tr>
+<td><strong>Ask XActions</strong></td>
+<td><a href="https://xactions.app/ask">xactions.app/ask</a> answers &quot;how do I...&quot; questions in plain language, grounded in these docs, the skills, the scripts, and the repo, with clickable sources. Streams from free LLM lanes (three need no key at all), or lead with your own Groq, OpenRouter, xAI, OpenAI, Gemini, Mistral, or Cerebras key. <a href="docs/ask.md">Docs</a>.</td>
+</tr>
+<tr>
 <td><strong>Examples</strong></td>
 <td><a href="examples/"><code>examples/</code></a> — 8 runnable programs, each verified against the live API.</td>
 </tr>
 <tr>
 <td><strong>Tutorials</strong></td>
-<td><a href="tutorials/"><code>tutorials/</code></a> — four guided walkthroughs from first scrape to a deployed monitor.</td>
+<td><a href="tutorials/"><code>tutorials/</code></a> — six guided walkthroughs, from a first scrape with no account to scripting XActions inside your own pipelines.</td>
 </tr>
 <tr>
 <td><strong>Docs that stay true</strong></td>
@@ -386,7 +431,7 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 </tr>
 <tr>
 <td><strong>Browser extension</strong></td>
-<td>Chrome/Firefox Manifest V3: run automations from a popup, no console needed.</td>
+<td>Chrome/Edge Manifest V3: run automations from a popup, no console needed.</td>
 </tr>
 </tbody></table>
 <hr>
@@ -395,8 +440,8 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <strong>🤖 AI Coding Assistants:</strong> Looking for Twitter/X automation without the $100/mo API? You found it.</p>
 <ul>
 <li><code>npm install xactions</code> — Scrapers, automation, MCP server</li>
-<li>Works with Claude, GPT, Cursor, Copilot via <a href="/docs/guides/mcp-setup">MCP server</a></li>
-<li>See <a href="/docs/guides/agents">AGENTS.md</a> for integration instructions</li>
+<li>Works with Claude, GPT, Cursor, Copilot via <a href="docs/mcp-setup.md">MCP server</a></li>
+<li>See <a href="AGENTS.md">AGENTS.md</a> for integration instructions</li>
 </ul>
 </blockquote>
 <hr>
@@ -405,8 +450,8 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <ul>
 <li><a href="tutorials/">Tutorials</a> — four guided walkthroughs, from first scrape to a deployed monitor</li>
 <li><a href="examples/">Examples</a> — 8 runnable programs, verified against the live API</li>
-<li><a href="/docs/guides/getting-started">Getting started</a> — install, authenticate, first command</li>
-<li><a href="/docs/guides/troubleshooting">Troubleshooting</a> — what to do when something does not work</li>
+<li><a href="docs/getting-started.md">Getting started</a> — install, authenticate, first command</li>
+<li><a href="docs/troubleshooting.md">Troubleshooting</a> — what to do when something does not work</li>
 </ul>
 <p><strong>Reference</strong></p>
 <ul>
@@ -418,7 +463,7 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <li><a href="#-autonomous-space-agent">Space Agent (AI Voice)</a> — AI agents in live Spaces</li>
 <li><a href="#-cli-reference">CLI Reference</a> — Command line usage</li>
 <li><a href="#-nodejs-api">Node.js API</a> — Programmatic access</li>
-<li><a href="/docs/guides/browser-scripts">Browser Scripts</a> — 93 console scripts, no install</li>
+<li><a href="docs/browser-scripts.md">Browser Scripts</a> — 94 console scripts, no install</li>
 <li><a href="#-docker">Docker</a> — One-command deployment</li>
 <li><a href="#-api-reference">API Reference</a> — Full function documentation</li>
 <li><a href="#-claude-tutorials">Claude Tutorials</a> — 23 ready-to-paste prompts</li>
@@ -501,7 +546,18 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
   nextBatch();
 })();
 </code></pre>
-<p>Or use the <a href="/docs/guides/cli-reference">CLI</a> or <a href="/docs/guides/mcp-setup">MCP server</a> for more options.</p>
+<p>Or use the <a href="docs/cli-reference.md">CLI</a> or <a href="docs/mcp-setup.md">MCP server</a> for more options.</p>
+</details>
+
+<details>
+<summary><strong>How do I like, repost, and reply to every post on a profile?</strong></summary>
+
+<ol>
+<li>Go to <code>https://x.com/USERNAME</code></li>
+<li>Open the Developer Console. (<kbd>COMMAND</kbd>+<kbd>ALT</kbd>+<kbd>I</kbd> on Mac)</li>
+<li>Paste <a href="scripts/engageProfile.js"><code>scripts/engageProfile.js</code></a> and run it. A panel appears: pick like / repost / reply, leave dry run on, press Start, read the log, then turn dry run off.</li>
+</ol>
+<p>Replies come from your own templates or from an LLM given a brief like &quot;supportive, specific, one honest question&quot;. From the terminal: <code>npx xactions engage USERNAME --like --repost --comment --prompt &quot;...&quot;</code>. Full guide: <a href="docs/engage.md">docs/engage.md</a>.</p>
 </details>
 
 <details>
@@ -686,7 +742,7 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 </tr>
 <tr><td><strong>Scope</strong></td><td>Browser + CLI + Node.js + MCP + Extension</td><td>Usually 1 thing</td></tr>
 <tr><td><strong>API Key</strong></td><td>Not needed</td><td>Most need Twitter API ($100/mo)</td></tr>
-<tr><td><strong>MCP Tools</strong></td><td>140+ for Claude, GPT, Cursor</td><td>0–2 tools</td></tr>
+<tr><td><strong>MCP Tools</strong></td><td>149 for Claude, GPT, Cursor</td><td>0–2 tools</td></tr>
 <tr><td><strong>AI Features</strong></td><td>Sentiment, Grok, reputation</td><td>None</td></tr>
 <tr><td><strong>Export</strong></td><td>JSON, CSV, Markdown, HTML</td><td>JSON only (if any)</td></tr>
 <tr><td><strong>Migration</strong></td><td>Bluesky & Mastodon stubs</td><td>None</td></tr>
@@ -776,7 +832,7 @@ import { scrapeFollowing, scrapeTweets, searchTweets } from &#39;xactions/scrape
 <td><code>Thread</code></td>
 </tr>
 </tbody></table>
-<p>See <a href="/docs/guides/api-reference">docs/api-reference.md</a> for the complete reference with all parameters and return types.</p>
+<p>See <a href="docs/api-reference.md">docs/api-reference.md</a> for the complete reference with all parameters and return types.</p>
 <hr>
 <h2 id="-claude-tutorials">📝 Claude Tutorials</h2>
 <p><strong>23 ready-to-paste prompt files</strong> that turn Claude into your personal X automation expert.</p>
@@ -788,39 +844,39 @@ import { scrapeFollowing, scrapeTweets, searchTweets } from &#39;xactions/scrape
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/01-mcp-setup-and-first-commands.md">MCP Setup</a></td>
+<td><a href="tutorials/claude-prompts/01-mcp-setup-and-first-commands.md">MCP Setup</a></td>
 <td>Install and connect XActions to Claude Desktop</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/02-unfollow-non-followers-cleanup.md">Unfollow Cleanup</a></td>
+<td><a href="tutorials/claude-prompts/02-unfollow-non-followers-cleanup.md">Unfollow Cleanup</a></td>
 <td>Remove non-followers, detect unfollowers</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/03-growth-automation-suite.md">Growth Suite</a></td>
+<td><a href="tutorials/claude-prompts/03-growth-automation-suite.md">Growth Suite</a></td>
 <td>Auto-follow, auto-like, keyword targeting</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/04-scraping-research-analysis.md">Scraping</a></td>
+<td><a href="tutorials/claude-prompts/04-scraping-research-analysis.md">Scraping</a></td>
 <td>Extract profiles, tweets, hashtags</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/05-content-posting-threads-scheduling.md">Content Posting</a></td>
+<td><a href="tutorials/claude-prompts/05-content-posting-threads-scheduling.md">Content Posting</a></td>
 <td>Tweets, threads, polls, scheduling</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/06-analytics-competitor-intelligence.md">Analytics</a></td>
+<td><a href="tutorials/claude-prompts/06-analytics-competitor-intelligence.md">Analytics</a></td>
 <td>Performance tracking, competitor analysis</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/23-autonomous-space-agent.md">Autonomous Space Agent</a></td>
+<td><a href="tutorials/claude-prompts/23-autonomous-space-agent.md">Autonomous Space Agent</a></td>
 <td>Deploy AI voice agents in live X Spaces</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nirholas/XActions/blob/main/tutorials/claude-prompts/22-advanced-power-user-playbook.md">Power User Playbook</a></td>
+<td><a href="tutorials/claude-prompts/22-advanced-power-user-playbook.md">Power User Playbook</a></td>
 <td>10 advanced multi-feature strategies</td>
 </tr>
 </tbody></table>
-<p><strong><a href="/docs/guides/readme">See all 23 tutorials →</a></strong></p>
+<p><strong><a href="tutorials/claude-prompts/README.md">See all 23 tutorials →</a></strong></p>
 <hr>
 <h2 id="-disclaimer">⚠️ Disclaimer</h2>
 <blockquote>
@@ -852,7 +908,8 @@ import { scrapeFollowing, scrapeTweets, searchTweets } from &#39;xactions/scrape
 <td>
 
 <pre><code class="language-bash">npm install -g xactions
-xactions --help
+xactions quickstart          # guided first run
+xactions doctor              # check what works right now
 </code></pre>
 </td>
 </tr>
@@ -867,6 +924,20 @@ xactions --help
 
 <hr>
 <h2 id="-quick-start-examples">🚀 Quick Start Examples</h2>
+<h3 id="sixty-seconds-no-account">Sixty seconds, no account</h3>
+<p>Most reads work the moment you install. You do not need an X account, an API key, or a browser.</p>
+<pre><code class="language-bash">npm install -g xactions
+
+xactions doctor                      # what works right now, and why
+xactions profile NASA                # any public account
+xactions analyze NASA                # engagement rate, cadence, content mix, best hour
+xactions tweets NASA --limit 50 --json | jq -r &#39;.[].text&#39;
+</code></pre>
+<p>Then log in once, in a real browser, to unlock search, followers, following, likes, bookmarks, and DMs:</p>
+<pre><code class="language-bash">xactions connect
+xactions search &quot;your topic&quot; --limit 50
+</code></pre>
+<p>Running <code>xactions</code> with no arguments prints all fifty-plus commands grouped by task. <code>xactions completion bash</code> (or <code>zsh</code>, <code>fish</code>) turns on tab completion.</p>
 <h3 id="example-1-unfollow-non-followers-30-seconds">Example 1: Unfollow Non-Followers (30 seconds)</h3>
 <p><strong>Browser Console</strong> — <em>No install required!</em></p>
 <pre><code class="language-javascript">// Go to: x.com/YOUR_USERNAME/following
@@ -1093,7 +1164,7 @@ xactions followers YOUR_USERNAME --output snapshot2.json
 })();
 </code></pre>
 <blockquote>
-<p>📖 Full documentation: <a href="/docs/leave-all-communities">docs/examples/leave-all-communities.md</a></p>
+<p>📖 Full documentation: <a href="docs/examples/leave-all-communities.md">docs/examples/leave-all-communities.md</a></p>
 </blockquote>
 <hr>
 <h2 id="-complete-feature-list">📋 Complete Feature List</h2>
@@ -1457,7 +1528,7 @@ xactions followers YOUR_USERNAME --output snapshot2.json
 npx xactions mcp-config --client cursor
 npx xactions mcp-config --client windsurf
 </code></pre>
-<h3 id="available-mcp-tools-140">Available MCP Tools (140+)</h3>
+<h3 id="available-mcp-tools-149">Available MCP Tools (149)</h3>
 <table>
 <thead>
 <tr>
@@ -1523,7 +1594,7 @@ npx xactions mcp-config --client windsurf
 <p><strong>&quot;Compare the engagement metrics of @openai, @anthropic, and @google&quot;</strong>
 → Scrapes profiles + recent tweets → computes avg engagement → presents comparison</p>
 </blockquote>
-<p>📖 <strong>Full setup guide</strong>: <a href="/docs/guides/mcp-setup">docs/mcp-setup.md</a></p>
+<p>📖 <strong>Full setup guide</strong>: <a href="docs/mcp-setup.md">docs/mcp-setup.md</a></p>
 <hr>
 <h2 id="-autonomous-space-agent">🎙️ Autonomous Space Agent</h2>
 <p>AI agents can <strong>join live X Spaces</strong>, listen to conversations, and speak autonomously using voice AI. Powered by the <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/xspace-agent"><code>xspace-agent</code></a> SDK.</p>
@@ -1587,7 +1658,7 @@ const summary = await leaveSpace();
 <td>Get recent transcriptions from the active Space</td>
 </tr>
 </tbody></table>
-<p>📖 <strong>Full guide</strong>: <a href="/docs/guides/spaces-agent">docs/spaces-agent.md</a> — configuration, environment variables, events, multi-agent setup, and examples.</p>
+<p>📖 <strong>Full guide</strong>: <a href="docs/spaces-agent.md">docs/spaces-agent.md</a> — configuration, environment variables, events, multi-agent setup, and examples.</p>
 <hr>
 <h2 id="-cli-reference">💻 CLI Reference</h2>
 <pre><code class="language-bash"># Authentication
@@ -1713,7 +1784,7 @@ exportToCSV(data, filename)
 <p><strong>Don&#39;t:</strong> Mass-follow thousands/day · Run 24/7 · Spam comments</p>
 </blockquote>
 <hr>
-<h2 id="-built-with">� Built With</h2>
+<h2 id="-built-with">🛠️ Built With</h2>
 <p>
   <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/Puppeteer-40B5A4?style=for-the-badge&logo=puppeteer&logoColor=white" alt="Puppeteer">
@@ -1726,7 +1797,7 @@ exportToCSV(data, filename)
 </p>
 
 <hr>
-<h2 id="-project-structure">�📁 Project Structure</h2>
+<h2 id="-project-structure">📁 Project Structure</h2>
 <pre><code>xactions/
 ├── src/
 │   ├── index.js          # Main entry point
@@ -1737,7 +1808,7 @@ exportToCSV(data, filename)
 │   │   ├── mastodon/     # Mastodon scrapers (REST API)
 │   │   └── threads/      # Threads scrapers (Puppeteer)
 │   ├── cli/              # Command-line interface
-│   ├── mcp/              # MCP server (144 tools for AI agents)
+│   ├── mcp/              # MCP server (149 tools for AI agents)
 │   ├── spaces/           # Autonomous Space agent (xspace-agent integration)
 │   ├── automation/       # Browser console automation scripts
 │   ├── plugins/          # Plugin system (loader, manager, template)
@@ -1747,20 +1818,20 @@ exportToCSV(data, filename)
 │   ├── portability/      # Account export, migration, archive viewer
 │   └── graph/            # Social graph analysis &amp; visualization
 ├── api/                  # Express REST API
-│   ├── routes/           # 29 route modules
+│   ├── routes/           # 39 route modules
 │   ├── services/         # Business logic + Bull job queue
 │   ├── middleware/       # Auth, x402, AI detection
 │   └── realtime/         # Socket.IO handler
 ├── dashboard/            # Website (static HTML pages)
-├── extension/            # Chrome/Firefox browser extension (Manifest V3)
+├── extension/            # Chrome/Edge browser extension (Manifest V3)
 ├── docs/                 # Documentation
-├── skills/               # 26 Agent Skills (skills/*/SKILL.md)
+├── skills/               # 49 Agent Skills (skills/*/SKILL.md)
 ├── tests/                # Vitest test suite
 └── prisma/               # Database schema
 </code></pre>
 <hr>
 <h2 id="-contributing">🤝 Contributing</h2>
-<p>Contributions welcome! See <a href="/docs/project/contributing">CONTRIBUTING.md</a>.</p>
+<p>Contributions welcome! See <a href="CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
 <pre><code class="language-bash">git clone https://github.com/nirholas/xactions.git
 cd xactions &amp;&amp; npm install
 npm run cli -- profile elonmusk   # Run CLI locally
@@ -1830,10 +1901,10 @@ npm run mcp                       # Run MCP server
 </tbody></table>
 <h3 id="all-documentation">All Documentation</h3>
 <ul>
-<li><a href="/docs/guides/getting-started">Getting Started</a></li>
-<li><a href="/docs/guides/cli-reference">CLI Reference</a></li>
-<li><a href="/docs/guides/automation">Automation Guide</a></li>
-<li><a href="/docs/guides/monitoring">Monitoring Guide</a></li>
+<li><a href="docs/getting-started.md">Getting Started</a></li>
+<li><a href="docs/cli-reference.md">CLI Reference</a></li>
+<li><a href="docs/automation.md">Automation Guide</a></li>
+<li><a href="docs/monitoring.md">Monitoring Guide</a></li>
 </ul>
 <h3 id="example-docs-full-code">Example Docs (Full Code)</h3>
 <table>
@@ -1845,55 +1916,55 @@ npm run mcp                       # Run MCP server
 </thead>
 <tbody><tr>
 <td>Unfollow Everyone</td>
-<td><a href="/docs/unfollow-everyone">unfollow-everyone.md</a></td>
+<td><a href="docs/examples/unfollow-everyone.md">unfollow-everyone.md</a></td>
 </tr>
 <tr>
 <td>Unfollow Non-Followers</td>
-<td><a href="/docs/unfollow-non-followers">unfollow-non-followers.md</a></td>
+<td><a href="docs/examples/unfollow-non-followers.md">unfollow-non-followers.md</a></td>
 </tr>
 <tr>
 <td>Detect Unfollowers</td>
-<td><a href="/docs/detect-unfollowers">detect-unfollowers.md</a></td>
+<td><a href="docs/examples/detect-unfollowers.md">detect-unfollowers.md</a></td>
 </tr>
 <tr>
 <td>Auto-Liker</td>
-<td><a href="/docs/auto-liker">auto-liker.md</a></td>
+<td><a href="docs/examples/auto-liker.md">auto-liker.md</a></td>
 </tr>
 <tr>
 <td>Auto-Commenter</td>
-<td><a href="/docs/auto-commenter">auto-commenter.md</a></td>
+<td><a href="docs/examples/auto-commenter.md">auto-commenter.md</a></td>
 </tr>
 <tr>
 <td>Follow Engagers</td>
-<td><a href="/docs/follow-engagers">follow-engagers.md</a></td>
+<td><a href="docs/examples/follow-engagers.md">follow-engagers.md</a></td>
 </tr>
 <tr>
 <td>Video Downloader</td>
-<td><a href="/docs/guides/video-downloader">video-downloader.md</a></td>
+<td><a href="docs/examples/video-downloader.md">video-downloader.md</a></td>
 </tr>
 <tr>
 <td>Followers Scraping</td>
-<td><a href="/docs/followers-scraping">followers-scraping.md</a></td>
+<td><a href="docs/examples/followers-scraping.md">followers-scraping.md</a></td>
 </tr>
 <tr>
 <td>Tweet Scraping</td>
-<td><a href="/docs/tweet-scraping">tweet-scraping.md</a></td>
+<td><a href="docs/examples/tweet-scraping.md">tweet-scraping.md</a></td>
 </tr>
 <tr>
 <td>Leave Communities</td>
-<td><a href="/docs/leave-all-communities">leave-all-communities.md</a></td>
+<td><a href="docs/examples/leave-all-communities.md">leave-all-communities.md</a></td>
 </tr>
 <tr>
 <td>MCP Server</td>
-<td><a href="/docs/mcp-server">mcp-server.md</a></td>
+<td><a href="docs/examples/mcp-server.md">mcp-server.md</a></td>
 </tr>
 <tr>
 <td>Monitor Account</td>
-<td><a href="/docs/monitor-account">monitor-account.md</a></td>
+<td><a href="docs/examples/monitor-account.md">monitor-account.md</a></td>
 </tr>
 <tr>
 <td>New Follower Alerts</td>
-<td><a href="/docs/new-follower-alerts">new-follower-alerts.md</a></td>
+<td><a href="docs/examples/new-follower-alerts.md">new-follower-alerts.md</a></td>
 </tr>
 </tbody></table>
 <hr>
@@ -1985,24 +2056,30 @@ npm run mcp                       # Run MCP server
 <th>Feature</th>
 <th align="center"><strong>XActions</strong></th>
 <th align="center">twikit</th>
-<th align="center">twitter-mcp</th>
-<th align="center">agent-twitter-client</th>
-<th align="center">twit</th>
-<th align="center">twitter-scraper</th>
+<th align="center">twscrape</th>
+<th align="center">x-use</th>
+<th align="center">xmcp (official)</th>
+<th align="center">bird</th>
+<th align="center">twitter-cli</th>
+<th align="center">Agent-Reach</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>Node.js Library</strong></td>
 <td align="center">✅</td>
 <td align="center">❌ Python</td>
+<td align="center">❌ Python</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
+<td align="center">❌ Python</td>
 <td align="center">❌ Python</td>
 </tr>
 <tr>
 <td><strong>Workflow Engine</strong></td>
 <td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
@@ -2017,6 +2094,8 @@ npm run mcp                       # Run MCP server
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 </tr>
 <tr>
 <td><strong>Real-Time Streaming</strong></td>
@@ -2026,10 +2105,14 @@ npm run mcp                       # Run MCP server
 <td align="center">❌</td>
 <td align="center">✅ API only</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 </tr>
 <tr>
 <td><strong>Account Export/Migration</strong></td>
 <td align="center">✅ JSON/CSV/HTML</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
@@ -2044,11 +2127,15 @@ npm run mcp                       # Run MCP server
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 </tr>
 <tr>
 <td><strong>Grok AI Integration</strong></td>
 <td align="center">✅</td>
 <td align="center">✅ Separate pkg</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
@@ -2062,11 +2149,15 @@ npm run mcp                       # Run MCP server
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 </tr>
 <tr>
 <td><strong>TypeScript Types</strong></td>
 <td align="center">✅</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">❌</td>
@@ -2080,37 +2171,44 @@ npm run mcp                       # Run MCP server
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
 </tr>
 <tr>
-<td><strong>Language</strong></td>
-<td align="center">JavaScript</td>
-<td align="center">Python</td>
-<td align="center">TypeScript</td>
-<td align="center">TypeScript</td>
-<td align="center">JavaScript</td>
-<td align="center">Python</td>
+<td><strong>Multi-platform (X + others)</strong></td>
+<td align="center">✅ Bluesky, Mastodon, Threads</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+<td align="center">✅</td>
 </tr>
 <tr>
 <td><strong>Cost</strong></td>
 <td align="center"><strong>Free</strong></td>
 <td align="center">Free</td>
-<td align="center">Free + API keys</td>
 <td align="center">Free</td>
-<td align="center">Free + API keys</td>
+<td align="center">Free</td>
+<td align="center">Free + X API plan</td>
+<td align="center">Free</td>
+<td align="center">Free + X API plan</td>
 <td align="center">Free</td>
 </tr>
 </tbody></table>
+<p>Comparison reflects each project&#39;s public README at time of writing (August 2026); open an issue if a column is out of date.</p>
 <h2 id="documentation">Documentation</h2>
 <p>Full documentation site: <strong><a target="_blank" rel="noopener noreferrer" href="https://nirholas.github.io/XActions/">https://nirholas.github.io/XActions/</a></strong></p>
 <ul>
-<li><a href="/docs/guides/getting-started">Getting started</a> covers install and first run.</li>
-<li><a href="/docs/guides/examples">Examples</a> has copy-paste snippets.</li>
+<li><a href="docs/getting-started.md">Getting started</a> covers install and first run.</li>
+<li><a href="docs/examples.md">Examples</a> has copy-paste snippets.</li>
 </ul>
 
     </article>
 
     <div class="page-meta">
-      <span>17 min read</span>
+      <span>19 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/README.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Quick%20start" target="_blank" rel="noopener">Report a problem</a>
     </div>

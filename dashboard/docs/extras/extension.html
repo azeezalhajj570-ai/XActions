@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 65 more…</a>
+      <a class="sidebar__link" href="/docs">+ 67 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -101,6 +101,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -206,7 +208,7 @@
 <li>Click the <strong>XA</strong> icon in your toolbar</li>
 <li>Pick an automation, configure settings, click ▶️</li>
 </ol>
-<p>Full installation guide: <a href="/docs/guides/extension">docs/extension.md</a></p>
+<p>Full installation guide: <a href="../docs/extension.md">docs/extension.md</a></p>
 <h2 id="features">Features</h2>
 <h3 id="growth-automations-6">Growth Automations (6)</h3>
 <table>
@@ -344,15 +346,15 @@ popup.js                    service-worker.js              bridge.js            
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="/docs/guides/extension">Extension User Guide</a></td>
+<td><a href="../docs/extension.md">Extension User Guide</a></td>
 <td>Installation, usage, each automation explained, tips, FAQ</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/extension-api">Extension Internal API</a></td>
+<td><a href="../docs/extension-api.md">Extension Internal API</a></td>
 <td>Message protocol, storage schema, event flow</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/extension-api">Extension Developer Guide</a></td>
+<td><a href="../docs/extension-api.md">Extension Developer Guide</a></td>
 <td>Adding automations, modifying UI, DOM selectors, testing</td>
 </tr>
 </tbody></table>
@@ -395,6 +397,35 @@ popup.js                    service-worker.js              bridge.js            
 </tbody></table>
 <h2 id="credits">Credits</h2>
 <p>Built by <a target="_blank" rel="noopener noreferrer" href="https://x.com/nichxbt">nichxbt</a> as part of <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/XActions">XActions</a>.</p>
+<h2 id="llm-relay-for-page-scripts">LLM relay for page scripts</h2>
+<p>x.com ships a Content-Security-Policy whose <code>connect-src</code> blocks the page from
+calling OpenRouter, OpenAI, Anthropic, or a local Ollama. The extension&#39;s
+service worker is not bound by the page&#39;s CSP, so a page script can ask it to
+make the call:</p>
+<pre><code class="language-js">window.postMessage({
+  source: &#39;xactions-page&#39;,
+  type: &#39;LLM_REQUEST&#39;,
+  id: &#39;any-unique-id&#39;,
+  request: {
+    provider: &#39;openrouter&#39;,           // openrouter | openai | anthropic | xai | ollama | custom
+    apiKey: &#39;sk-or-...&#39;,              // blank for ollama
+    model: &#39;google/gemini-2.5-flash&#39;, // provider default when omitted
+    baseUrl: &#39;&#39;,                      // full chat-completions URL for custom
+    messages: [{ role: &#39;user&#39;, content: &#39;hi&#39; }],
+    temperature: 0.9,
+    maxTokens: 160,
+  },
+}, &#39;*&#39;);
+
+window.addEventListener(&#39;message&#39;, (e) =&gt; {
+  if (e.data?.source === &#39;xactions-extension&#39; &amp;&amp; e.data.type === &#39;LLM_RESPONSE&#39; &amp;&amp; e.data.id === &#39;any-unique-id&#39;) {
+    console.log(e.data.text, e.data.error);
+  }
+});
+</code></pre>
+<p><code>scripts/engageProfile.js</code> uses this when its provider is set to <strong>XActions
+extension (any provider)</strong>. The key travels page, content script, service
+worker for that one request and is not stored by the extension.</p>
 
     </article>
 

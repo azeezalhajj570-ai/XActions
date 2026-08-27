@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard" aria-current="page">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -266,9 +270,9 @@ node api/server.js
 # Or use the dashboard server directly
 node dashboard-server.js
 </code></pre>
-<p>Open <a target="_blank" rel="noopener noreferrer" href="http://localhost:3001">http://localhost:3001</a> in your browser.</p>
+<p>Open <a target="_blank" rel="noopener noreferrer" href="http://localhost:3001">http://localhost:3001</a> in your browser (the standalone dashboard server listens on <a target="_blank" rel="noopener noreferrer" href="http://localhost:3000">http://localhost:3000</a>; set <code>PORT</code> to change it).</p>
 <h3 id="production">Production</h3>
-<p>Visit <a href="https://xactions.app">xactions.app</a> or deploy your own instance (see <a href="/docs/guides/deployment">deployment.md</a>).</p>
+<p>Visit <a href="https://xactions.app">xactions.app</a> or deploy your own instance (see <a href="deployment.md">deployment.md</a>).</p>
 <hr>
 <h2 id="pages">Pages</h2>
 <h3 id="core">Core</h3>
@@ -632,7 +636,7 @@ socket.on(&#39;stream:data&#39;, (data) =&gt; { /* new stream event */ });
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>4 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/dashboard.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Dashboard" target="_blank" rel="noopener">Report a problem</a>
     </div>

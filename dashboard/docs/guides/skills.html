@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -265,10 +269,69 @@ them to use, in what order, for this task.&quot;</p>
 <ul>
 <li>Location: <a href="../skills/"><code>skills/</code></a></li>
 <li>Machine-readable index: <a href="../skills/index.json"><code>skills/index.json</code></a></li>
-<li>Template for new ones: <a href="https://github.com/nirholas/XActions/blob/main/skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a></li>
+<li>Template for new ones: <a href="../skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a></li>
 </ul>
 <hr>
 <h2 id="using-them">Using them</h2>
+<h3 id="install-into-your-agent">Install into your agent</h3>
+<p>The CLI ships the whole catalogue and can copy any skill into the directory
+your coding agent already reads. Nothing is fetched: <code>xactions skills</code> resolves
+the <code>skills/</code> directory relative to the installed package, so it works from a
+global <code>npm install -g xactions</code> as well as a clone.</p>
+<pre><code class="language-bash">xactions skills list                                   # every skill, and where each is installed
+xactions skills show follower-monitoring               # print one SKILL.md in full
+xactions skills install --all --global                 # Claude Code, for every project: ~/.claude/skills/&lt;id&gt;/
+xactions skills install growth-automation              # Claude Code, this project only: ./.claude/skills/&lt;id&gt;/
+xactions skills install --all --target cursor          # ./.cursor/rules/&lt;id&gt;.mdc
+xactions skills install --all --target codex --global  # ~/.codex/skills/&lt;id&gt;/
+xactions skills install --all --target windsurf        # ./.windsurf/rules/&lt;id&gt;.md
+xactions skills uninstall --all --target cursor
+</code></pre>
+<p>Where each target puts things, and what it writes:</p>
+<table>
+<thead>
+<tr>
+<th><code>--target</code></th>
+<th>Destination</th>
+<th>What lands there</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>claude</code> (default)</td>
+<td><code>~/.claude/skills/&lt;id&gt;/</code> with <code>--global</code>, else <code>./.claude/skills/&lt;id&gt;/</code></td>
+<td>The skill directory, copied whole, so <code>references/</code> and relative script paths keep working</td>
+</tr>
+<tr>
+<td><code>project</code></td>
+<td><code>./.claude/skills/&lt;id&gt;/</code></td>
+<td>Same as <code>claude</code> without <code>--global</code></td>
+</tr>
+<tr>
+<td><code>cursor</code></td>
+<td><code>./.cursor/rules/&lt;id&gt;.mdc</code></td>
+<td>SKILL.md wrapped in <code>.mdc</code> frontmatter (<code>description</code>, <code>globs: []</code>, <code>alwaysApply: false</code>)</td>
+</tr>
+<tr>
+<td><code>codex</code></td>
+<td><code>~/.codex/skills/&lt;id&gt;/</code> with <code>--global</code>, else <code>./.codex/skills/&lt;id&gt;/</code></td>
+<td>The skill directory, plus a managed block in <code>./AGENTS.md</code> listing every installed SKILL.md</td>
+</tr>
+<tr>
+<td><code>windsurf</code></td>
+<td><code>./.windsurf/rules/&lt;id&gt;.md</code></td>
+<td>SKILL.md wrapped in Windsurf frontmatter (<code>trigger: model_decision</code>)</td>
+</tr>
+</tbody></table>
+<p><code>cursor</code>, <code>windsurf</code> and <code>project</code> are per-project by definition, so <code>--global</code>
+is ignored for them and the command says so.</p>
+<p>Every run is idempotent and reports what it did per skill: <code>installed</code>,
+<code>updated</code> (the copy on disk was stale), <code>unchanged</code>, <code>removed</code>, or <code>absent</code>.
+The rules-file targets carry a <code>Source:</code> line naming the package&#39;s skill
+directory, because a SKILL.md refers to its scripts by relative path and the
+agent needs to know where those resolve. <code>--json</code> on any sub-command prints
+the same report as JSON.</p>
+<p><code>xactions doctor</code> reports how many skills are installed per target, and
+<code>xactions skills list</code> marks each skill with where it was found.</p>
 <h3 id="with-claude-code">With Claude Code</h3>
 <p>Point Claude at the directory. It reads the frontmatter <code>description</code> of each
 skill to decide which one applies to your request:</p>
@@ -523,13 +586,13 @@ does will never get selected.</p>
 </tr>
 <tr>
 <td><a href="../skills/xactions-mcp-server/SKILL.md">XActions MCP Server</a></td>
-<td>144 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze).</td>
+<td>149 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze).</td>
 </tr>
 </tbody></table>
 <hr>
 <h2 id="writing-one">Writing one</h2>
 <ol>
-<li>Copy <a href="https://github.com/nirholas/XActions/blob/main/skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a> to <code>skills/your-skill/SKILL.md</code>.</li>
+<li>Copy <a href="../skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a> to <code>skills/your-skill/SKILL.md</code>.</li>
 <li>Write the frontmatter. Spend the effort on <code>description</code>: name the job and
 the trigger. Compare &quot;Manages bookmarks&quot; with &quot;Organize, export, and
 bulk-clear bookmarks with auto-tagging. Use when someone asks to clean up,
@@ -553,16 +616,16 @@ belong in the skill, because the agent will not infer them.</li>
 <hr>
 <h2 id="related">Related</h2>
 <ul>
-<li><a href="/docs/guides/mcp-setup">MCP Setup</a> — the 144 tools skills drive</li>
-<li><a href="/docs/guides/browser-scripts">Browser Scripts</a> — what most skills reference</li>
-<li><a href="/docs/guides/agents">Agents</a> — the autonomous agent that consumes skills</li>
-<li><a href="/docs/guides/agents">AGENTS.md</a> — integration notes for AI coding assistants</li>
+<li><a href="mcp-setup.md">MCP Setup</a> — the 149 tools skills drive</li>
+<li><a href="browser-scripts.md">Browser Scripts</a> — what most skills reference</li>
+<li><a href="agents.md">Agents</a> — the autonomous agent that consumes skills</li>
+<li><a href="../AGENTS.md">AGENTS.md</a> — integration notes for AI coding assistants</li>
 </ul>
 
     </article>
 
     <div class="page-meta">
-      <span>5 min read</span>
+      <span>7 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/skills.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Skills%20Reference" target="_blank" rel="noopener">Report a problem</a>
     </div>

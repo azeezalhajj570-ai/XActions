@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -526,7 +530,7 @@ cp config/agent-config.example.json data/agent-config.json
   }
 }
 </code></pre>
-<p>See <a href="/docs/guides/agent-config-reference">Config Reference</a> for all options.</p>
+<p>See <a href="agent-config-reference.md">Config Reference</a> for all options.</p>
 <hr>
 <h2 id="running-the-agent">Running the Agent</h2>
 <h3 id="standard-mode-headless-runs-indefinitely">Standard mode (headless, runs indefinitely)</h3>
@@ -580,7 +584,7 @@ curl http://localhost:3001/api/agent/llm-usage?days=30
 # Growth report
 curl http://localhost:3001/api/agent/report?days=30
 </code></pre>
-<p>See <a href="/docs/guides/agent-api-reference">Agent API Reference</a> for all endpoints.</p>
+<p>See <a href="agent-api-reference.md">Agent API Reference</a> for all endpoints.</p>
 <h3 id="logs">Logs</h3>
 <p>The agent prints emoji-coded logs to stdout:</p>
 <table>
@@ -632,11 +636,11 @@ curl http://localhost:3001/api/agent/report?days=30
 <hr>
 <h2 id="next-steps">Next Steps</h2>
 <ul>
-<li><strong><a href="/docs/guides/agent-config-reference">Config Reference</a></strong> — Every configuration option explained</li>
-<li><strong><a href="/docs/guides/agent-api-reference">API Reference</a></strong> — REST API for monitoring and control</li>
-<li><strong><a href="/docs/guides/agent-architecture">Architecture</a></strong> — Deep dive into how every module works</li>
-<li><strong><a href="/docs/guides/content-calendar">Content Calendar</a></strong> — Weekly content planning system</li>
-<li><strong><a href="/docs/guides/agent-advanced">Advanced Features</a></strong> — Multi-account, engagement networks, and more</li>
+<li><strong><a href="agent-config-reference.md">Config Reference</a></strong> — Every configuration option explained</li>
+<li><strong><a href="agent-api-reference.md">API Reference</a></strong> — REST API for monitoring and control</li>
+<li><strong><a href="agent-architecture.md">Architecture</a></strong> — Deep dive into how every module works</li>
+<li><strong><a href="content-calendar.md">Content Calendar</a></strong> — Weekly content planning system</li>
+<li><strong><a href="agent-advanced.md">Advanced Features</a></strong> — Multi-account, engagement networks, and more</li>
 </ul>
 
     </article>

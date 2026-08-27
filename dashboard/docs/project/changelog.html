@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 65 more…</a>
+      <a class="sidebar__link" href="/docs">+ 67 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -101,6 +101,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -195,6 +197,57 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a target="_blank" rel="noopener noreferrer" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h2 id="unreleased">[Unreleased]</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Ask XActions.</strong> <a href="https://xactions.app/ask">xactions.app/ask</a> answers questions about the toolkit in plain language: &quot;how do I unfollow all users&quot; gets the exact script, where to paste it, and its safety features, with clickable sources. Answers are grounded in a retrieval index built from the docs, the 49 skills, the tutorials, every browser script&#39;s header, and the dashboard pages (<code>npm run ask:index</code>, checked by <code>npm run docs:check</code>), plus a live GitHub issue search, and stream through a chain of free LLM lanes: Groq, Cerebras, OpenRouter free models, xAI, Gemini, Mistral, and Cloudflare Workers AI when a key is configured, and LLM7, Pollinations, and OVH with no key at all. The model picker lets you lead with your own key, kept in your browser. <code>POST /api/ask</code> (Server-Sent Events) runs at the Cloudflare edge, in Express, and in the Vercel serverless entry; the page falls back to running the same engine in the browser when no API answers. History is local to the browser and nothing is stored server-side. Docs: <a href="docs/ask.md">docs/ask.md</a>.</li>
+<li><strong>Pinned GraphQL query IDs refreshed against x.com (2026-08-27).</strong> The offline fallback table in <code>src/scrapers/twitter/http/endpoints.js</code> and <code>src/client/api/graphqlQueries.js</code> now carries the IDs x.com serves today, so a fresh install works before the first auto-discovery run. <code>UserByScreenName</code>, <code>TweetDetail</code>, <code>SearchTimeline</code>, <code>Followers</code>, <code>Following</code>, <code>CreateTweet</code> and 16 more had rotated.</li>
+<li><strong><code>xactions/portability</code> subpath export</strong> so <code>import { importTwitterArchive } from &#39;xactions/portability&#39;</code> resolves from an npm install.</li>
+<li><strong>Competitive and structural audit</strong> at <a href="docs/audits/2026-08-27-competitive-and-structural-audit.md">docs/audits/2026-08-27-competitive-and-structural-audit.md</a>: 24 comparable projects surveyed, every gap listed by area, and the repo-health backlog with what this release already closed.</li>
+<li><strong><code>xactions login --cookies-file &lt;path&gt;</code> and <code>xactions login --from-browser [browser]</code>.</strong> Login no longer means pasting <code>auth_token</code> out of DevTools. <code>--cookies-file</code> imports a session from any common export: Netscape <code>cookies.txt</code> (including <code>#HttpOnly_</code> prefixes), Cookie-Editor / EditThisCookie JSON arrays, Playwright / Puppeteer <code>storageState</code>, or a raw <code>auth_token=...; ct0=...</code> header string. <code>--from-browser</code> reads x.com cookies straight out of a locally installed browser: Firefox on every platform, and Chromium-family browsers (chrome, chromium, brave, edge, arc) on Linux (default keyring-less key) and macOS (via the Keychain). Unsupported combinations (Windows Chromium, or a Linux Chromium sealed by the system keyring) print the exact <code>--cookies-file</code> export path to use instead. Both paths extract <code>auth_token</code> + <code>ct0</code> (and any other x.com cookies) and save through the same session storage every later command reads. New reusable module <code>src/client/auth/cookieImport.js</code> exports <code>parseCookieInput</code>, <code>detectCookieFormat</code>, and <code>readBrowserCookies</code> from the package root.</li>
+</ul>
+<h3 id="added-1">Added</h3>
+<ul>
+<li><strong><code>xactions skills</code> and <code>--compact</code>.</strong> <code>xactions skills list|show|install|uninstall</code> copies the bundled SKILL.md catalogue into the place your agent reads: <code>~/.claude/skills/</code> or <code>./.claude/skills/</code> (Claude Code), <code>./.cursor/rules/*.mdc</code> (Cursor), <code>~/.codex/skills/</code> plus a managed <code>AGENTS.md</code> block (Codex), or <code>./.windsurf/rules/</code> (Windsurf), idempotently and with a per-skill report; <code>doctor</code> now counts installs per target. The new global <code>--compact</code> flag prints the read commands (<code>profile</code>, <code>tweets</code>, <code>search</code>, <code>thread</code>, <code>followers</code>, <code>following</code>, <code>non-followers</code>, <code>hashtag</code>, <code>media</code>, <code>analyze</code>) as one tab-separated <code>key=value</code> record per line with only the essential fields, and <code>--fields id,text,likes</code> picks columns; both <code>--json</code> and <code>--compact</code> keep the spinner silent when stdout is a pipe.</li>
+<li><strong>Sweep a whole profile: like, repost, and reply to every post.</strong> Doing this by hand on a hundred-post account is twenty minutes of clicking. <a href="scripts/engageProfile.js"><code>scripts/engageProfile.js</code></a> does it from the console with a floating panel: per-action toggles, speed presets, a 90-second rest every 20 posts, automatic back-off after three failures, DOM-verified actions, progress saved per profile so a reload resumes, undo for likes and reposts, and a JSON export. Replies come from templates (<code>{author}</code>, <code>{name}</code>, never the same one twice in a row) or from an LLM given a one-line brief. Grok works straight from the console because x.com&#39;s CSP allows <code>api.x.ai</code>; every other provider goes through the extension.</li>
+<li><strong><code>xactions engage &lt;username&gt;</code>.</strong> The same sweep from the terminal over the HTTP client: <code>--like --repost --comment</code>, <code>--prompt</code> for AI replies with any provider (OpenRouter, OpenAI, xAI, Anthropic, Ollama, custom URL), <code>--template</code>/<code>--templates-file</code>, <code>--since</code>, <code>--dry-run</code>, <code>--json</code>, and resumable progress in <code>~/.xactions/engage/</code>. Rate limits pause the run and continue.</li>
+<li><strong>Extension LLM relay.</strong> The browser extension now answers <code>LLM_REQUEST</code> messages from page scripts by calling the provider from its service worker, which is not bound by x.com&#39;s Content-Security-Policy. Host permissions were added for OpenRouter, OpenAI, Anthropic, xAI, and localhost.</li>
+<li><strong><code>POST /api/ai/writer/comment</code></strong> and <code>createCommentGenerator()</code> in <code>xactions/ai</code>: prompt-driven reply generation with no voice profile, shared by the CLI, the API, and the extension. Replies are sanitised and regenerated once when they open with boilerplate.</li>
+</ul>
+<h3 id="added-2">Added</h3>
+<ul>
+<li><strong>MCP server: tool filtering, Streamable HTTP, and an approval gate.</strong> <code>XACTIONS_MCP_TOOLS</code> / <code>XACTIONS_MCP_EXCLUDE</code> (or <code>--tools</code> / <code>--exclude</code>) trim the 149-tool list by name, group (<code>read</code>, <code>write</code>, <code>dm</code>, <code>analytics</code>, ...), or <code>x_get_*</code> pattern, and a filtered tool is refused with the group to enable rather than a generic error. <code>xactions-mcp --http [--port 8787] [--host 127.0.0.1]</code> serves the MCP Streamable HTTP transport on <code>/mcp</code>, with bearer auth via <code>XACTIONS_MCP_TOKEN</code>; stdio stays the default. <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code> (or <code>--require-approval</code>) holds every write tool as a draft in <code>~/.xactions/mcp-drafts.json</code> instead of running it, and the always-available <code>x_list_drafts</code>, <code>x_draft_status</code>, <code>x_approve_draft</code>, and <code>x_discard_draft</code> tools manage the queue. Also fixed: <code>x_list_platforms</code> was declared but never handled and now lists every scraper platform with its capabilities and the adapter registry; 32 tool descriptions that were too short to guide a model were rewritten; and a coverage test now fails the build if a declared tool has no handler. Docs: <a href="docs/mcp-setup.md">MCP setup guide</a>.</li>
+</ul>
+<h3 id="added-3">Added</h3>
+<ul>
+<li><strong>GraphQL query IDs refresh themselves from x.com&#39;s bundles.</strong> The HTTP scraper pinned every GraphQL query ID to a value copied from twikit, and X rotates those IDs with each web release; on 2026-08-27, 22 of the 26 pinned IDs were stale, including <code>UserByScreenName</code>, <code>TweetDetail</code> and <code>SearchTimeline</code>. <code>src/scrapers/twitter/http/queryIds.js</code> now loads an x.com page, reads its webpack chunk manifest, downloads <code>main</code> plus the feature chunks that carry our operations, and extracts the live <code>{queryId, operationName}</code> pairs into <code>~/.xactions/query-ids.json</code> (honours <code>XACTIONS_HOME</code>). <code>TwitterHttpClient</code> prefers the cached ID over the pinned one, refreshes once and retries when a call answers <code>404</code> or a <code>400</code> naming the persisted query, and refreshes in the background when the cache is older than 24 hours. The pinned table stays as the offline fallback. <code>queryIdStatus()</code> exposes <code>{cached, fetchedAt, count}</code> for <code>xactions doctor</code>.</li>
+</ul>
+<h3 id="added-4">Added</h3>
+<ul>
+<li><strong>Import your official X archive.</strong> <code>importTwitterArchive(path)</code> in <code>src/portability</code> reads the data export X sends you (the GDPR zip, or the folder you extracted it to) and returns normalised tweets, likes, following, followers, blocks, mutes, DMs grouped by conversation, lists, account, profile and media references. Zips are streamed entry by entry with <code>yauzl</code> so multi-gigabyte archives never have to fit in memory; multi-part files (<code>tweets-part1.js</code>) are merged in order. <code>summarizeArchive</code> and <code>formatArchiveReport</code> produce a counts, date range, busiest year and top hashtag report; <code>exportArchive</code> writes the import in the same JSON/CSV/Markdown/HTML layout <code>export</code> produces, and <code>migrate</code> accepts <code>source: &#39;twitterArchive&#39;</code> to go straight from the zip to a Bluesky or Mastodon dry run. See <a href="docs/portability.md#import-your-x-archive">docs/portability.md</a>.</li>
+</ul>
+<h2 id="350---2026-08-04">[3.5.0] - 2026-08-04</h2>
+<h3 id="added-5">Added</h3>
+<h4 id="a-cli-you-can-find-your-way-around">A CLI you can find your way around</h4>
+<ul>
+<li><strong>Commands are grouped by task.</strong> Running <code>xactions</code> printed fifty-three commands in one flat alphabetical list, which tells a newcomer nothing about where to start and an experienced user nothing about what else exists. The root help now sorts them into eight task-shaped groups (Start here, Read an account, Followers and audience, Search and monitor, Write and grow, Automate, Move data, Low level) with an examples block and pointers to <code>quickstart</code>, per-command help, and completions. The grouping is reconciled against the live command tree, so a newly registered command still appears (under &quot;More&quot;) and a group entry naming a deleted command is caught by a test rather than shipped.</li>
+<li><strong><code>xactions quickstart</code>.</strong> A guided first run that reads what you already have configured and prints the three commands that will produce a result on your machine, then the directions worth exploring next. <code>--json</code> reports the detected setup state (config directory, whether a session is saved, guest or session tier) for scripts and CI.</li>
+<li><strong><code>xactions completion bash|zsh|fish</code>.</strong> Tab completion for every command, sub-command, and flag, generated from the live Commander tree rather than a hand-maintained list, so it stays correct as commands are added. Descriptions are escaped per shell: an unescaped colon in zsh&#39;s <code>name:description</code> format silently truncated half the descriptions, and an apostrophe would have terminated the quoted string early.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong><code>--json</code> now works on every read command.</strong> It was accepted by <code>profile</code> and <code>analyze</code> only; <code>tweets</code>, <code>followers</code>, <code>following</code>, <code>non-followers</code>, <code>search</code>, <code>hashtag</code>, <code>thread</code>, and <code>media</code> rejected it with <code>error: unknown option &#39;--json&#39;</code> despite the docs promising it worked everywhere. All eight now accept it.</li>
+<li><strong><code>--json</code> outranks <code>--output</code> and <code>--google-sheets</code>.</strong> Passing both used to write the file and print nothing, so a script that piped <code>--json</code> while a config supplied <code>--output</code> silently produced no output. <code>--json</code> is now an explicit &quot;give me the data on stdout&quot; and wins.</li>
+</ul>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li><strong><a href="tutorials/05-competitive-intelligence.md">tutorial 05: Read any account like an analyst</a>.</strong> Reading an account report properly (median versus mean, engagement per view versus per follower, lifetime versus recent cadence), comparing accounts, follower overlap, and tracking a series over time. Runs entirely on the guest tier.</li>
+<li><strong><a href="tutorials/06-everything-is-json.md">tutorial 06: Everything is JSON</a>.</strong> XActions as a pipeline component: the real field names, jq filters, chaining commands, exit codes in cron and CI, and where to switch from shell to the Node client. Every snippet was run against live data before it was written down.</li>
+<li><strong>CLI reference corrected.</strong> It carried a hardcoded <code>Version 3.0.0</code>, claimed an X account was required (most reads need none), and steered new users to <code>xactions login</code> (paste cookies out of DevTools) rather than <code>xactions connect</code> (log in through a real browser). It now documents the command groups, <code>quickstart</code>, and <code>completion</code>.</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul>
+<li><code>packages/xactions-mcp</code> raised off the vulnerable 3.4.4 dependency line, clearing the outstanding <code>npm audit</code> advisories. Released as 3.4.8 and carried into this version.</li>
+</ul>
 <h3 id="fixed">Fixed</h3>
 <h4 id="public-reads-work-again-without-a-browser">Public reads work again, without a browser</h4>
 <ul>
@@ -221,7 +274,7 @@
 <li><strong><code>tests/x402-integration.test.js</code> failed for every contributor.</strong> Its skip condition was inverted: it skipped in CI and ran on laptops, so a clean checkout produced 21 red <code>ECONNREFUSED</code> failures. It now probes for a server and skips when there is not one.</li>
 <li>Two A2A tests asserted a hardcoded <code>3.1.0</code> against the real version.</li>
 </ul>
-<h3 id="added">Added</h3>
+<h3 id="added-6">Added</h3>
 <h4 id="examples-and-tutorials">Examples and tutorials</h4>
 <ul>
 <li><strong><a href="examples/"><code>examples/</code></a></strong> — 8 runnable programs, each verified against the live API before release: profile lookup, timeline analysis, offline sentiment reports, a three-network comparison, CSV export, non-follower analysis, a keyword monitor, and an MCP client that drives the server over stdio.</li>
@@ -232,7 +285,7 @@
 <li><strong><code>npm run docs:check</code></strong> fails on a dead relative link, a dead heading anchor, a referenced script that no longer exists, a stale version claim, a wrong MCP tool count, or a documented CLI command that does not exist. It is dependency-free and runs as its own CI job. It found 87 dead links, 25 stale version and tool-count claims, and 11 invented CLI commands on its first run; all are fixed.</li>
 <li><strong><code>npm run docs:scripts</code></strong> regenerates the browser-script catalog from the scripts themselves, so a 93-entry list cannot drift.</li>
 <li><strong><code>npm run check:endpoints</code></strong> probes every GraphQL endpoint and distinguishes a rotated query ID from an endpoint that merely needs a session, which is the failure that silently broke the client above.</li>
-<li>Five docs the index had promised but never had: <a href="/docs/guides/browser-scripts">browser-scripts</a>, <a href="/docs/guides/configuration">configuration</a>, <a href="/docs/guides/database">database</a>, <a href="/docs/guides/skills">skills</a>, <a href="/docs/guides/troubleshooting">troubleshooting</a>.</li>
+<li>Five docs the index had promised but never had: <a href="docs/browser-scripts.md">browser-scripts</a>, <a href="docs/configuration.md">configuration</a>, <a href="docs/database.md">database</a>, <a href="docs/skills.md">skills</a>, <a href="docs/troubleshooting.md">troubleshooting</a>.</li>
 </ul>
 <h4 id="40-new-browser-tools-and-the-command-center-now-covers-108">40 new browser tools, and the Command Center now covers 108</h4>
 <ul>
@@ -275,7 +328,7 @@
 <ul>
 <li>Every script in <code>scripts/twitter/</code> (beyond the two already rewritten) was read end-to-end and fixed where real bugs were found. Highlights: all scripts using top-level <code>const CONFIG</code> broke on re-paste into an already-open DevTools console (a <code>SyntaxError</code>, since <code>const</code>/<code>let</code> bindings persist across console pastes in the same tab) — fixed to <code>var</code> everywhere. Added consistent <code>window.stopX()</code> abort switches to every long-running loop that lacked one. Fixed stale-DOM bugs in <code>mass-unblock.js</code>/<code>mass-unmute.js</code> (cached elements pointing at rows already removed from a virtualized list), a wrong-author-attribution bug on quote-tweets in <code>bookmark-exporter.js</code>, a duplicate-processing risk in the hashtag/location commenters, several <code>window.location.href</code> reloads that silently killed the running script mid-workflow, and wired up half-implemented options (filters, reply templates, video quality selection) that were declared but never actually checked.</li>
 </ul>
-<h3 id="added-1">Added</h3>
+<h3 id="added-7">Added</h3>
 <h4 id="google-cloud-run-deployment-for-the-hosted-api">Google Cloud Run deployment for the hosted API</h4>
 <ul>
 <li><code>deploy/gcp/provision-api.sh</code> + <code>deploy/gcp/cloudbuild-api.yaml</code>: one-shot provisioning (Cloud SQL Postgres, Secret Manager, IAM) and build/deploy for the <code>xactions-api</code> Cloud Run service, reusing the existing Memorystore Redis instance instead of standing up new infra. <code>api/services/jobQueue.js</code>&#39;s Bull queue now namespaces its Redis keys so it can safely share that instance.</li>
@@ -309,7 +362,7 @@
 <li>Repaired every broken documentation cross-link (664 .md links plus repo-file links) and rebuilt the sitemap from 47 stale URLs to 535 real ones.</li>
 </ul>
 <h2 id="322---2026-07-19">[3.2.2] - 2026-07-19</h2>
-<h3 id="added-2">Added</h3>
+<h3 id="added-8">Added</h3>
 <h4 id="xactionsapp-is-live-again-on-cloudflare-pages-free">xactions.app is live again, on Cloudflare Pages (free)</h4>
 <ul>
 <li><code>deploy/cloudflare/</code>: build script + <code>_redirects</code> deploying the full site
@@ -331,13 +384,13 @@ environments without Cloudflare access</li>
 <li>Reliability: end-of-list stall detection that never fired, missing <code>videoComponent</code> selectors, unrevoked Blob URLs, setInterval re-entrancy</li>
 <li><code>src/cli/index.js</code>: <code>await</code> in a non-async SIGINT handler crashed the whole CLI on load</li>
 </ul>
-<h3 id="added-3">Added</h3>
+<h3 id="added-9">Added</h3>
 <h4 id="cloud-run-deployment-for-xactionsapp">Cloud Run deployment for xactions.app</h4>
 <ul>
 <li><code>deploy/gcp/</code>: Dockerfile, nginx config, and Cloud Build pipeline serving the landing page, dashboard, docs, tutorials, and blog with the same clean-URL routing the Vercel deployment had (Vercel deployment is disabled and the domain has been down)</li>
 </ul>
 <h2 id="320---2026-07-19">[3.2.0] - 2026-07-19</h2>
-<h3 id="added-4">Added</h3>
+<h3 id="added-10">Added</h3>
 <h4 id="scraper-toolbox-browser-console">Scraper Toolbox (browser console)</h4>
 <ul>
 <li><code>scripts/twitter/scraper-toolbox.js</code>: interactive on-page control panel for scraping any X timeline (profile, search, list, likes, bookmarks, home)</li>
@@ -359,7 +412,7 @@ environments without Cloudflare access</li>
 <li>Video attachments using the newer <code>videoComponent</code> testid were not detected</li>
 </ul>
 <h2 id="310---2026-02-25">[3.1.0] - 2026-02-25</h2>
-<h3 id="added-5">Added</h3>
+<h3 id="added-11">Added</h3>
 <h4 id="plugin-system">Plugin System</h4>
 <ul>
 <li>Community plugin architecture — create <code>xactions-plugin-*</code> npm packages</li>
@@ -461,14 +514,14 @@ environments without Cloudflare access</li>
 <li>New npm exports: <code>xactions/streaming</code>, <code>xactions/analytics</code>, <code>xactions/plugins</code></li>
 <li><code>xactions-mcp</code> and <code>xactions-agent</code> bin commands</li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed-1">Changed</h3>
 <ul>
 <li>MCP server expanded from ~200 to 140+ registered tools</li>
 <li>Package exports updated for multi-platform scraper paths</li>
 <li>Dependencies updated: vitest 4.x, puppeteer 24.x, added node-cron, better-sqlite3, exceljs</li>
 </ul>
 <h2 id="100---2026-02-11">[1.0.0] - 2026-02-11</h2>
-<h3 id="added-6">Added</h3>
+<h3 id="added-12">Added</h3>
 <ul>
 <li>Initial release</li>
 </ul>
@@ -476,7 +529,7 @@ environments without Cloudflare access</li>
     </article>
 
     <div class="page-meta">
-      <span>14 min read</span>
+      <span>21 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/CHANGELOG.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Changelog" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Architecture — XActions Docs</title>
-<meta name="description" content="XActions v3.4.4 — System architecture, project structure, and design decisions.">
+<meta name="description" content="XActions v3.5.0 — System architecture, project structure, and design decisions.">
 <meta name="keywords" content="xactions, twitter automation, x automation, free, open source, architecture, guides &amp; reference">
 <meta name="author" content="nich (@nichxbt)">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="Architecture — XActions">
-<meta property="og:description" content="XActions v3.4.4 — System architecture, project structure, and design decisions.">
+<meta property="og:description" content="XActions v3.5.0 — System architecture, project structure, and design decisions.">
 <meta property="og:url" content="https://xactions.app/docs/guides/architecture">
 <meta property="og:image" content="https://xactions.app/og-docs.png">
 <meta property="og:site_name" content="XActions">
@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@nichxbt">
 <meta name="twitter:title" content="Architecture — XActions">
-<meta name="twitter:description" content="XActions v3.4.4 — System architecture, project structure, and design decisions.">
+<meta name="twitter:description" content="XActions v3.5.0 — System architecture, project structure, and design decisions.">
 <meta name="twitter:image" content="https://xactions.app/og-docs.png">
 
 <link rel="canonical" href="https://xactions.app/docs/guides/architecture">
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Architecture — XActions Docs",
-  "description": "XActions v3.4.4 — System architecture, project structure, and design decisions.",
+  "description": "XActions v3.5.0 — System architecture, project structure, and design decisions.",
   "url": "https://xactions.app/docs/guides/architecture",
   "image": "https://xactions.app/og-docs.png",
   "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture" aria-current="page">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -257,7 +261,7 @@
     <article class="prose">
 <h1 id="architecture">Architecture</h1>
 <blockquote>
-<p>XActions v3.4.4 — System architecture, project structure, and design decisions.</p>
+<p>XActions v3.5.0 — System architecture, project structure, and design decisions.</p>
 </blockquote>
 <h2 id="high-level-architecture">High-Level Architecture</h2>
 <pre><code>┌──────────────────────────────────────────────────────────────┐
@@ -606,76 +610,76 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><a href="/docs/guides/getting-started">getting-started.md</a></td>
+<td><a href="getting-started.md">getting-started.md</a></td>
 <td>Installation, quick start</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/cli-reference">cli-reference.md</a></td>
+<td><a href="cli-reference.md">cli-reference.md</a></td>
 <td>78+ CLI commands</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/rest-api">rest-api.md</a></td>
+<td><a href="rest-api.md">rest-api.md</a></td>
 <td>175+ REST API endpoints</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/mcp-setup">mcp-setup.md</a></td>
+<td><a href="mcp-setup.md">mcp-setup.md</a></td>
 <td>MCP server for AI agents</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/agents">agents.md</a></td>
+<td><a href="agents.md">agents.md</a></td>
 <td>Autonomous thought leader agent</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/scraping-infrastructure">scraping-infrastructure.md</a></td>
+<td><a href="scraping-infrastructure.md">scraping-infrastructure.md</a></td>
 <td>Proxy, stealth browser, pagination</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/graph">graph.md</a></td>
+<td><a href="graph.md">graph.md</a></td>
 <td>Social graph analysis &amp; visualization</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/streaming">streaming.md</a></td>
+<td><a href="streaming.md">streaming.md</a></td>
 <td>Real-time event streams</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/workflows">workflows.md</a></td>
+<td><a href="workflows.md">workflows.md</a></td>
 <td>Workflow engine</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/plugins">plugins.md</a></td>
+<td><a href="plugins.md">plugins.md</a></td>
 <td>Plugin system</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/analytics">analytics.md</a></td>
+<td><a href="analytics.md">analytics.md</a></td>
 <td>Analytics &amp; sentiment</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/video">video.md</a></td>
+<td><a href="video.md">video.md</a></td>
 <td>Video generation</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/portability">portability.md</a></td>
+<td><a href="portability.md">portability.md</a></td>
 <td>Export, migrate, diff</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/automation">automation.md</a></td>
+<td><a href="automation.md">automation.md</a></td>
 <td>Browser automation framework</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/deployment">deployment.md</a></td>
+<td><a href="deployment.md">deployment.md</a></td>
 <td>Deploy to cloud</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/dom-selectors">dom-selectors.md</a></td>
+<td><a href="dom-selectors.md">dom-selectors.md</a></td>
 <td>X/Twitter DOM selectors</td>
 </tr>
 <tr>
-<td><a href="/docs/guides/engagement-booster">engagement-booster.md</a></td>
+<td><a href="engagement-booster.md">engagement-booster.md</a></td>
 <td>Engagement control panel</td>
 </tr>
 </tbody></table>
 <hr>
-<p><em>XActions v3.4.4 — by nichxbt</em></p>
+<p><em>XActions v3.5.0 — by nichxbt</em></p>
 
     </article>
 
@@ -687,7 +691,7 @@
 
     <nav class="page-nav" aria-label="Previous and next">
       <a class="page-nav__link" href="/docs/guides/analytics-advanced"><span class="page-nav__dir">← Previous</span><span class="page-nav__title">Analytics &amp; Sentiment Analysis</span></a>
-      <a class="page-nav__link page-nav__link--next" href="/docs/guides/audience-overlap"><span class="page-nav__dir">Next →</span><span class="page-nav__title">Audience Overlap Analysis</span></a>
+      <a class="page-nav__link page-nav__link--next" href="/docs/guides/ask"><span class="page-nav__dir">Next →</span><span class="page-nav__title">Ask XActions</span></a>
     </nav>
 
     <div class="callout">

@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -688,6 +692,88 @@ import mastodon from &#39;xactions/scrapers/mastodon&#39;;
 const mastoProfile = await mastodon.getProfile(&#39;user&#39;, &#39;https://mastodon.social&#39;);
 </code></pre>
 <hr>
+<h2 id="graphql-query-id-discovery">GraphQL Query ID Discovery</h2>
+<p>Every GraphQL call to x.com is addressed by a persisted query ID
+(<code>/i/api/graphql/&lt;queryId&gt;/&lt;operationName&gt;</code>). X rotates those IDs whenever it
+ships a new web bundle, and a stale ID answers <code>404 Query not found</code>. That is
+the single most common way a no-API client breaks, and the reason a scraper
+that worked last month stops working with no code change.</p>
+<p>The HTTP scraper refreshes its IDs the way the web client does, from x.com&#39;s
+own JavaScript bundles (<code>src/scrapers/twitter/http/queryIds.js</code>):</p>
+<ol>
+<li>Load an x.com page that still ships the classic client (<code>/home</code>, then
+<code>/i/flow/login</code>). <code>https://x.com/</code> itself is a server-rendered shell with
+no bundles, so it is only a last resort.</li>
+<li>Read the inline webpack runtime&#39;s chunk manifest (chunk name to hash) and the
+<code>main.*.js</code> URL.</li>
+<li>Download <code>main</code> plus the feature chunks that carry the operations XActions
+uses (<code>bundle.LoggedInMain</code>, <code>ondemand.HoverCard</code>, the Bookmarks, HomeTimeline
+and TweetActivity <code>shared~</code> chunks, ...). About 2 MB in total. A full sweep of
+every chunk (<code>scope: &#39;full&#39;</code>) is ~130 MB and only worth it when you need an
+operation outside the table.</li>
+<li>Extract every <code>{queryId, operationName, operationType}</code> descriptor and write
+them to <code>~/.xactions/query-ids.json</code> (or <code>$XACTIONS_HOME/query-ids.json</code>)
+with a <code>fetchedAt</code> timestamp.</li>
+</ol>
+<h3 id="resolution-order">Resolution order</h3>
+<p>For any operation: the cached/discovered ID, then the hardcoded table in
+<code>src/scrapers/twitter/http/endpoints.js</code>. Offline behaviour is unchanged: with
+no cache and no network the hardcoded IDs are used exactly as before. The cache
+wins over the table because it was read from x.com&#39;s live bundle, and the
+table value may have rotated since it was pinned.</p>
+<h3 id="when-it-refreshes">When it refreshes</h3>
+<p><code>TwitterHttpClient</code> handles this on its own:</p>
+<ul>
+<li>A GraphQL call that fails with <code>404</code>, or <code>400</code> with an error naming the
+persisted query, triggers one refresh and one retry with the new ID. If the
+refreshed ID is unchanged, or discovery fails (offline), the original error is
+rethrown. Mutations are only retried when the first attempt was rejected for a
+stale ID, so nothing is ever sent twice.</li>
+<li>When the cache is older than 24 hours, a refresh starts in the background (at
+most once per hour per process) without blocking the call.</li>
+</ul>
+<p>Pass <code>autoRefreshQueryIds: false</code> to the client to turn both off. Under vitest
+the default is off, so unit tests never reach the network unless they opt in.</p>
+<h3 id="api-1">API</h3>
+<pre><code class="language-javascript">import {
+  discoverQueryIds,
+  refreshQueryIds,
+  getQueryId,
+  resolveOperation,
+  queryIdStatus,
+} from &#39;xactions/scrapers/twitter/http/queryIds.js&#39;;
+
+// Probe x.com now and persist the result
+const { count, source, cachePath } = await discoverQueryIds();
+console.log(`${count} operations from ${source.mainBundle} -&gt; ${cachePath}`);
+
+// Cache &gt; discovered &gt; hardcoded, never touches the network
+getQueryId(&#39;TweetDetail&#39;);                 // &#39;XMOz5h24KAZ86qKffKTLdQ&#39;
+resolveOperation(&#39;Likes&#39;);                 // { queryId, operationName: &#39;Favoriters&#39;, source: &#39;cache&#39; }
+
+// Force a refresh (concurrent callers share one in-flight discovery)
+await refreshQueryIds({ fetch: myProxiedFetch, scope: &#39;full&#39; });
+
+// For diagnostics (`xactions doctor` reads this)
+queryIdStatus();                           // { cached, fetchedAt, count, cachePath, stale }
+</code></pre>
+<p><code>resolveOperation</code> accepts either an operationName (<code>Favoriters</code>) or a key of
+the hardcoded table (<code>Likes</code>). <code>src/client/api/graphqlQueries.js</code> reads the same
+cache on every access, so the high-level <code>Scraper</code> client benefits without
+changes.</p>
+<h3 id="verifying-against-live-xcom">Verifying against live x.com</h3>
+<pre><code class="language-bash">node --input-type=module -e &#39;
+import { discoverQueryIds } from &quot;./src/scrapers/twitter/http/queryIds.js&quot;;
+import { GRAPHQL } from &quot;./src/scrapers/twitter/http/endpoints.js&quot;;
+const r = await discoverQueryIds({ persist: false });
+for (const e of Object.values(GRAPHQL)) {
+  const live = r.operations[e.operationName]?.queryId;
+  console.log(e.operationName.padEnd(26), live === e.queryId ? &quot;match&quot; : `differs (${live})`);
+}&#39;
+</code></pre>
+<p>On 2026-08-27 this found 148 operations and 22 of the 26 hardcoded IDs had
+rotated, including <code>UserByScreenName</code>, <code>TweetDetail</code> and <code>SearchTimeline</code>.</p>
+<hr>
 <h2 id="environment-variables">Environment Variables</h2>
 <table>
 <thead>
@@ -727,7 +813,7 @@ const mastoProfile = await mastodon.getProfile(&#39;user&#39;, &#39;https://mast
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scraping-infrastructure.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scraping%20Infrastructure" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -95,6 +95,7 @@
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
       <a class="sidebar__link" href="/docs/guides/analytics-advanced">Analytics &amp; Sentiment Analysis</a>
       <a class="sidebar__link" href="/docs/guides/architecture">Architecture</a>
+      <a class="sidebar__link" href="/docs/guides/ask">Ask XActions</a>
       <a class="sidebar__link" href="/docs/guides/audience-overlap">Audience Overlap Analysis</a>
       <a class="sidebar__link" href="/docs/guides/spaces-agent">Autonomous Space Agent</a>
       <a class="sidebar__link" href="/docs/guides/browser-extension">Browser Extension</a>
@@ -106,6 +107,7 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
@@ -157,7 +159,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup" aria-current="page">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.4.4 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -165,6 +167,8 @@
       <a class="sidebar__link" href="/docs/learn/mcp-with-claude">Tutorial 02 — Claude that can use X</a>
       <a class="sidebar__link" href="/docs/learn/clean-up-your-following">Tutorial 03 — Clean up your following list</a>
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
+      <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
+      <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -396,11 +400,256 @@ npx xactions-mcp
 <td><code>local</code> (default, free) or <code>remote</code></td>
 </tr>
 <tr>
+<td><code>XACTIONS_MCP_TOOLS</code></td>
+<td>No</td>
+<td>Allowlist of tool or group names to expose (see <a href="#tool-filtering">Tool filtering</a>)</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_EXCLUDE</code></td>
+<td>No</td>
+<td>Denylist of tool or group names to hide; wins over the allowlist</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_REQUIRE_APPROVAL</code></td>
+<td>No</td>
+<td><code>1</code> holds every write tool as a draft until approved (see <a href="#approval-mode-draft-before-you-post">Approval mode</a>)</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_TOKEN</code></td>
+<td>No</td>
+<td>Bearer token required on <code>/mcp</code> when running with <code>--http</code></td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_HOST</code></td>
+<td>No</td>
+<td>Bind address for <code>--http</code> (default <code>127.0.0.1</code>)</td>
+</tr>
+<tr>
+<td><code>XACTIONS_HOME</code></td>
+<td>No</td>
+<td>Directory for local state such as <code>mcp-drafts.json</code> (default <code>~/.xactions</code>)</td>
+</tr>
+<tr>
 <td><code>DEBUG</code></td>
 <td>No</td>
 <td>Set to <code>true</code> for verbose error stacks</td>
 </tr>
 </tbody></table>
+<hr>
+<h2 id="tool-filtering">Tool filtering</h2>
+<p>The server ships 149 tools. Most sessions need a handful, and a smaller tool list means a cheaper, more accurate model. Filter with an allowlist, a denylist, or both. Each accepts a comma-separated mix of:</p>
+<ul>
+<li><strong>tool names</strong> such as <code>x_get_profile</code></li>
+<li><strong>group names</strong> such as <code>read</code> or <code>analytics</code></li>
+<li><strong>prefix patterns</strong> such as <code>x_get_*</code></li>
+</ul>
+<p>Groups (run <code>npx xactions-mcp --list-groups</code> to see every member):</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>read</code></td>
+<td>Profiles, followers, tweets, search, threads, media, trends, notifications, <code>x_list_platforms</code></td>
+</tr>
+<tr>
+<td><code>write</code></td>
+<td>Post, reply, quote, like, retweet, bookmark, follow, unfollow, mute, delete, profile edits</td>
+</tr>
+<tr>
+<td><code>dm</code></td>
+<td>Send, list, and export direct messages</td>
+</tr>
+<tr>
+<td><code>lists</code></td>
+<td>X Lists and their members</td>
+</tr>
+<tr>
+<td><code>spaces</code></td>
+<td>Spaces discovery, transcripts, and the live Space agent</td>
+</tr>
+<tr>
+<td><code>analytics</code></td>
+<td>Account reports, growth, engagement, sentiment, bots, influencers, history</td>
+</tr>
+<tr>
+<td><code>ai</code></td>
+<td>Voice analysis, tweet generation, rewriting, summarising, hashtag suggestions</td>
+</tr>
+<tr>
+<td><code>grok</code></td>
+<td>Grok queries and image analysis</td>
+</tr>
+<tr>
+<td><code>automation</code></td>
+<td>Auto-like, auto-follow, smart unfollow, auto-comment, bulk execution</td>
+</tr>
+<tr>
+<td><code>monitoring</code></td>
+<td>Streams, keyword and account monitors, follower alerts, notifications</td>
+</tr>
+<tr>
+<td><code>workflows</code></td>
+<td>Saved workflows, the local scheduler, RSS to tweet drafts</td>
+</tr>
+<tr>
+<td><code>persona</code></td>
+<td>The persona autopilot</td>
+</tr>
+<tr>
+<td><code>graph</code></td>
+<td>Social graph building and analysis</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>Account export and migration, datasets, CRM, teams, format conversion</td>
+</tr>
+<tr>
+<td><code>auth</code></td>
+<td><code>x_login</code></td>
+</tr>
+<tr>
+<td><code>x402</code></td>
+<td>Paid plugin tools, when a plugin registers them</td>
+</tr>
+<tr>
+<td><code>drafts</code></td>
+<td>The four approval tools; these are never filtered out</td>
+</tr>
+</tbody></table>
+<p>The rules match <a target="_blank" rel="noopener noreferrer" href="https://github.com/xdevplatform/xmcp">xdevplatform/xmcp</a>: an empty allowlist means everything, the denylist always wins, and <code>x_list_drafts</code>, <code>x_approve_draft</code>, <code>x_discard_draft</code>, <code>x_draft_status</code> stay available so pending drafts can never be orphaned. <code>tools/list</code> only returns what passes the filter, and calling a hidden tool returns an error naming the group to enable rather than a generic &quot;unknown tool&quot;.</p>
+<p>Environment variables (any client):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;xactions&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;xactions-mcp&quot;],
+      &quot;env&quot;: {
+        &quot;XACTIONS_SESSION_COOKIE&quot;: &quot;your_auth_token_here&quot;,
+        &quot;XACTIONS_MCP_TOOLS&quot;: &quot;read,analytics,x_post_tweet&quot;,
+        &quot;XACTIONS_MCP_EXCLUDE&quot;: &quot;x_get_non_followers&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<p>The same thing as CLI flags (Cursor, <code>.cursor/mcp.json</code>):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;xactions&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;xactions-mcp&quot;, &quot;--tools&quot;, &quot;read,analytics&quot;, &quot;--exclude&quot;, &quot;x_get_*&quot;],
+      &quot;env&quot;: { &quot;XACTIONS_SESSION_COOKIE&quot;: &quot;your_auth_token_here&quot; }
+    }
+  }
+}
+</code></pre>
+<p>Unknown names are reported on stderr at startup and otherwise ignored, so a typo hides nothing silently.</p>
+<hr>
+<h2 id="http-transport">HTTP transport</h2>
+<p>Stdio is the default and is what Claude Desktop, Cursor, Windsurf, and VS Code speak. For a remote client, a shared team server, or a container, run the <a target="_blank" rel="noopener noreferrer" href="https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http">Streamable HTTP</a> transport instead:</p>
+<pre><code class="language-bash">XACTIONS_MCP_TOKEN=$(openssl rand -hex 24) npx xactions-mcp --http --port 8787 --host 127.0.0.1
+</code></pre>
+<ul>
+<li>The MCP endpoint is <code>POST /mcp</code> (plus <code>GET</code> for the event stream and <code>DELETE</code> to end a session). Sessions are managed by the server: the <code>initialize</code> response carries an <code>Mcp-Session-Id</code> header that every later request must echo.</li>
+<li><code>GET /health</code> is unauthenticated and reports tool and session counts.</li>
+<li><code>XACTIONS_MCP_TOKEN</code> turns on bearer auth for everything under <code>/mcp</code>. Without it the server will still start, but only bind it to loopback (the default). Set a token before you change <code>--host</code>.</li>
+<li><code>MCP_TRANSPORT=http</code> and <code>PORT</code> are honoured too, for hosts like Railway that inject them.</li>
+</ul>
+<p>Hand-check it with curl:</p>
+<pre><code class="language-bash">curl -s -i -X POST http://127.0.0.1:8787/mcp \
+  -H &quot;Authorization: Bearer $XACTIONS_MCP_TOKEN&quot; \
+  -H &#39;Content-Type: application/json&#39; -H &#39;Accept: application/json, text/event-stream&#39; \
+  -d &#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;initialize&quot;,&quot;params&quot;:{&quot;protocolVersion&quot;:&quot;2025-06-18&quot;,&quot;capabilities&quot;:{},&quot;clientInfo&quot;:{&quot;name&quot;:&quot;curl&quot;,&quot;version&quot;:&quot;1.0&quot;}}}&#39;
+# copy the mcp-session-id header, then:
+curl -s -X POST http://127.0.0.1:8787/mcp \
+  -H &quot;Authorization: Bearer $XACTIONS_MCP_TOKEN&quot; -H &quot;Mcp-Session-Id: &lt;id&gt;&quot; \
+  -H &#39;Content-Type: application/json&#39; -H &#39;Accept: application/json, text/event-stream&#39; \
+  -d &#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;tools/list&quot;}&#39;
+</code></pre>
+<p>Claude Desktop and Cursor connect to a remote MCP server by URL. Cursor <code>.cursor/mcp.json</code>:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;xactions-remote&quot;: {
+      &quot;url&quot;: &quot;http://127.0.0.1:8787/mcp&quot;,
+      &quot;headers&quot;: { &quot;Authorization&quot;: &quot;Bearer your_token_here&quot; }
+    }
+  }
+}
+</code></pre>
+<p>Tool filtering and approval mode apply to every HTTP session exactly as they do on stdio.</p>
+<hr>
+<h2 id="approval-mode-draft-before-you-post">Approval mode (draft before you post)</h2>
+<p>Giving an agent a live posting tool is a leap of faith. Approval mode, borrowed from <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/x-use">x-use</a>, removes it: with <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code> (or <code>--require-approval</code>) every side-effect tool is <strong>held as a draft instead of executed</strong>. Posting, replying, quoting, liking, retweeting, bookmarking, following, unfollowing, muting, blocking-style profile changes, DM sending, deleting, scheduling, bulk automation, workflow and persona runs, and joining Spaces are all covered; the exact register is <code>WRITE_TOOLS</code> in <code>src/mcp/tool-groups.js</code>. Read and analytics tools run immediately as before.</p>
+<p>A held call returns the draft id:</p>
+<pre><code class="language-json">{
+  &quot;held&quot;: true,
+  &quot;draftId&quot;: &quot;3f9c1a2b&quot;,
+  &quot;tool&quot;: &quot;x_post_tweet&quot;,
+  &quot;args&quot;: { &quot;text&quot;: &quot;Shipping approval mode today.&quot; },
+  &quot;createdAt&quot;: &quot;2026-08-27T05:15:05.512Z&quot;,
+  &quot;message&quot;: &quot;Approval mode is on. \&quot;x_post_tweet\&quot; was saved as draft 3f9c1a2b and has NOT been executed.&quot;,
+  &quot;next&quot;: &quot;Review with x_draft_status, run with x_approve_draft {\&quot;id\&quot;:\&quot;3f9c1a2b\&quot;}, or drop with x_discard_draft.&quot;
+}
+</code></pre>
+<p>Four tools manage drafts and are always available, whatever the tool filter says:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>x_list_drafts</code></td>
+<td>List drafts, newest first; optional <code>status</code> of <code>pending</code>, <code>executed</code>, <code>failed</code>, or <code>all</code></td>
+</tr>
+<tr>
+<td><code>x_draft_status</code></td>
+<td>Show one draft with its arguments, state, and result or error</td>
+</tr>
+<tr>
+<td><code>x_approve_draft</code></td>
+<td>Execute the stored call exactly as submitted; an already-run draft is refused so nothing posts twice</td>
+</tr>
+<tr>
+<td><code>x_discard_draft</code></td>
+<td>Delete a draft without running it</td>
+</tr>
+</tbody></table>
+<p>Drafts live in <code>~/.xactions/mcp-drafts.json</code> (<code>XACTIONS_HOME</code> overrides the directory), written atomically, so a second process, a script, or a person with a text editor can review the queue. The same list, approve, and discard functions are exported from <code>src/mcp/drafts.js</code> for use outside MCP.</p>
+<p>Claude Desktop, read-only session that can still queue posts for you to approve elsewhere:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;xactions&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;xactions-mcp&quot;, &quot;--require-approval&quot;],
+      &quot;env&quot;: {
+        &quot;XACTIONS_SESSION_COOKIE&quot;: &quot;your_auth_token_here&quot;,
+        &quot;XACTIONS_MCP_TOOLS&quot;: &quot;read,analytics,write&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<p>Cursor, approval on with the drafts reviewed in the same chat:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;xactions&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;xactions-mcp&quot;],
+      &quot;env&quot;: {
+        &quot;XACTIONS_SESSION_COOKIE&quot;: &quot;your_auth_token_here&quot;,
+        &quot;XACTIONS_MCP_REQUIRE_APPROVAL&quot;: &quot;1&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<p>A typical exchange: the agent calls <code>x_post_tweet</code>, gets draft <code>3f9c1a2b</code> back, and shows you the text. You say &quot;approve it&quot;, the agent calls <code>x_approve_draft {&quot;id&quot;:&quot;3f9c1a2b&quot;}</code>, and only then does the tweet go out.</p>
 <hr>
 <h2 id="available-tools">Available Tools</h2>
 <h3 id="scraping-free-no-api-key-needed">Scraping (free, no API key needed)</h3>
@@ -618,7 +867,7 @@ npx puppeteer browsers install chrome
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>8 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/mcp-setup.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20MCP%20Server%20Setup%20Guide" target="_blank" rel="noopener">Report a problem</a>
     </div>
