@@ -28,7 +28,7 @@ export const GROUPS = [
   {
     title: 'Start here',
     hint: 'Set up and verify the install',
-    commands: ['quickstart', 'doctor', 'connect', 'login', 'logout', 'mcp-config', 'skills', 'info'],
+    commands: ['quickstart', 'doctor', 'connect', 'login', 'logout', 'mcp-config', 'skills', 'drafts', 'info'],
   },
   {
     title: 'Read an account',
@@ -69,7 +69,7 @@ export const GROUPS = [
   {
     title: 'Move data',
     hint: 'Export, import, convert, migrate, diff',
-    commands: ['export', 'export-data', 'import', 'convert', 'migrate', 'diff'],
+    commands: ['export', 'export-data', 'archive', 'import', 'convert', 'migrate', 'diff'],
   },
   {
     title: 'Low level',

@@ -264,6 +264,134 @@ async function checkSkills() {
 }
 
 /**
+ * Human age of an ISO timestamp for the query-ID line: `12m old`, `3h old`.
+ * @param {string} iso
+ * @param {number} [now=Date.now()]
+ * @returns {string}
+ */
+export function formatCacheAge(iso, now = Date.now()) {
+  const ms = now - Date.parse(iso);
+  if (!Number.isFinite(ms) || ms < 0) return 'unknown age';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return 'under a minute old';
+  if (minutes < 60) return `${minutes}m old`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h old`;
+  return `${Math.floor(hours / 24)}d old`;
+}
+
+/**
+ * Turn a query-ID cache status into a check result. Pure, so it is testable
+ * without a cache on disk or a network.
+ * @param {{cached: boolean, fetchedAt: string|null, count: number, cachePath: string, stale: boolean}} status
+ * @param {number} [now=Date.now()]
+ * @returns {CheckResult}
+ */
+export function describeQueryIds(status, now = Date.now()) {
+  if (!status.cached) {
+    return {
+      status: 'warn',
+      detail: 'No discovered query IDs cached; the pinned table in endpoints.js is in use',
+      fix: `Run \`xactions doctor --refresh-ids\` to pull the current IDs from x.com into ${status.cachePath}.`,
+    };
+  }
+  const age = status.fetchedAt ? formatCacheAge(status.fetchedAt, now) : 'unknown age';
+  if (status.stale) {
+    return {
+      status: 'warn',
+      detail: `${status.count} query IDs cached, ${age}, past the 24h freshness window`,
+      fix: 'Run `xactions doctor --refresh-ids`. A stale ID answers "404 Query not found" the day X ships a new bundle.',
+    };
+  }
+  return { status: 'ok', detail: `${status.count} query IDs cached, ${age} (${status.cachePath})` };
+}
+
+/**
+ * Are the GraphQL query IDs fresh. With `refresh`, discover them from x.com
+ * first and report that run instead.
+ * @param {{refresh?: boolean}} [options]
+ * @returns {Promise<CheckResult>}
+ */
+async function checkQueryIds({ refresh = false } = {}) {
+  const { queryIdStatus, refreshQueryIds } = await import('../../scrapers/twitter/http/queryIds.js');
+  if (refresh) {
+    try {
+      const result = await refreshQueryIds();
+      return { status: 'ok', detail: `Refreshed ${result.count} query IDs from x.com into ${result.cachePath}` };
+    } catch (error) {
+      const previous = describeQueryIds(queryIdStatus());
+      return {
+        status: 'fail',
+        detail: `Refresh failed: ${error.message}. Still using: ${previous.detail}`,
+        fix: 'Check your network and any proxy, then run `xactions doctor --refresh-ids` again.',
+      };
+    }
+  }
+  return describeQueryIds(queryIdStatus());
+}
+
+/**
+ * Turn account-pool stats into a check result. Pure, for tests.
+ * @param {{storePath: string, total: number, locked: number, available: number, coolingDown: number, nextResetAt: number|null}|null} stats
+ *   null when no pool database exists yet
+ * @param {string} storePath
+ * @param {number} [now=Date.now()]
+ * @returns {CheckResult}
+ */
+export function describeAccounts(stats, storePath, now = Date.now()) {
+  if (!stats) {
+    return {
+      status: 'warn',
+      detail: `No account pool at ${storePath}; every call uses the single saved session`,
+      fix: 'Optional. Add sessions with createAccountPool().add() to spread rate limits over several accounts.',
+    };
+  }
+  if (stats.total === 0) {
+    return { status: 'warn', detail: `Account pool at ${storePath} is empty`, fix: 'Add at least one account to the pool, or delete the file.' };
+  }
+  const parts = [`${stats.total} account${stats.total === 1 ? '' : 's'}`, `${stats.available} available`];
+  if (stats.coolingDown > 0) {
+    const wait = stats.nextResetAt ? `, next reset in ${Math.max(0, Math.ceil((stats.nextResetAt - now) / 60000))}m` : '';
+    parts.push(`${stats.coolingDown} rate limited${wait}`);
+  }
+  if (stats.locked > 0) parts.push(`${stats.locked} locked`);
+  const detail = parts.join(', ');
+  if (stats.available === 0 && stats.coolingDown === 0) {
+    return { status: 'fail', detail, fix: 'Every pooled account is locked (401/403). Refresh their cookies and unlock them, or remove them from the pool.' };
+  }
+  if (stats.locked > 0) {
+    return { status: 'warn', detail, fix: 'A locked account answered 401/403. Refresh its cookies, then unlock it.' };
+  }
+  return { status: 'ok', detail };
+}
+
+/**
+ * Is a multi-account pool configured, and how much of it can serve right now.
+ * Only opens the database when one already exists, so doctor never creates one.
+ * @returns {Promise<CheckResult>}
+ */
+async function checkAccounts() {
+  try {
+    const { resolveCacheDir } = await import('../../scrapers/twitter/http/queryIds.js');
+    const storePath = path.join(resolveCacheDir(), 'accounts.db');
+    try {
+      await fs.access(storePath);
+    } catch {
+      return describeAccounts(null, storePath);
+    }
+    const { createAccountPool } = await import('../../scrapers/twitter/http/accountPool.js');
+    const pool = createAccountPool({ storePath });
+    try {
+      return describeAccounts(pool.stats(), storePath);
+    } finally {
+      pool.close();
+    }
+  } catch (error) {
+    return { status: 'fail', detail: `Could not read the account pool: ${error.message}`, fix: 'Delete or repair accounts.db under ~/.xactions (or XACTIONS_HOME).' };
+  }
+}
+
+/**
  * Print the result of one check.
  * @param {string} name
  * @param {CheckResult} result
@@ -276,9 +404,10 @@ function printCheck(name, result) {
 
 /**
  * Run every check and summarise.
+ * @param {{refreshIds?: boolean}} [options]
  * @returns {Promise<void>}
  */
-export async function doctorCommand() {
+export async function doctorCommand(options = {}) {
   console.log(chalk.cyan(`\n⚡ XActions doctor  ${chalk.gray(`v${VERSION}`)}\n`));
 
   const results = [];
@@ -300,6 +429,7 @@ export async function doctorCommand() {
   await run('Browser', await checkBrowser());
   await run('MCP server', await checkMcp());
   await run('Skills', await checkSkills());
+  await run('GraphQL query IDs', await checkQueryIds({ refresh: Boolean(options.refreshIds) }));
 
   console.log('');
   console.log(chalk.bold('  Guest tier'), chalk.gray('(works with no account)'));
@@ -312,6 +442,7 @@ export async function doctorCommand() {
   printCheck('Session saved', stored);
   results.push(stored);
   await run('Session valid', await checkSessionLive(stored));
+  await run('Accounts', await checkAccounts());
 
   const failed = results.filter((r) => r.status === 'fail').length;
   const warned = results.filter((r) => r.status === 'warn').length;
@@ -335,6 +466,7 @@ export async function doctorCommand() {
 export function registerDoctorCommand(program) {
   program
     .command('doctor')
-    .description('Check the install, the guest tier, the saved session and the MCP server')
-    .action(doctorCommand);
+    .description('Check the install, the guest tier, the saved session, the query-ID cache and the MCP server')
+    .option('--refresh-ids', 'Discover the current GraphQL query IDs from x.com before checking them')
+    .action((options) => doctorCommand(options));
 }

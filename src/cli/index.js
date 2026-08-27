@@ -26,6 +26,8 @@ import { registerQuickstartCommand } from './commands/quickstart.js';
 import { registerCompletionCommand } from './commands/completion.js';
 import { registerEngageCommand } from './commands/engage.js';
 import { registerSkillsCommand } from './commands/skills.js';
+import { registerDraftsCommand } from './commands/drafts.js';
+import { registerArchiveCommand } from './commands/archive.js';
 import { renderRootHelp } from './help-groups.js';
 import { createSpinner, printCompact, resolveOutputMode } from '../utils/output.js';
 
@@ -258,6 +260,8 @@ registerEngageCommand(program, { createHttpScraper, loadConfig, configDir: CONFI
 registerQuickstartCommand(program, { version: VERSION });
 registerCompletionCommand(program);
 registerSkillsCommand(program);
+registerDraftsCommand(program);
+registerArchiveCommand(program);
 
 // ============================================================================
 // Auth Commands

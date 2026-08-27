@@ -350,6 +350,20 @@ Cursor, approval on with the drafts reviewed in the same chat:
 
 A typical exchange: the agent calls `x_post_tweet`, gets draft `3f9c1a2b` back, and shows you the text. You say "approve it", the agent calls `x_approve_draft {"id":"3f9c1a2b"}`, and only then does the tweet go out.
 
+### Approve drafts from the terminal
+
+You do not have to go back through the agent to release a draft. `xactions drafts` reads the same `mcp-drafts.json` the server writes:
+
+```bash
+xactions drafts list                # id, status, age, tool, argument summary
+xactions drafts show 3f9c1a2b       # the full arguments
+xactions drafts approve 3f9c1a2b    # runs it through the server's own dispatcher
+xactions drafts approve --all       # every pending draft, oldest first
+xactions drafts discard 3f9c1a2b    # drop it
+```
+
+This is the setup for a read-only agent session where a person releases posts from a shell: give the agent `XACTIONS_MCP_REQUIRE_APPROVAL=1`, and review the queue with `xactions drafts list` whenever you like. Both sides honour `XACTIONS_HOME`, so point them at the same directory if you have moved it. Full reference: [cli-reference.md](cli-reference.md#drafts-approve-mcp-write-calls-from-the-terminal).
+
 ---
 
 ## Available Tools

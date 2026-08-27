@@ -2469,3 +2469,77 @@ Any raw field of the underlying record can also be named in `--fields` (for exam
 
 `--compact` outranks `--output` and `--google-sheets`, the same way `--json` does. When stdout is a pipe, both `--json` and `--compact` keep the spinner completely silent, so nothing lands on stderr but a real error.
 
+---
+
+## Drafts (approve MCP write calls from the terminal)
+
+When an MCP client runs with `XACTIONS_MCP_REQUIRE_APPROVAL=1`, every write tool call (post, reply, like, follow, DM, delete, ...) is held in `~/.xactions/mcp-drafts.json` instead of running. `xactions drafts` is the terminal side of that queue: read exactly what the agent wanted to do, release it, or drop it. `XACTIONS_HOME` moves the store; the MCP server and this command read the same file.
+
+```bash
+xactions drafts list                    # newest first: id, status, age, tool, args
+xactions drafts list --status pending   # pending, executed, failed, or all
+xactions drafts show 3f9c1a2b           # full arguments, and the result or error once it ran
+xactions drafts approve 3f9c1a2b        # run it now, exactly as submitted
+xactions drafts approve --all           # every pending draft, oldest first
+xactions drafts discard 3f9c1a2b        # delete without running
+xactions drafts clear                   # drop executed and failed drafts, keep pending ones
+```
+
+```
+  ID        STATUS    AGE       TOOL                      ARGS
+  3f9c1a2b  pending   4m        x_post_tweet              text="Shipping approval mode today."
+  a81d02c7  executed  2h        x_follow_user             username="nasa"
+
+  2 drafts, 1 pending. Approve one with `xactions drafts approve <id>`, everything with `--all`.
+```
+
+Approval replays the call through the MCP server's own dispatcher, so an approved draft runs the same code path the live tool would have. A draft that already ran is refused, so nothing posts twice; a failed run keeps the draft with its error so you can read it with `show` and retry by re-creating it. Every sub-command takes `--json`; errors under `--json` come back as `{"error": "..."}` with exit code 1. The MCP server is only loaded by `approve`, so `list`, `show`, `discard` and `clear` are instant.
+
+## Archive (the X data export, without scraping)
+
+X hands you your full history as a zip (Settings > Your account > Download an archive of your data). `xactions archive` reads that zip, or the folder you extracted it to, straight from disk. Nothing here needs a login or the network.
+
+```bash
+xactions archive summary twitter-2026-01-01-abc123.zip
+xactions archive summary ./twitter-export --sections tweets,likes --top 5 --json
+xactions archive export twitter-2026-01-01-abc123.zip --out exports/me
+xactions archive export twitter-2026-01-01-abc123.zip --out exports/me --formats json,csv
+xactions archive migrate twitter-2026-01-01-abc123.zip --to bluesky
+xactions archive migrate twitter-2026-01-01-abc123.zip --to bluesky --execute --handle me.bsky.social --password app-pass
+xactions archive migrate twitter-2026-01-01-abc123.zip --to mastodon --execute --instance https://fosstodon.org --token ...
+```
+
+| Sub-command | Does |
+|-------------|------|
+| `summary <zip-or-folder>` | Counts per section, tweet date range, tweets per year, busiest year, top hashtags and mentions, likes and retweets received. `--sections` reads only the named sections (fast on a multi-gigabyte zip), `--top <n>` sizes the hashtag and mention lists. |
+| `export <zip-or-folder> --out <dir>` | Writes the archive in the same layout `xactions export` produces: `profile.json`, `tweets.json`, `following.json`, ... plus CSV, Markdown and an `index.html` viewer. `--formats json,csv,md,html` picks a subset. The result works with `xactions diff` and `xactions migrate` unchanged. |
+| `migrate <zip-or-folder> --to bluesky\|mastodon` | Stages `tweets.json` and `following.json` from the archive (into `--out`, default `exports/<archive>_migration`) and runs the migration. Dry run by default; `--execute` needs `--handle` and `--password` (Bluesky app password) or `--token` and `--instance` (Mastodon). |
+
+```
+✔ Read twitter-2026-01-01-abc123.zip (zip)
+
+  X archive for @nichxbt (zip)
+  Account created: 2019-03-01
+  Tweets span:     2024-01-01 to 2025-03-16
+
+  Tweets       5 (3 original, 1 replies, 1 retweets, 2 with media)
+  Likes        2
+  Following    3
+  ...
+  Top hashtags
+    #xactions  3
+```
+
+A spinner tracks the scan (`Scanning 4/12 data/tweets.js`, `Parsed tweets (18,204 records) from data/tweets.js`). Under `--json` with stdout piped, the spinner is silent and only the document is printed, so `xactions archive summary me.zip --json | jq .counts` works as expected.
+
+## Doctor: query IDs and account pool
+
+`xactions doctor` has two extra lines beyond the environment and session checks:
+
+- **GraphQL query IDs.** X rotates the persisted query IDs of its GraphQL operations whenever it ships a new web bundle, and a stale one answers `404 Query not found`. The line reports how many discovered IDs are cached in `~/.xactions/query-ids.json`, how old they are, and warns past the 24 hour freshness window. `xactions doctor --refresh-ids` discovers the current IDs from x.com before running the checks and reports the refresh result. With no cache, the pinned table in `src/scrapers/twitter/http/endpoints.js` is in use, which is fine until X rotates.
+- **Accounts.** If a multi-account pool exists (`~/.xactions/accounts.db`), the line reports how many accounts are configured, how many can serve right now, how many are cooling down on a rate limit (with the next reset), and how many are locked after a 401/403. With no pool it says so as a warning and moves on; doctor never creates one.
+
+```
+  ✓ GraphQL query IDs   142 query IDs cached, 3h old (/home/me/.xactions/query-ids.json)
+  ! Accounts            No account pool at /home/me/.xactions/accounts.db; every call uses the single saved session
+```
