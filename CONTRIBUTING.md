@@ -128,6 +128,23 @@ When filing an issue, please include:
 
 By contributing, you agree that your contributions will be licensed under the Apache 2.0 License.
 
+### Borrowing from other projects
+
+We learn from other open source projects, and we do it by their rules. Before
+you bring anything in from elsewhere, check the upstream LICENSE file itself,
+not the README's claim:
+
+- **MIT, BSD, ISC, Apache-2.0, Unlicense, CC0**: you may adapt the code. Keep the
+  upstream copyright and licence notice in the file you put it in, and add a row
+  to [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+- **GPL, LGPL, AGPL, SSPL, MPL, CC-BY-SA, or no LICENSE file at all**: ideas only.
+  Read it, understand the mechanism, write your own. Do not paste a line.
+
+Endpoint paths, query IDs, header names and rate-limit numbers are observations
+of X's behaviour rather than someone's creative work, so those can be recorded
+from any source. Matching a public API's shape is fine everywhere too. When in
+doubt, add the dependency instead of copying it.
+
 ---
 
 **Thank you for helping make XActions better!** ⚡

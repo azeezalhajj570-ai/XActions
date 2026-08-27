@@ -1,0 +1,69 @@
+# Third-party notices
+
+XActions is Apache-2.0. This file records every outside project whose code or
+design shaped part of this repository, what was taken, and under which licence.
+It exists for two reasons: Apache-2.0 obliges us to keep upstream attribution
+with adapted code, and a project that borrows well should say so.
+
+Nothing here is vendored: no third-party source tree is copied into this
+repository. The entries below are either small adaptations written into our own
+modules, or designs we reimplemented from scratch.
+
+## What we may take, and from whom
+
+Our licence choice constrains what can be copied in. The rule is simple and
+non-negotiable:
+
+| Upstream licence | What we may do |
+|---|---|
+| MIT, BSD, ISC, Apache-2.0, Unlicense, CC0 | **Adapt the code**, keeping the upstream copyright line and licence in the file that carries it, and add a row below |
+| GPL, LGPL, AGPL, SSPL, MPL | **Ideas only.** Read it, understand the mechanism, write our own. Never paste a line, never a derivative file |
+| CC-BY-SA and other share-alike | **Ideas only**, same as copyleft |
+| No LICENSE file at all | **Ideas only.** No licence means no grant, whatever the README says |
+
+Two practical notes. Facts are not expression: an endpoint path, a query ID, a
+header name, or a rate-limit number can be recorded from any source, because
+those are observations of X's behaviour rather than someone's creative work.
+And an interface is not an implementation: reading a project's public API to
+match a shape is fine everywhere on this table.
+
+When in doubt, add the dependency instead of copying it, or write it yourself.
+
+## Code adapted into XActions
+
+| Upstream | Licence | What we adapted | Where it lives |
+|---|---|---|---|
+| [d60/twikit](https://github.com/d60/twikit) | MIT | GraphQL endpoint table, feature-flag defaults, and v1.1 REST paths, since verified and refreshed against x.com's own bundles | `src/scrapers/twitter/http/endpoints.js`, `src/client/api/graphqlQueries.js` |
+| [the-convocation/twitter-scraper](https://github.com/the-convocation/twitter-scraper) | MIT | The public guest bearer token and parts of the media and timeline parsing shapes | `src/scrapers/twitter/http/endpoints.js`, `src/scrapers/twitter/http/media.js` |
+| [nirholas/xeepy](https://github.com/nirholas/xeepy) | Apache-2.0 (same author) | Tool behaviours ported from the Python twin | `src/mcp/server.js` |
+
+## Designs reimplemented, no code taken
+
+| Upstream | Licence | The idea we took | Our implementation |
+|---|---|---|---|
+| [vladkens/twscrape](https://github.com/vladkens/twscrape) | MIT | An account pool that leases the least-recently-used session and parks one until its rate-limit window resets | `src/scrapers/twitter/http/accountPool.js` |
+| [ihuzaifashoukat/x-use](https://github.com/ihuzaifashoukat/x-use) | MIT | Holding every write as a draft for human approval, and daily per-account action caps that survive a restart | `src/mcp/drafts.js`, `src/mcp/action-caps.js` |
+| [xdevplatform/xmcp](https://github.com/xdevplatform/xmcp) | No LICENSE file, ideas only | Trimming a large tool list with an allowlist so a client's context is not flooded | `src/mcp/tool-groups.js` |
+| [steipete/bird](https://github.com/steipete/bird) | Ideas only | Refreshing GraphQL query IDs from x.com's own JavaScript bundles rather than pinning them | `src/scrapers/twitter/http/queryIds.js` |
+| [Altimis/Scweet](https://github.com/Altimis/Scweet) | MIT | Saving a cursor per run so an interrupted scrape resumes where it stopped | `src/scrapers/twitter/http/checkpoint.js` |
+| Stripe and GitHub webhook conventions | Documentation | Signing `<timestamp>.<body>` so a captured delivery cannot be replayed | `src/notifications/webhook.js` |
+
+## Deliberately not copied
+
+These solve problems we care about, and their licences do not allow their code
+in an Apache-2.0 project. Where we want the capability, we write our own.
+
+| Upstream | Licence | Why it is ideas-only for us |
+|---|---|---|
+| [mikf/gallery-dl](https://github.com/mikf/gallery-dl) | GPL-2.0 | Copyleft. Its media coverage is a benchmark to match, not a source to copy |
+| [alkihis/twitter-archive-reader](https://github.com/alkihis/twitter-archive-reader) | CC-BY-SA-4.0 | Share-alike. Our archive importer was written from the file format, not from its code |
+| [gitroomhq/postiz-app](https://github.com/gitroomhq/postiz-app) | AGPL-3.0 | Strong copyleft. Scheduling ideas only |
+| [mahrtayyab/tweety](https://github.com/mahrtayyab/tweety) | No LICENSE file | No grant, so no code |
+
+## Adding to this file
+
+If you adapt third-party code, do three things in the same change: keep the
+upstream copyright and licence notice in the file you put it in, add a row to
+the table above, and say in the pull request which upstream file it came from.
+If you only took the idea, add a row to the second table instead. If the
+upstream is copyleft, share-alike, or unlicensed, do not send the code at all.
