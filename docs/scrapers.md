@@ -131,6 +131,76 @@ const opts = {
 
 ---
 
+## Communities, notifications, trends and Spaces (HTTP client)
+
+These run on the HTTP client, not Puppeteer: no browser starts, and each call is
+one GraphQL request. Import them from `xactions/scrapers/twitter/http`, or reach
+them as methods on the object `createHttpScraper()` returns. Every read here
+needs a logged-in session (`xactions login`); trends by place are the exception
+and work on the guest tier.
+
+```js
+import { createHttpScraper } from 'xactions/scrapers/twitter/http';
+
+const x = await createHttpScraper({ cookie: process.env.X_COOKIE });
+
+const community = await x.scrapeCommunity('1493446837214187523');
+const posts = await x.scrapeCommunityTweets(community.id, { limit: 100 });
+const mine = await x.scrapeMyCommunities();
+```
+
+### Communities
+
+| Function | Description |
+|----------|-------------|
+| `scrapeCommunity(id)` | Community details: name, description, member count, rules, moderators |
+| `scrapeCommunityTweets(id, opts)` | Community timeline, `{ ranking: 'latest' \| 'top' }` |
+| `scrapeCommunityMedia(id, opts)` | Media posts from a community |
+| `searchCommunityTweets(query, opts)` | Search within communities |
+| `scrapeMyCommunities(opts)` | Communities the logged-in account belongs to |
+| `scrapeCommunityDiscovery(opts)` | Communities X suggests |
+| `joinCommunity(id)` / `leaveCommunity(id)` | Membership mutations |
+| `requestToJoinCommunity(id, opts)` | Ask to join a restricted community |
+
+### Notifications
+
+| Function | Description |
+|----------|-------------|
+| `scrapeNotifications(opts)` | The full notifications timeline as typed events |
+| `scrapeMentions(opts)` | The Mentions tab only |
+| `scrapeVerifiedNotifications(opts)` | The Verified tab only |
+
+Each entry is normalised to `{ id, type, users, tweet, timestamp }`, where
+`type` is one of `follow`, `like`, `retweet`, `reply`, `mention`, `quote` or
+`generic`, so a notification handler can switch on it without reading X's raw
+entry shapes.
+
+### Trends, highlights and Spaces
+
+| Function | Description |
+|----------|-------------|
+| `scrapeTrends(opts)` | Trends for the account's own location |
+| `scrapeTrendsByWoeid(woeid)` | Trends for a place; `1` is worldwide |
+| `scrapeTrendLocations()` | Every place X publishes trends for, with WOEIDs |
+| `scrapeExplorePage(opts)` | The Explore tab, tab by tab |
+| `scrapeHighlights(user, opts)` | Posts an account pinned to its Highlights tab |
+| `scrapeArticles(user, opts)` | Long-form Articles by an account |
+| `scrapeVerifiedFollowers(user, opts)` | Verified followers only |
+| `scrapeFollowersYouKnow(user, opts)` | Followers the logged-in account also follows |
+| `scrapeAudioSpace(spaceId)` | Space details: title, state, host, speakers, listener count |
+
+```js
+// What is trending in Japan right now (woeid 23424856)
+const jp = await x.scrapeTrendsByWoeid(23424856);
+console.log(jp.map((t) => `${t.name} (${t.postCount ?? 'n/a'})`).join('\n'));
+```
+
+The query IDs behind all of these are discovered from x.com at runtime and
+cached, so they keep working when X rotates them. See
+[Scraping infrastructure](scraping-infrastructure.md#graphql-query-id-discovery).
+
+---
+
 ## Adapter System
 
 Swap browser backends without changing scraper code.

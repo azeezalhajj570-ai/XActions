@@ -86,9 +86,17 @@ function resolveSecret(secret) {
  * @param {string} secret
  * @returns {string} e.g. "sha256=ab12..."
  */
-export function signWebhookBody(rawBody, secret) {
+export function signWebhookBody(rawBody, secret, timestamp) {
   if (!secret) throw new Error('signWebhookBody: a secret is required');
-  const hex = createHmac('sha256', secret).update(rawBody).digest('hex');
+  if (!Number.isFinite(Number(timestamp))) {
+    throw new Error('signWebhookBody: a unix-seconds timestamp is required');
+  }
+  // The timestamp is part of the signed payload, not just a header. Signing
+  // the body alone would let anyone who captured one delivery replay it for
+  // ever by rewriting the timestamp header to the present. Same construction
+  // Stripe and GitHub use: HMAC over `<timestamp>.<body>`.
+  const signed = `${timestamp}.${typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8')}`;
+  const hex = createHmac('sha256', secret).update(signed).digest('hex');
   return `sha256=${hex}`;
 }
 
@@ -126,17 +134,22 @@ export function verifyWebhookSignature(rawBody, headers, secret, options = {}) {
   const signature = headerValue(headers, HEADER_SIGNATURE);
   if (!signature) return { valid: false, reason: `missing ${HEADER_SIGNATURE} header` };
 
-  const expected = Buffer.from(signWebhookBody(rawBody, secret));
+  // The timestamp is signed, so it is required even when the freshness check
+  // is switched off: without it there is nothing to verify against.
+  const timestampRaw = headerValue(headers, HEADER_TIMESTAMP);
+  const timestamp = Number(timestampRaw);
+  if (!Number.isFinite(timestamp)) {
+    return { valid: false, reason: `missing or invalid ${HEADER_TIMESTAMP} header` };
+  }
+
+  const expected = Buffer.from(signWebhookBody(rawBody, secret, timestamp));
   const received = Buffer.from(String(signature));
   if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
     return { valid: false, reason: 'signature mismatch' };
   }
 
-  const timestampRaw = headerValue(headers, HEADER_TIMESTAMP);
-  const timestamp = Number(timestampRaw);
   const tolerance = options.toleranceSeconds ?? DEFAULT_TOLERANCE_SECONDS;
   if (tolerance > 0) {
-    if (!Number.isFinite(timestamp)) return { valid: false, reason: `missing or invalid ${HEADER_TIMESTAMP} header` };
     const now = options.now ?? Math.floor(Date.now() / 1000);
     if (Math.abs(now - timestamp) > tolerance) {
       return { valid: false, reason: `timestamp outside ${tolerance}s tolerance` };
@@ -277,7 +290,7 @@ export async function deliverWebhook({
       'X-XActions-Timestamp': String(timestamp),
       'X-XActions-Event': event,
       'X-XActions-Delivery': id,
-      ...(key ? { 'X-XActions-Signature': signWebhookBody(body, key) } : {}),
+      ...(key ? { 'X-XActions-Signature': signWebhookBody(body, key, timestamp) } : {}),
     };
 
     const started = Date.now();

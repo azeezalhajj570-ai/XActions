@@ -366,6 +366,78 @@ This is the setup for a read-only agent session where a person releases posts fr
 
 ---
 
+## Daily action caps
+
+X suspends accounts that follow, like or post faster than a person could. Its
+limits are enforced on X's side, but by the time X says "over the limit" the
+account is already flagged. XActions keeps an agent under the line on purpose:
+every write tool is charged against a rolling 24 hour budget for its action
+class, and a call that would go over is refused before anything reaches X.
+
+The ledger lives in `~/.xactions/action-ledger.json` (honours `XACTIONS_HOME`),
+so a budget spent this morning is still spent after a restart, a crash, or a
+fresh `npx xactions-mcp`. A cap that resets when the process does is not a cap.
+
+Nothing needs configuring: the defaults apply the moment the server starts.
+
+| Class | Default per 24h | Tools charged to it |
+|-------|-----------------|---------------------|
+| `post` | 2400 | `x_post_tweet`, `x_post_thread`, `x_create_poll`, `x_schedule_post`, `x_publish_article`, `x_persona_run`, `x_workflow_run` |
+| `reply` | 2400 | `x_reply`, `x_quote_tweet`, `x_auto_comment` |
+| `like` | 500 | `x_like`, `x_auto_like`, `x_bookmark` |
+| `repost` | 500 | `x_retweet`, `x_auto_retweet` |
+| `follow` | 400 | `x_follow`, `x_auto_follow`, `x_follow_engagers` |
+| `unfollow` | 400 | `x_unfollow`, `x_unfollow_non_followers`, `x_unfollow_all`, `x_smart_unfollow` |
+| `dm` | 500 | `x_send_dm` |
+| `block` | 500 | `x_block_user` |
+| `mute` | 500 | `x_mute_user`, `x_unmute_user` |
+| `delete` | 2400 | `x_delete_tweet`, `x_clear_bookmarks` |
+
+The published sources are X's own limits page (2,400 posts and 500 direct
+messages a day, 400 follows a day). Classes X does not publish a number for
+reuse the closest published figure, deliberately on the low side.
+
+Ask for the remaining budget at any time with the `x_action_budget` tool, which
+is always available and never charged:
+
+```json
+{
+  "account": "nichxbt",
+  "windowHours": 24,
+  "classes": {
+    "follow": { "cap": 400, "used": 37, "remaining": 363, "resetAt": "2026-08-28T09:14:02.113Z" }
+  }
+}
+```
+
+A refused call answers with the class, the cap, and when the next slot frees, so
+an agent can wait rather than retry into a suspension:
+
+```json
+{
+  "error": "Daily cap reached for \"follow\" on account \"nichxbt\": 400/400 in the last 24h.",
+  "code": "ACTION_CAP_EXCEEDED",
+  "resetAt": "2026-08-28T09:14:02.113Z"
+}
+```
+
+### Changing the caps
+
+Set `XACTIONS_ACTION_CAPS` to a JSON object, or write the same shape to
+`~/.xactions/action-caps.json`. A flat map sets every account; an `accounts` key
+sets one. `0` disables a class entirely.
+
+```bash
+XACTIONS_ACTION_CAPS='{"follow":150,"like":300,"accounts":{"brand":{"post":50}}}'
+```
+
+Which account a call is charged to is, in order: the server's `account` option,
+`XACTIONS_ACCOUNT`, the username of the saved session, then `default`. Approving
+a held draft is charged the same as running the tool directly, so the approval
+gate cannot be used to spend past a cap.
+
+---
+
 ## Available Tools
 
 ### Scraping (free, no API key needed)
