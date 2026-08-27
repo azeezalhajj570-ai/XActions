@@ -303,8 +303,8 @@ describe('getQueryId / resolveOperation precedence', () => {
     // The client-side registry reads live on every access
     expect(GRAPHQL_ENDPOINTS.UserByScreenName.queryId).toBe(LIVE.UserByScreenName);
     expect(GRAPHQL_ENDPOINTS.Likes.queryId).toBe(LIVE.Favoriters);
-    // The hardcoded table itself is untouched
-    expect(GRAPHQL.UserByScreenName.queryId).not.toBe(LIVE.UserByScreenName);
+    // The hardcoded table itself is untouched by discovery
+    expect(GRAPHQL.UserByScreenName.queryId).toBe(pinnedBefore);
   });
 
   it('ignores a corrupt cache file', () => {
@@ -374,25 +374,26 @@ describe('isStaleQueryIdError', () => {
 // ---------------------------------------------------------------------------
 
 describe('TwitterHttpClient stale query ID handling', () => {
-  const hardcodedUrl = (op) => `https://x.com/i/api/graphql/${GRAPHQL[op].queryId}/${op}`;
+  // A pinned ID from an older release, modelled as the live ID with a different final character.
+  const stale = (op) => LIVE[op].slice(0, -1) + (LIVE[op].endsWith('0') ? '1' : '0');
+  const staleUrl = (op) => `https://x.com/i/api/graphql/${stale(op)}/${op}`;
   const liveUrl = (op) => `https://x.com/i/api/graphql/${LIVE[op]}/${op}`;
 
   it('on a 404 refreshes the IDs from x.com and retries once with the new ID', async () => {
     const payload = { data: { user: { result: { rest_id: '1' } } } };
     const fetch = bundleFetch({
-      [hardcodedUrl('UserByScreenName')]: () => textResponse(404, '{"errors":[{"message":"Query not found"}]}'),
+      [staleUrl('UserByScreenName')]: () => textResponse(404, '{"errors":[{"message":"Query not found"}]}'),
       [liveUrl('UserByScreenName')]: () => textResponse(200, JSON.stringify(payload)),
     });
     // Route on the URL prefix: the GraphQL GET carries query params
     const routed = vi.fn((url, opts) => fetch(url.split('?')[0], opts));
 
     const client = new TwitterHttpClient({ fetch: routed, maxRetries: 0, autoRefreshQueryIds: true });
-    const { queryId, operationName } = GRAPHQL.UserByScreenName;
-    const result = await client.graphql(queryId, operationName, { screen_name: 'nichxbt' });
+    const result = await client.graphql(stale('UserByScreenName'), 'UserByScreenName', { screen_name: 'nichxbt' });
 
     expect(result.data).toEqual(payload);
     const graphqlCalls = routed.mock.calls.map(([u]) => u.split('?')[0]).filter((u) => u.includes('/i/api/graphql/'));
-    expect(graphqlCalls).toEqual([hardcodedUrl('UserByScreenName'), liveUrl('UserByScreenName')]);
+    expect(graphqlCalls).toEqual([staleUrl('UserByScreenName'), liveUrl('UserByScreenName')]);
     expect(routed.mock.calls.filter(([u]) => u === 'https://x.com/home').length).toBe(1);
     // The refreshed ID is now cached for later calls
     expect(getQueryId('UserByScreenName')).toBe(LIVE.UserByScreenName);
@@ -401,15 +402,17 @@ describe('TwitterHttpClient stale query ID handling', () => {
   it('on a 400 naming the persisted query, refreshes and retries once', async () => {
     const payload = { data: { tweetResult: {} } };
     const fetch = bundleFetch({
-      [hardcodedUrl('TweetDetail')]: () =>
+      [staleUrl('TweetDetail')]: () =>
         textResponse(400, '{"errors":[{"message":"PersistedQueryNotFound: unknown operation"}]}'),
       [liveUrl('TweetDetail')]: () => textResponse(200, JSON.stringify(payload)),
     });
     const routed = vi.fn((url, opts) => fetch(url.split('?')[0], opts));
     const client = new TwitterHttpClient({ fetch: routed, maxRetries: 0, autoRefreshQueryIds: true });
 
-    const result = await client.graphql(GRAPHQL.TweetDetail.queryId, 'TweetDetail', { focalTweetId: '1' });
+    const result = await client.graphql(stale('TweetDetail'), 'TweetDetail', { focalTweetId: '1' });
     expect(result.data).toEqual(payload);
+    const graphqlCalls = routed.mock.calls.map(([u]) => u.split('?')[0]).filter((u) => u.includes('/i/api/graphql/'));
+    expect(graphqlCalls).toEqual([staleUrl('TweetDetail'), liveUrl('TweetDetail')]);
   });
 
   it('rethrows the original error when discovery fails (offline)', async () => {
