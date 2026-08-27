@@ -92,10 +92,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/client": "^5.7.1",
-    "@remotion/bundler": "^4.0.428",
-    "@remotion/cli": "^4.0.428",
-    "@remotion/player": "^4.0.428",
-    "@remotion/renderer": "^4.0.428",
     "axios": "^1.15.2",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.10.0",
@@ -109,7 +105,6 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.1",
     "express-validator": "^7.0.1",
-    "googleapis": "^171.4.0",
     "helmet": "^7.1.0",
     "inquirer": "^9.2.0",
     "jsonwebtoken": "^9.0.2",
@@ -122,7 +117,6 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "redis": "^4.6.11",
-    "remotion": "^4.0.428",
     "socket.io": "^4.7.5",
     "stripe": "^14.10.0",
     "yauzl": "^3.4.0"
@@ -138,12 +132,17 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@remotion/bundler": "^4.0.428",
+    "@remotion/cli": "^4.0.428",
+    "@remotion/player": "^4.0.428",
+    "@remotion/renderer": "^4.0.428",
     "archiver": "^5.3.2",
     "eslint": "^10.9.1",
     "globals": "^17.11.0",
     "jsdom": "^28.1.0",
     "marked": "^17.0.3",
     "nodemon": "^3.0.2",
+    "remotion": "^4.0.428",
     "supertest": "^6.3.4",
     "vitest": "^4.0.18"
   },
@@ -212,24 +211,28 @@
   "peerDependencies": {
     "cheerio": ">=1.0.0",
     "crawlee": ">=3.0.0",
+    "googleapis": "^171.4.0",
     "got-scraping": ">=4.0.0",
     "playwright": ">=1.40.0",
     "selenium-webdriver": ">=4.0.0"
   },
   "peerDependenciesMeta": {
-    "playwright": {
-      "optional": true
-    },
     "cheerio": {
       "optional": true
     },
     "crawlee": {
       "optional": true
     },
-    "selenium-webdriver": {
+    "googleapis": {
       "optional": true
     },
     "got-scraping": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    },
+    "selenium-webdriver": {
       "optional": true
     }
   }
