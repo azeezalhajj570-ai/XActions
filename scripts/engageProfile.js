@@ -20,6 +20,19 @@
 // A floating panel appears when you paste. Everything below can also be changed there.
 // Start in dry run. Read the log. Then switch it off.
 
+/**
+ * ============================================================
+ * ⚡ Engage Profile
+ * ============================================================
+ *
+ * @name        engageProfile.js
+ * @description Like, repost, and comment on every post of one profile, with comments from your templates or from an LLM.
+ * @author      nichxbt (https://x.com/nichxbt)
+ * @version     1.0.0
+ * @date        2026-08-27
+ * @repository  https://github.com/nirholas/XActions
+ * ============================================================
+ */
 (() => {
   'use strict';
 

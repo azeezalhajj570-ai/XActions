@@ -1,21 +1,5 @@
 [
   {
-    "slug": "engage-profile",
-    "title": "A toast that means X is pushing back",
-    "description": "scripts/engageProfile.js",
-    "category": "Other Tools",
-    "icon": "⚡",
-    "sourceDir": "scripts"
-  },
-  {
-    "slug": "search-sweep",
-    "title": "A toast that means X is pushing back",
-    "description": "scripts/searchSweep.js",
-    "category": "Other Tools",
-    "icon": "⚡",
-    "sourceDir": "scripts"
-  },
-  {
     "slug": "account-health-monitor",
     "title": "Account Health Monitor",
     "description": "Comprehensive health check for your X/Twitter account.",
@@ -590,6 +574,14 @@
     "category": "Messaging",
     "icon": "🔒",
     "sourceDir": "src"
+  },
+  {
+    "slug": "engage-profile",
+    "title": "Engage Profile",
+    "description": "Like, repost, and comment on every post of one profile, with comments from your templates or from an LLM.",
+    "category": "Other Tools",
+    "icon": "⚡",
+    "sourceDir": "scripts"
   },
   {
     "slug": "engagement-analytics",
@@ -1429,6 +1421,14 @@
     "description": "",
     "category": "Scrapers",
     "icon": "🔍",
+    "sourceDir": "scripts"
+  },
+  {
+    "slug": "search-sweep",
+    "title": "Search Sweep",
+    "description": "Delete, like, repost, or reply to every post an X search returns. Built for \"remove every reply I ever sent this account\".",
+    "category": "Other Tools",
+    "icon": "⚡",
     "sourceDir": "scripts"
   },
   {

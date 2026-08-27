@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A toast that means X is pushing back — Free X/Twitter Script | XActions</title>
-  <meta name="description" content="scripts/searchSweep.js">
+  <title>Search Sweep — Free X/Twitter Script | XActions</title>
+  <meta name="description" content="Delete, like, repost, or reply to every post an X search returns. Built for &quot;remove every reply I ever sent this account&quot;.">
   <meta name="keywords" content="xactions, twitter automation, x automation, browser script, devtools console, free, open source, search, sweep, other tools">
   <meta name="author" content="nich (@nichxbt)">
   <meta name="robots" content="index, follow">
 
   <meta property="og:type" content="article">
-  <meta property="og:title" content="A toast that means X is pushing back — XActions">
-  <meta property="og:description" content="scripts/searchSweep.js">
+  <meta property="og:title" content="Search Sweep — XActions">
+  <meta property="og:description" content="Delete, like, repost, or reply to every post an X search returns. Built for &quot;remove every reply I ever sent this account&quot;.">
   <meta property="og:url" content="https://xactions.app/scripts/search-sweep">
   <meta property="og:site_name" content="XActions">
   <meta property="og:image" content="https://xactions.app/og-image.png">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@nichxbt">
-  <meta name="twitter:title" content="A toast that means X is pushing back — XActions">
-  <meta name="twitter:description" content="scripts/searchSweep.js">
+  <meta name="twitter:title" content="Search Sweep — XActions">
+  <meta name="twitter:description" content="Delete, like, repost, or reply to every post an X search returns. Built for &quot;remove every reply I ever sent this account&quot;.">
 
   <link rel="canonical" href="https://xactions.app/scripts/search-sweep">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
@@ -28,8 +28,8 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "A toast that means X is pushing back — Free X/Twitter Script | XActions",
-    "description": "scripts/searchSweep.js",
+    "headline": "Search Sweep — Free X/Twitter Script | XActions",
+    "description": "Delete, like, repost, or reply to every post an X search returns. Built for \"remove every reply I ever sent this account\".",
     "url": "https://xactions.app/scripts/search-sweep",
     "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
     "publisher": { "@type": "Organization", "name": "XActions", "url": "https://xactions.app" },
@@ -47,7 +47,7 @@
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xactions.app" },
       { "@type": "ListItem", "position": 2, "name": "Scripts", "item": "https://xactions.app/scripts" },
       { "@type": "ListItem", "position": 3, "name": "Other Tools", "item": "https://xactions.app/scripts#other-tools" },
-      { "@type": "ListItem", "position": 4, "name": "A toast that means X is pushing back", "item": "https://xactions.app/scripts/search-sweep" }
+      { "@type": "ListItem", "position": 4, "name": "Search Sweep", "item": "https://xactions.app/scripts/search-sweep" }
     ]
   }
   </script>
@@ -112,9 +112,9 @@
 
     <main class="main-content" id="main-content">
       <header class="main-header">
-        <h1>⚡ A toast that means X is pushing back</h1>
+        <h1>⚡ Search Sweep</h1>
         <div class="breadcrumb">
-          <a href="/">Home</a> › <a href="/scripts">Scripts</a> › <a href="/scripts#other-tools">Other Tools</a> › A toast that means X is pushing back
+          <a href="/">Home</a> › <a href="/scripts">Scripts</a> › <a href="/scripts#other-tools">Other Tools</a> › Search Sweep
         </div>
       </header>
 
@@ -123,13 +123,13 @@
         <span class="source-badge">scripts</span>
 
         <div class="meta-row">
-          
-          
-          <span>1482 lines</span>
+          <span>v1.0.0</span>
+          <span>Updated: 2026-08-27</span>
+          <span>1495 lines</span>
           <span>by <a href="https://x.com/nichxbt" rel="noopener">@nichxbt</a></span>
         </div>
 
-        <p>scripts/searchSweep.js</p>
+        <p>Delete, like, repost, or reply to every post an X search returns. Built for &quot;remove every reply I ever sent this account&quot;.</p>
 
         
 
@@ -287,6 +287,19 @@
 //
 // DELETION IS PERMANENT. Export your posts first with scripts/backupAccount.js.
 
+/**
+ * ============================================================
+ * 🔍 Search Sweep
+ * ============================================================
+ *
+ * @name        searchSweep.js
+ * @description Delete, like, repost, or reply to every post an X search returns. Built for &quot;remove every reply I ever sent this account&quot;.
+ * @author      nichxbt (https://x.com/nichxbt)
+ * @version     1.0.0
+ * @date        2026-08-27
+ * @repository  https://github.com/nirholas/XActions
+ * ============================================================
+ */
 (() =&gt; {
   'use strict';
 
@@ -1751,8 +1764,7 @@
     <aside class="sidebar-right">
       <div class="sidebar-card">
         <h3>⚡ Other Tools</h3>
-        <a href="/scripts/engage-profile">⚡ A toast that means X is pushing back</a>
-<a href="/scripts/account-misc">⚡ Account Misc</a>
+        <a href="/scripts/account-misc">⚡ Account Misc</a>
 <a href="/scripts/ad-campaign-manager">⚡ Ad Campaign Manager</a>
 <a href="/scripts/advanced-creator">⚡ Advanced Creator</a>
 <a href="/scripts/advanced-dm">⚡ Advanced DM</a>
@@ -1761,6 +1773,7 @@
 <a href="/scripts/advanced-premium">⚡ Advanced Premium</a>
 <a href="/scripts/advanced-settings">⚡ Advanced Settings</a>
 <a href="/scripts/audit-console-errors">⚡ Audit Console Errors</a>
+<a href="/scripts/community-manager">⚡ Community Manager</a>
       </div>
       <div class="sidebar-card">
         <h3>🔗 Quick Links</h3>

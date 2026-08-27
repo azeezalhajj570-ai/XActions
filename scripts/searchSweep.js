@@ -30,6 +30,19 @@
 //
 // DELETION IS PERMANENT. Export your posts first with scripts/backupAccount.js.
 
+/**
+ * ============================================================
+ * 🔍 Search Sweep
+ * ============================================================
+ *
+ * @name        searchSweep.js
+ * @description Delete, like, repost, or reply to every post an X search returns. Built for "remove every reply I ever sent this account".
+ * @author      nichxbt (https://x.com/nichxbt)
+ * @version     1.0.0
+ * @date        2026-08-27
+ * @repository  https://github.com/nirholas/XActions
+ * ============================================================
+ */
 (() => {
   'use strict';
 
