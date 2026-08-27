@@ -480,6 +480,80 @@ rotated, including `UserByScreenName`, `TweetDetail` and `SearchTimeline`.
 
 ---
 
+## Account Pool and Resumable Scrapes (HTTP scraper)
+
+One X session gets roughly 50 GraphQL calls per operation per 15-minute window, which caps a single-account follower scrape at about 1,000 users before it stalls. The HTTP scraper solves this the way [twscrape](https://github.com/vladkens/twscrape) does: a pool of accounts in SQLite, per-account per-operation rate-limit tracking from the `x-rate-limit-*` headers, and automatic rotation. Interrupted scrapes resume from a saved cursor, the idea behind [Scweet](https://github.com/Altimis/Scweet)'s resume mode.
+
+Both live in `src/scrapers/twitter/http/` and are exported from `xactions/src/scrapers/twitter/http/index.js`.
+
+### Account pool
+
+```javascript
+import { createAccountPool, createPooledClient, createCheckpoint, scrapeFollowers } from 'xactions/src/scrapers/twitter/http/index.js';
+import fs from 'node:fs';
+
+// Accounts persist in $XACTIONS_HOME/accounts.db (default ~/.xactions/accounts.db).
+// Cookies accept a header string, Netscape cookies.txt text, a Cookie-Editor JSON
+// export, Playwright storageState, an array of { name, value }, or authToken + ct0.
+const pool = createAccountPool({
+  accounts: [
+    { name: 'main', authToken: process.env.X_AUTH_TOKEN_1, ct0: process.env.X_CT0_1 },
+    { name: 'alt', cookies: fs.readFileSync('./alt-cookies.txt', 'utf8'), proxy: 'socks5://127.0.0.1:1080' },
+  ],
+});
+
+// Manage it like a CLI would
+pool.add({ name: 'third', cookies: 'auth_token=...; ct0=...' });
+pool.importCookies('fourth', fs.readFileSync('./cookies.json', 'utf8'));
+pool.remove('third');
+console.log(pool.list());   // [{ name, proxy, locked, lockReason, lastUsed, limits: { Followers: { remaining, resetAt, coolingDown } } }]
+console.log(pool.stats());  // { total, locked, leased, available, coolingDown, nextResetAt, accounts }
+```
+
+Each account gets its own `TwitterHttpClient` with its cookies and proxy (proxies route through undici's `ProxyAgent`). `acquire(operation)` leases the least-recently-used account that is unlocked and outside its rate-limit window for that operation; when every account is cooling down it waits for the earliest reset (bounded by `maxWaitMs`, default 15 minutes) and throws an `AccountPoolError` naming the next reset when the wait would exceed the budget.
+
+```javascript
+const lease = await pool.acquire('Followers', { maxWaitMs: 60_000 });
+try {
+  const page = await lease.client.graphql(queryId, 'Followers', variables);
+} finally {
+  lease.release();
+}
+pool.markLocked('alt', 'challenge required'); // skipped by acquire until pool.unlock('alt')
+```
+
+### Pooled client
+
+`createPooledClient(pool)` exposes the same `graphql()`, `request()`, `rest()`, and `graphqlPaginate()` as a single client and passes as the `client` argument of every scraper. A 429 (or a response whose `x-rate-limit-remaining` reaches 0) records the window and retries the same call on the next account; a 401/403 locks the account and moves on. After every account has been tried the last error is rethrown.
+
+```javascript
+const client = createPooledClient(pool, {
+  maxAccounts: 3,                    // most accounts one call may try (default: pool size)
+  onRotate: ({ from, operation, reason }) => console.log(`${operation}: ${from} ${reason}`),
+});
+
+const followers = await scrapeFollowers(client, 'elonmusk', { limit: 5000 });
+```
+
+### Resumable scrapes
+
+A checkpoint is a small JSON file (`{ cursor, count, updatedAt, meta }`) written atomically after every page under `$XACTIONS_HOME/checkpoints/`. Pass it as the `checkpoint` option of `scrapeFollowers`, `scrapeFollowing`, `scrapeLikers`, `scrapeRetweeters`, `scrapeListMembers`, `scrapeTweets`, `scrapeTweetsAndReplies`, or `searchTweets`. A run that starts with a saved checkpoint continues from its cursor, and the `count` already collected is subtracted from `limit`, so re-running the same command finishes the job. The file is deleted when the scrape completes.
+
+```javascript
+const checkpoint = createCheckpoint({ key: 'followers:elonmusk' });
+
+// Run 1 dies at page 400 (rate-limit wall, network drop, Ctrl-C).
+// Run 2, same call, starts at the page-400 cursor with the remaining budget.
+const rest = await scrapeFollowers(client, 'elonmusk', { limit: 50000, checkpoint });
+
+console.log(checkpoint.resume()); // null once finished; otherwise { cursor, count, updatedAt, meta }
+checkpoint.clear();               // start over
+```
+
+Because a resumed run returns only the users fetched after the cursor, write results out as they arrive (for example from `onProgress`, or by appending each run's output) rather than relying on a single final array.
+
+---
+
 ## Environment Variables
 
 | Variable | Description |

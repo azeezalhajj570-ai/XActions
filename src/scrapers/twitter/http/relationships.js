@@ -18,6 +18,7 @@ import {
   buildGraphQLUrl,
 } from './endpoints.js';
 import { AuthError, NotFoundError } from './errors.js';
+import { bindCheckpoint } from './checkpoint.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -208,16 +209,24 @@ async function resolveUserId(client, username) {
  * @param {object} client — TwitterHttpClient instance
  * @param {object} endpoint — `{ queryId, operationName }` from GRAPHQL map
  * @param {object} baseVariables — Variables for the first page (e.g. `{ userId }`)
- * @param {object} options — `{ limit, cursor, onProgress }`
+ * @param {object} options — `{ limit, cursor, onProgress, checkpoint }`; a
+ *   `checkpoint` from `createCheckpoint()` resumes from its saved cursor and
+ *   records the cursor after every page (see checkpoint.js)
  * @param {string} responseDataPath — Dot-path to instructions in response
  * @returns {Promise<object[]>} — Array of parsed user objects
  */
 async function scrapeUserList(client, endpoint, baseVariables, options = {}, responseDataPath) {
-  const { limit = DEFAULT_LIMIT, cursor: initialCursor = null, onProgress } = options;
+  const { limit: requestedLimit = DEFAULT_LIMIT, cursor: initialCursor = null, onProgress } = options;
   const { queryId, operationName } = endpoint;
+  const checkpoint = bindCheckpoint(options.checkpoint, {
+    cursor: initialCursor,
+    limit: requestedLimit,
+    meta: { operation: operationName, ...baseVariables },
+  });
+  const limit = checkpoint.limit;
 
   const seen = new Map(); // username → user (deduplication)
-  let nextCursor = initialCursor;
+  let nextCursor = checkpoint.cursor;
   let pageNum = 0;
 
   while (seen.size < limit) {
@@ -254,8 +263,10 @@ async function scrapeUserList(client, endpoint, baseVariables, options = {}, res
 
     nextCursor = cursor;
     pageNum++;
+    checkpoint.record(cursor, seen.size);
   }
 
+  checkpoint.complete();
   return Array.from(seen.values()).slice(0, limit);
 }
 

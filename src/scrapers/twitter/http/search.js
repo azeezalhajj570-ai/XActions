@@ -11,6 +11,7 @@
  */
 
 import { GRAPHQL, REST_BASE } from './endpoints.js';
+import { bindCheckpoint } from './checkpoint.js';
 import { parseTweetData, parseTimelineInstructions } from './tweets.js';
 import { parseUserData } from './profile.js';
 import { NotFoundError, TwitterApiError } from './errors.js';
@@ -120,7 +121,7 @@ export function buildAdvancedQuery(options = {}) {
  */
 export async function searchTweets(client, query, options = {}) {
   const {
-    limit = 100,
+    limit: requestedLimit = 100,
     type = 'Latest',
     cursor = null,
     onProgress,
@@ -148,8 +149,10 @@ export async function searchTweets(client, query, options = {}) {
   const rawQuery = advancedParts.join(' ');
 
   const { queryId, operationName } = GRAPHQL.SearchTimeline;
+  const checkpoint = bindCheckpoint(options.checkpoint, { cursor, limit: requestedLimit, meta: { operation: operationName, rawQuery, product: type } });
+  const limit = checkpoint.limit;
   const allTweets = [];
-  let nextCursor = cursor;
+  let nextCursor = checkpoint.cursor;
 
   while (allTweets.length < limit) {
     const variables = {
@@ -179,8 +182,10 @@ export async function searchTweets(client, query, options = {}) {
     // No more pages or no new tweets
     if (!bottomCursor || tweets.length === 0) break;
     nextCursor = bottomCursor;
+    checkpoint.record(bottomCursor, allTweets.length);
   }
 
+  checkpoint.complete();
   return allTweets.slice(0, limit);
 }
 

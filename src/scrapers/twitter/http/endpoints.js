@@ -91,6 +91,35 @@ export const GRAPHQL = {
   // ---- Mutations (bookmarks) ----
   CreateBookmark:  { queryId: 'aoDbu3RHznuiSkQ9aNM67Q', operationName: 'CreateBookmark' },            // live x.com bundle, 2026-08-27 — also in scraper
   DeleteBookmark:  { queryId: 'Wlmlj2-xzyS1GN3a6cj-mQ', operationName: 'DeleteBookmark' },           // live x.com bundle, 2026-08-27
+
+  // ---- Queries (communities) ----
+  CommunityByRestId:                         { queryId: 'KW2CcDlT6D26JLajPjL5KA', operationName: 'CommunityByRestId' },                         // live x.com bundle, 2026-08-27
+  CommunityTweetsTimeline:                   { queryId: 'EwftYyqQemkckQ0wzGM6uw', operationName: 'CommunityTweetsTimeline' },                   // live x.com bundle, 2026-08-27 (rankingMode Recency|Relevance)
+  CommunityMediaTimeline:                    { queryId: 'ESJtwnI_apuGesbJncpc0Q', operationName: 'CommunityMediaTimeline' },                    // live x.com bundle, 2026-08-27
+  GlobalCommunitiesPostSearchTimeline:       { queryId: 'PgGU9J7vYfQ7vCGUICnMDQ', operationName: 'GlobalCommunitiesPostSearchTimeline' },       // live x.com bundle, 2026-08-27 (post search, Top)
+  GlobalCommunitiesLatestPostSearchTimeline: { queryId: 'OLcWToLopIqEtIQLgMeH9g', operationName: 'GlobalCommunitiesLatestPostSearchTimeline' }, // live x.com bundle, 2026-08-27 (post search, Latest)
+  CommunitiesMembershipsTimeline:            { queryId: '5CAFmEfqEEHpaQh5OvMf5Q', operationName: 'CommunitiesMembershipsTimeline' },            // live x.com bundle, 2026-08-27 (viewer's communities)
+  CommunityDiscoveryTimeline:                { queryId: 'mIfTIPdezu2obBzq1q1q6Q', operationName: 'CommunityDiscoveryTimeline' },                // live x.com bundle, 2026-08-27
+
+  // ---- Mutations (communities) ----
+  JoinCommunity:          { queryId: 'aUN7S2onDMr0Mp19QNT3Sw', operationName: 'JoinCommunity' },          // live x.com bundle, 2026-08-27
+  LeaveCommunity:         { queryId: 'pIi88QWEs6LWhfm0-8pXDw', operationName: 'LeaveCommunity' },         // live x.com bundle, 2026-08-27
+  RequestToJoinCommunity: { queryId: 'bdUGDQcMiz2p_8j9aEqx6A', operationName: 'RequestToJoinCommunity' }, // live x.com bundle, 2026-08-27
+
+  // ---- Queries (notifications, auth required) ----
+  NotificationsTimeline: { queryId: '8kmedJD_u653xqEjZIS7yA', operationName: 'NotificationsTimeline' }, // live x.com bundle, 2026-08-27 (timeline_type All|Verified|Mentions)
+
+  // ---- Queries (explore / trends) ----
+  ExplorePage: { queryId: 'jo4rJIWiO5pQlMk6FYphZQ', operationName: 'ExplorePage' }, // live x.com bundle, 2026-08-27
+
+  // ---- Queries (profile side-timelines) ----
+  UserHighlightsTweets:  { queryId: 'ryXhzHPlD6YJE137gSf7mQ', operationName: 'UserHighlightsTweets' },  // live x.com bundle, 2026-08-27
+  UserArticlesTweets:    { queryId: 'ZmMjUyrTpwYfTGAdylEyMw', operationName: 'UserArticlesTweets' },    // live x.com bundle, 2026-08-27
+  BlueVerifiedFollowers: { queryId: 'u3PkPbg--arppBcwNbF1ig', operationName: 'BlueVerifiedFollowers' }, // live x.com bundle, 2026-08-27
+  FollowersYouKnow:      { queryId: 'VFqixXkwK2VqJ9PedvCNqg', operationName: 'FollowersYouKnow' },      // live x.com bundle, 2026-08-27
+
+  // ---- Queries (spaces) ----
+  AudioSpaceById: { queryId: 'Bh0L6azTQoMs9rJKeCF4wQ', operationName: 'AudioSpaceById' }, // live x.com bundle, 2026-08-27
 };
 
 /**

@@ -52,8 +52,10 @@ import {
   buildGroups,
   GROUP_NAMES,
   ALWAYS_AVAILABLE_TOOLS,
+  resolveActionCharge,
 } from './tool-groups.js';
 import * as drafts from './drafts.js';
+import * as actionCaps from './action-caps.js';
 
 // ============================================================================
 // Configuration
@@ -1764,7 +1766,7 @@ const TOOLS = [
     description: 'Send a test notification to a specific channel.',
     inputSchema: {
       type: 'object',
-      properties: { channel: { type: 'string', enum: ['slack', 'discord', 'telegram', 'email'], description: 'Channel to test' } },
+      properties: { channel: { type: 'string', enum: ['slack', 'discord', 'telegram', 'email', 'webhook'], description: 'Channel to test' } },
       required: ['channel'],
     },
   },
@@ -2266,6 +2268,18 @@ const TOOLS = [
       required: ['id'],
     },
   },
+
+  // ====== Daily action caps (see action-caps.js) ======
+  {
+    name: 'x_action_budget',
+    description: 'Report the remaining daily action budget for the active account: for each action class (post, reply, like, repost, follow, unfollow, dm, block, mute, delete) the cap, how many actions were used in the rolling 24 hour window, how many remain, and when the next slot frees. Caps persist across restarts and are set by XACTIONS_ACTION_CAPS or ~/.xactions/action-caps.json.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        account: { type: 'string', description: 'Account to report on (default: the active session, or "default")' },
+      },
+    },
+  },
 ];
 
 // ============================================================================
@@ -2307,8 +2321,13 @@ async function initializeBackend() {
 
 /**
  * Execute a tool using the appropriate backend
+ *
+ * @param {string} name tool name
+ * @param {object} args tool arguments
+ * @param {{ account?: string }} [options] server options; `account` is the
+ *   ledger account daily action caps are read from and charged to
  */
-async function executeTool(name, args) {
+async function executeTool(name, args, options = {}) {
   // Add session cookie to args if provided globally
   if (SESSION_COOKIE && !args.cookie && name === 'x_login') {
     args.cookie = SESSION_COOKIE;
@@ -2317,6 +2336,11 @@ async function executeTool(name, args) {
   // Draft approval tools never touch a backend and are always available
   if (ALWAYS_AVAILABLE_TOOLS.includes(name)) {
     return await executeDraftTool(name, args);
+  }
+
+  // Daily action budget: reads the local ledger, needs no browser
+  if (name === 'x_action_budget') {
+    return await executeActionBudgetTool(args, options);
   }
 
   // Platform directory: reads the scraper registry, needs no browser
@@ -4015,6 +4039,66 @@ async function executeAITool(name, args) {
  * Returns a new instance each time — needed for HTTP mode (one server per session).
  */
 /**
+ * Daily action cap tools and enforcement.
+ *
+ * The account an action is charged to is, in order: the `account` server
+ * option, XACTIONS_ACCOUNT, the username of the active saved session
+ * (`xactions login`), or "default". The session lookup runs once and is
+ * cached: the ledger key must not change mid-process.
+ */
+let cachedSessionAccount = null;
+
+async function resolveActionAccount(options = {}) {
+  if (options.account) return options.account;
+  if (process.env.XACTIONS_ACCOUNT) return process.env.XACTIONS_ACCOUNT;
+  if (cachedSessionAccount === null) {
+    cachedSessionAccount = await (async () => {
+      try {
+        const { getActiveSession } = await import('../client/auth/storage.js');
+        const session = await getActiveSession();
+        return session?.username || '';
+      } catch {
+        return '';
+      }
+    })();
+  }
+  return cachedSessionAccount || actionCaps.DEFAULT_ACCOUNT;
+}
+
+async function executeActionBudgetTool(args = {}, options = {}) {
+  const account = args.account || await resolveActionAccount(options);
+  return actionCaps.remaining(account);
+}
+
+/**
+ * Charge a tool call against the ledger before it runs. Returns null when the
+ * call is allowed (or needs no charge), or an MCP error result when the cap
+ * is reached, so nothing reaches X.
+ */
+async function enforceActionCap(name, args, options) {
+  const charge = resolveActionCharge(name, args);
+  if (!charge) return null;
+  const account = await resolveActionAccount(options);
+  try {
+    actionCaps.checkAndRecord(account, charge.actionClass, { count: charge.count });
+    return null;
+  } catch (error) {
+    if (!(error instanceof actionCaps.ActionCapExceededError)) throw error;
+    return textResult({
+      error: error.message,
+      code: error.code,
+      tool: name,
+      account: error.account,
+      actionClass: error.actionClass,
+      cap: error.cap,
+      used: error.used,
+      resetAt: error.resetAt.toISOString(),
+      hint: 'Check x_action_budget for every class. Raise the cap with XACTIONS_ACTION_CAPS (JSON, e.g. {"follow":600}) or ~/.xactions/action-caps.json if this account is allowed more.',
+    }, true);
+  }
+}
+
+/**
  * Resolve the runtime options that shape a server instance. Explicit
  * options win, then environment variables, then defaults. Read at call time
  * (not import time) so tests and the CLI can change the environment before
@@ -4024,7 +4108,8 @@ async function executeAITool(name, args) {
  * @param {string | string[]} [overrides.tools] allowlist tokens (tool or group names)
  * @param {string | string[]} [overrides.exclude] denylist tokens
  * @param {boolean} [overrides.requireApproval] hold write tools as drafts
- * @returns {{ tools: string | string[] | undefined, exclude: string | string[] | undefined, requireApproval: boolean }}
+ * @param {string} [overrides.account] ledger account for daily action caps
+ * @returns {{ tools: string | string[] | undefined, exclude: string | string[] | undefined, requireApproval: boolean, account: string | undefined }}
  */
 function resolveServerOptions(overrides = {}) {
   const truthy = (v) => v !== undefined && v !== '' && !['0', 'false', 'no', 'off'].includes(String(v).toLowerCase());
@@ -4032,6 +4117,7 @@ function resolveServerOptions(overrides = {}) {
     tools: overrides.tools ?? process.env.XACTIONS_MCP_TOOLS,
     exclude: overrides.exclude ?? process.env.XACTIONS_MCP_EXCLUDE,
     requireApproval: overrides.requireApproval ?? truthy(process.env.XACTIONS_MCP_REQUIRE_APPROVAL),
+    account: overrides.account ?? process.env.XACTIONS_ACCOUNT,
   };
 }
 
@@ -4117,8 +4203,21 @@ function createMcpServer(overrides = {}) {
       });
     }
 
+    // Daily action caps: charge the call (or the draft it approves) before
+    // anything reaches X. A refused approval leaves the draft pending.
+    if (name === 'x_approve_draft') {
+      const pending = args?.id ? drafts.getDraft(args.id) : null;
+      if (pending && pending.status === 'pending') {
+        const refused = await enforceActionCap(pending.tool, pending.args, options);
+        if (refused) return refused;
+      }
+    } else {
+      const refused = await enforceActionCap(name, args || {}, options);
+      if (refused) return refused;
+    }
+
     try {
-      const result = await executeTool(name, args || {});
+      const result = await executeTool(name, args || {}, options);
 
       return {
         content: [

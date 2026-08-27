@@ -75,6 +75,11 @@ export class TwitterHttpClient {
    * @param {number} [options.maxRetries=3]
    * @param {string|'rotate'} [options.userAgent]
    * @param {function} [options.fetch] - Custom fetch implementation
+   * @param {function} [options.onResponse] - Called after every HTTP response with
+   *   `{ url, status, remaining, resetAt }`, where `remaining` / `resetAt` come
+   *   from the `x-rate-limit-remaining` / `x-rate-limit-reset` headers (null when
+   *   absent, `resetAt` in ms). The account pool uses this to track per-account,
+   *   per-operation rate-limit windows without wrapping fetch.
    * @param {boolean} [options.autoRefreshQueryIds] - Re-discover GraphQL query IDs
    *   from x.com's bundles when a call fails with a stale-ID error, and in the
    *   background when the on-disk cache is older than 24h. Defaults to true,
@@ -86,6 +91,8 @@ export class TwitterHttpClient {
     this._proxy = options.proxy || null;
     this._maxRetries = options.maxRetries ?? 3;
     this._fetch = options.fetch || globalThis.fetch;
+    this._onResponse = typeof options.onResponse === 'function' ? options.onResponse : null;
+    this._proxyDispatcher = null;
     this._userAgents = USER_AGENTS;
     this._autoRefreshQueryIds = options.autoRefreshQueryIds ?? !process.env.VITEST;
 
@@ -141,6 +148,33 @@ export class TwitterHttpClient {
 
   setProxy(proxyUrl) {
     this._proxy = proxyUrl;
+    this._proxyDispatcher = null;
+  }
+
+  /**
+   * Build (once) the undici ProxyAgent that routes this client's requests
+   * through `options.proxy`. Node's global fetch honours the `dispatcher`
+   * request option, so no fetch wrapper is needed. A custom `options.fetch`
+   * is left alone: it owns its own transport.
+   * @private
+   */
+  async _requestInit(method, headers, body) {
+    const init = { method, headers, body };
+    if (!this._proxy || this._fetch !== globalThis.fetch) return init;
+    if (!this._proxyDispatcher) {
+      let undici;
+      try {
+        undici = await import('undici');
+      } catch {
+        throw new NetworkError(
+          `A proxy was configured (${this._proxy}) but the "undici" package is not installed; run "npm install undici" to route requests through it.`,
+          { endpoint: this._proxy }
+        );
+      }
+      this._proxyDispatcher = new undici.ProxyAgent(this._proxy);
+    }
+    init.dispatcher = this._proxyDispatcher;
+    return init;
   }
 
   // ---- Header construction ------------------------------------------------
@@ -199,7 +233,7 @@ export class TwitterHttpClient {
     for (let attempt = 0; attempt <= this._maxRetries; attempt++) {
       const startTime = Date.now();
       try {
-        const res = await this._fetch(url, { method, headers, body });
+        const res = await this._fetch(url, await this._requestInit(method, headers, body));
         const elapsed = Date.now() - startTime;
         if (this._debug) {
           console.log(`[TwitterHttpClient] ${method} ${url} → ${res.status} (${elapsed}ms)`);
@@ -208,6 +242,15 @@ export class TwitterHttpClient {
         // Rate-limit detection from headers
         const remaining = parseInt(res.headers?.get?.('x-rate-limit-remaining') ?? '', 10);
         const resetTs = parseInt(res.headers?.get?.('x-rate-limit-reset') ?? '', 10) * 1000;
+
+        if (this._onResponse) {
+          this._onResponse({
+            url,
+            status: res.status,
+            remaining: Number.isNaN(remaining) ? null : remaining,
+            resetAt: Number.isNaN(resetTs) ? null : resetTs,
+          });
+        }
 
         if (res.status === 429) {
           const rlErr = { resetAt: resetTs || Date.now() + 60_000, endpoint: url, retryCount: attempt };
@@ -235,6 +278,10 @@ export class TwitterHttpClient {
           console.log(`[TwitterHttpClient] ${method} ${url} → ERROR (${elapsed}ms): ${err.message}`);
         }
         lastError = err;
+        // A RateLimitError here can only come from the rate-limit strategy
+        // choosing to throw; surface it at once so a pooled client can rotate
+        // to another account instead of burning the back-off schedule.
+        if (err instanceof RateLimitError) throw err;
         // Don't retry auth / not-found / explicit API errors
         if (
           err instanceof AuthError ||

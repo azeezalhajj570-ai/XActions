@@ -59,11 +59,16 @@ describe('handler coverage', () => {
     const caseNames = new Set(
       [...serverSource.matchAll(/case '(x_[a-z0-9_]+)'/g)].map((m) => m[1])
     );
+    // Tools dispatched by an explicit `if (name === 'x_...')` branch before
+    // the backend switches, so a new one needs no edit here.
+    const dispatchedByName = new Set(
+      [...serverSource.matchAll(/name === '(x_[a-z0-9_]+)'/g)].map((m) => m[1])
+    );
     const implemented = new Set([
       ...Object.keys(localToolMap),
       ...caseNames,
+      ...dispatchedByName,
       ...groups.ALWAYS_AVAILABLE_TOOLS,
-      'x_list_platforms',
     ]);
 
     const missing = TOOLS.map((t) => t.name).filter((n) => !implemented.has(n));

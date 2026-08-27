@@ -13,6 +13,10 @@ export { TwitterHttpClient, WaitingRateLimitStrategy, ErrorRateLimitStrategy } f
 export { TwitterAuth } from './auth.js';
 export { GuestTokenManager } from './guest.js';
 
+// Multi-account rotation (SQLite-backed) and resumable pagination
+export { createAccountPool, createPooledClient, AccountPoolError, normalizeCookies, operationFromUrl } from './accountPool.js';
+export { createCheckpoint, bindCheckpoint } from './checkpoint.js';
+
 // Zero-credential session harvesting via Playwright (no API key required)
 export { harvestSession, SessionPool, createClientFromSession, DEFAULT_SESSION_TTL } from './playwright-session.js';
 
@@ -21,6 +25,9 @@ export { scrapeProfile, scrapeProfileById, parseUserData } from './profile.js';
 export { scrapeTweets, scrapeTweetsAndReplies, scrapeTweetById, parseTweetData, parseTimelineInstructions } from './tweets.js';
 export { scrapeThread, scrapeFullThread, scrapeConversation, parseConversationModule, reconstructThread } from './thread.js';
 export { scrapeFollowers, scrapeFollowing, scrapeNonFollowers, scrapeLikers, scrapeRetweeters, scrapeListMembers } from './relationships.js';
+export { scrapeCommunity, scrapeCommunityTweets, scrapeCommunityMedia, searchCommunityTweets, scrapeMyCommunities, scrapeCommunityDiscovery, joinCommunity, leaveCommunity, requestToJoinCommunity, parseCommunity, parseCommunityList, parseCommunityTweets } from './communities.js';
+export { scrapeNotifications, scrapeMentions, scrapeVerifiedNotifications, parseNotificationEntry, parseNotificationsTimeline } from './notifications.js';
+export { scrapeTrends, scrapeTrendsByWoeid, scrapeTrendLocations, scrapeExplorePage, scrapeHighlights, scrapeArticles, scrapeVerifiedFollowers, scrapeFollowersYouKnow, scrapeAudioSpace, parseTrend, parseTrendTimeline, parseGuideTrends, parseAudioSpace } from './explore.js';
 
 // Action functions (mutations)
 export { postTweet, postThread, deleteTweet, replyToTweet, quoteTweet, schedulePost } from './actions.js';
@@ -63,7 +70,7 @@ export async function createHttpScraper(options = {}) {
     await auth.loginWithCookies(options.cookies);
   }
 
-  const [profileMod, relationshipsMod, tweetsMod, threadMod, actionsMod, engagementMod, mediaMod] = await Promise.all([
+  const [profileMod, relationshipsMod, tweetsMod, threadMod, actionsMod, engagementMod, mediaMod, communitiesMod, notificationsMod, exploreMod] = await Promise.all([
     import('./profile.js'),
     import('./relationships.js'),
     import('./tweets.js'),
@@ -71,6 +78,9 @@ export async function createHttpScraper(options = {}) {
     import('./actions.js'),
     import('./engagement.js'),
     import('./media.js'),
+    import('./communities.js'),
+    import('./notifications.js'),
+    import('./explore.js'),
   ]);
 
   return {
@@ -140,5 +150,32 @@ export async function createHttpScraper(options = {}) {
     scrapeMedia: (username, opts) => mediaMod.scrapeMedia(client, username, opts),
     downloadMedia: (url, opts) => mediaMod.downloadMedia(client, url, opts),
     getVideoUrl: (tweetId) => mediaMod.getVideoUrl(client, tweetId),
+
+    // Communities
+    scrapeCommunity: (communityId) => communitiesMod.scrapeCommunity(client, communityId),
+    scrapeCommunityTweets: (communityId, opts) => communitiesMod.scrapeCommunityTweets(client, communityId, opts),
+    scrapeCommunityMedia: (communityId, opts) => communitiesMod.scrapeCommunityMedia(client, communityId, opts),
+    searchCommunityTweets: (query, opts) => communitiesMod.searchCommunityTweets(client, query, opts),
+    scrapeMyCommunities: (opts) => communitiesMod.scrapeMyCommunities(client, opts),
+    scrapeCommunityDiscovery: (opts) => communitiesMod.scrapeCommunityDiscovery(client, opts),
+    joinCommunity: (communityId) => communitiesMod.joinCommunity(client, communityId),
+    leaveCommunity: (communityId) => communitiesMod.leaveCommunity(client, communityId),
+    requestToJoinCommunity: (communityId, opts) => communitiesMod.requestToJoinCommunity(client, communityId, opts),
+
+    // Notifications
+    scrapeNotifications: (opts) => notificationsMod.scrapeNotifications(client, opts),
+    scrapeMentions: (opts) => notificationsMod.scrapeMentions(client, opts),
+    scrapeVerifiedNotifications: (opts) => notificationsMod.scrapeVerifiedNotifications(client, opts),
+
+    // Explore, trends, Spaces, profile side-timelines
+    scrapeTrends: (opts) => exploreMod.scrapeTrends(client, opts),
+    scrapeTrendsByWoeid: (woeid) => exploreMod.scrapeTrendsByWoeid(client, woeid),
+    scrapeTrendLocations: () => exploreMod.scrapeTrendLocations(client),
+    scrapeExplorePage: (opts) => exploreMod.scrapeExplorePage(client, opts),
+    scrapeHighlights: (user, opts) => exploreMod.scrapeHighlights(client, user, opts),
+    scrapeArticles: (user, opts) => exploreMod.scrapeArticles(client, user, opts),
+    scrapeVerifiedFollowers: (user, opts) => exploreMod.scrapeVerifiedFollowers(client, user, opts),
+    scrapeFollowersYouKnow: (user, opts) => exploreMod.scrapeFollowersYouKnow(client, user, opts),
+    scrapeAudioSpace: (spaceId) => exploreMod.scrapeAudioSpace(client, spaceId),
   };
 }

@@ -133,7 +133,7 @@ export const GROUP_RULES = Object.freeze([
   },
   {
     group: 'read',
-    names: ['x_list_platforms', 'x_download_video', 'x_get_settings'],
+    names: ['x_list_platforms', 'x_download_video', 'x_get_settings', 'x_action_budget'],
     prefixes: ['x_get_', 'x_search_', 'x_client_'],
   },
 ]);
@@ -170,6 +170,80 @@ export const WRITE_TOOLS = Object.freeze(new Set([
   // Outbound notifications
   'x_notify_send',
 ]));
+
+/**
+ * Action class each write tool is charged against in the daily cap ledger
+ * (src/mcp/action-caps.js). Classes: post, reply, like, repost, follow,
+ * unfollow, dm, block, mute, delete. A tool that fans out into many actions
+ * (auto_like, unfollow_all, persona_run) is charged once per call here;
+ * the per-item pacing inside those tools is their own delay setting.
+ */
+export const ACTION_CLASS = Object.freeze({
+  x_post_tweet: 'post',
+  x_post_thread: 'post',
+  x_create_poll: 'post',
+  x_schedule_post: 'post',
+  x_publish_article: 'post',
+  x_client_send_tweet: 'post',
+  x_schedule_add: 'post',
+  x_workflow_run: 'post',
+  x_persona_run: 'post',
+  x_reply: 'reply',
+  x_quote_tweet: 'reply',
+  x_auto_comment: 'reply',
+  x_like: 'like',
+  x_auto_like: 'like',
+  x_bookmark: 'like',
+  x_retweet: 'repost',
+  x_auto_retweet: 'repost',
+  x_follow: 'follow',
+  x_auto_follow: 'follow',
+  x_follow_engagers: 'follow',
+  x_unfollow: 'unfollow',
+  x_unfollow_non_followers: 'unfollow',
+  x_unfollow_all: 'unfollow',
+  x_smart_unfollow: 'unfollow',
+  x_send_dm: 'dm',
+  x_mute_user: 'mute',
+  x_unmute_user: 'mute',
+  x_delete_tweet: 'delete',
+  x_clear_bookmarks: 'delete',
+});
+
+/**
+ * Write tools with no action class: they change the account's own settings,
+ * move data between platforms, join a Space, or send a notification to the
+ * owner's channels. None of them is something X rate-limits per day, so they
+ * pass the cap check untouched. Every WRITE_TOOL is in exactly one of
+ * ACTION_CLASS, UNCAPPED_WRITE_TOOLS, or the dynamic resolver below.
+ */
+export const UNCAPPED_WRITE_TOOLS = Object.freeze(new Set([
+  'x_update_profile', 'x_toggle_protected', 'x_migrate_account',
+  'x_space_join', 'x_notify_send',
+]));
+
+/**
+ * Resolve what a tool call should be charged: an action class and how many
+ * actions. Returns null for read tools and uncapped write tools. Bulk tools
+ * whose class depends on their arguments (x_bulk_execute) are resolved from
+ * the arguments; a dry run costs nothing.
+ *
+ * @param {string} name tool name
+ * @param {object} [args] tool arguments
+ * @returns {{ actionClass: string, count: number } | null}
+ */
+export function resolveActionCharge(name, args = {}) {
+  if (name === 'x_bulk_execute') {
+    if (args?.dryRun) return null;
+    const action = String(args?.action || '').toLowerCase();
+    const cls = ['follow', 'unfollow', 'block', 'mute', 'dm'].includes(action) ? action : null;
+    if (!cls) return null;
+    const count = Array.isArray(args?.usernames) ? args.usernames.length : 1;
+    return { actionClass: cls, count: Math.max(1, count) };
+  }
+  const cls = ACTION_CLASS[name];
+  return cls ? { actionClass: cls, count: 1 } : null;
+}
 
 /**
  * Resolve the group a tool belongs to.
@@ -306,6 +380,9 @@ export default {
   GROUP_RULES,
   GROUP_NAMES,
   WRITE_TOOLS,
+  ACTION_CLASS,
+  UNCAPPED_WRITE_TOOLS,
+  resolveActionCharge,
   groupOf,
   buildGroups,
   isWriteTool,

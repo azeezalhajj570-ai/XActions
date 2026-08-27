@@ -11,6 +11,7 @@
  */
 
 import { GRAPHQL, DEFAULT_FEATURES } from './endpoints.js';
+import { bindCheckpoint } from './checkpoint.js';
 import { NotFoundError, TwitterApiError } from './errors.js';
 
 // ---------------------------------------------------------------------------
@@ -319,19 +320,21 @@ function extractTweetResult(entry) {
  * @returns {Promise<object[]>} Array of parsed tweet objects.
  */
 export async function scrapeTweets(client, username, options = {}) {
-  const { limit = 100, includeReplies = false, cursor = null, onProgress } = options;
+  const { limit: requestedLimit = 100, includeReplies = false, cursor = null, onProgress, checkpoint: checkpointHandle } = options;
 
   // If includeReplies, delegate to the specialised function
   if (includeReplies) {
-    return scrapeTweetsAndReplies(client, username, { limit, cursor, onProgress });
+    return scrapeTweetsAndReplies(client, username, { limit: requestedLimit, cursor, onProgress, checkpoint: checkpointHandle });
   }
 
   // Resolve username → userId
   const userId = await resolveUserId(client, username);
 
   const { queryId, operationName } = GRAPHQL.UserTweets;
+  const checkpoint = bindCheckpoint(checkpointHandle, { cursor, limit: requestedLimit, meta: { operation: operationName, username } });
+  const limit = checkpoint.limit;
   const allTweets = [];
-  let nextCursor = cursor;
+  let nextCursor = checkpoint.cursor;
 
   while (allTweets.length < limit) {
     const variables = {
@@ -363,8 +366,10 @@ export async function scrapeTweets(client, username, options = {}) {
     // No more pages or no new tweets
     if (!bottomCursor || tweets.length === 0) break;
     nextCursor = bottomCursor;
+    checkpoint.record(bottomCursor, allTweets.length);
   }
 
+  checkpoint.complete();
   return allTweets.slice(0, limit);
 }
 
@@ -385,13 +390,15 @@ export async function scrapeTweets(client, username, options = {}) {
  * @returns {Promise<object[]>}
  */
 export async function scrapeTweetsAndReplies(client, username, options = {}) {
-  const { limit = 100, cursor = null, onProgress } = options;
+  const { limit: requestedLimit = 100, cursor = null, onProgress } = options;
 
   const userId = await resolveUserId(client, username);
 
   const { queryId, operationName } = GRAPHQL.UserTweetsAndReplies;
+  const checkpoint = bindCheckpoint(options.checkpoint, { cursor, limit: requestedLimit, meta: { operation: operationName, username } });
+  const limit = checkpoint.limit;
   const allTweets = [];
-  let nextCursor = cursor;
+  let nextCursor = checkpoint.cursor;
 
   while (allTweets.length < limit) {
     const variables = {
@@ -422,8 +429,10 @@ export async function scrapeTweetsAndReplies(client, username, options = {}) {
 
     if (!bottomCursor || tweets.length === 0) break;
     nextCursor = bottomCursor;
+    checkpoint.record(bottomCursor, allTweets.length);
   }
 
+  checkpoint.complete();
   return allTweets.slice(0, limit);
 }
 
