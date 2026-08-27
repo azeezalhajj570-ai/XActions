@@ -36,6 +36,7 @@ When in doubt, add the dependency instead of copying it, or write it yourself.
 | [d60/twikit](https://github.com/d60/twikit) | MIT | GraphQL endpoint table, feature-flag defaults, and v1.1 REST paths, since verified and refreshed against x.com's own bundles | `src/scrapers/twitter/http/endpoints.js`, `src/client/api/graphqlQueries.js` |
 | [the-convocation/twitter-scraper](https://github.com/the-convocation/twitter-scraper) | MIT | The public guest bearer token and parts of the media and timeline parsing shapes | `src/scrapers/twitter/http/endpoints.js`, `src/scrapers/twitter/http/media.js` |
 | [nirholas/xeepy](https://github.com/nirholas/xeepy) | Apache-2.0 (same author) | Tool behaviours ported from the Python twin | `src/mcp/server.js` |
+| [Lqm1/x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id) | MIT (Copyright 2025 Lami) | The `x-client-transaction-id` algorithm: key-byte index extraction from the `ondemand.s` chunk, the cubic-bezier animation key, and the SHA-256 plus XOR payload assembly. Ported to plain regex reads so no DOM library is pulled in, and to the chunk resolver query-ID discovery already has. Verified byte-identical against the upstream package | `src/scrapers/twitter/http/transactionId.js` |
 
 ## Designs reimplemented, no code taken
 
@@ -47,6 +48,8 @@ When in doubt, add the dependency instead of copying it, or write it yourself.
 | [steipete/bird](https://github.com/steipete/bird) | Ideas only | Refreshing GraphQL query IDs from x.com's own JavaScript bundles rather than pinning them | `src/scrapers/twitter/http/queryIds.js` |
 | [Altimis/Scweet](https://github.com/Altimis/Scweet) | MIT | Saving a cursor per run so an interrupted scrape resumes where it stopped | `src/scrapers/twitter/http/checkpoint.js` |
 | Stripe and GitHub webhook conventions | Documentation | Signing `<timestamp>.<body>` so a captured delivery cannot be replayed | `src/notifications/webhook.js` |
+| [fa0311/x-client-transaction-id-pair-dict](https://github.com/fa0311/x-client-transaction-id-pair-dict) | MIT | Publishing known-good `{animationKey, verification}` pairs so a cold start can sign a request without parsing x.com's bundles. We read the published dictionary at runtime and vendor none of it | `src/scrapers/twitter/http/transactionId.js` |
+| [d60/twikit](https://github.com/d60/twikit) | MIT | The live_pipeline session shape: one long-lived event connection, a session id handed back in the first frame, and mid-session subscription changes keyed by that id. Endpoint paths, topic strings and frame keys are observations of x.com, verified against the live service; the client, its normalised events, backoff and fallback are ours | `src/streaming/livePipeline.js` |
 
 ## Deliberately not copied
 

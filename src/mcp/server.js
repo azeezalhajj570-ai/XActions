@@ -27,6 +27,7 @@ import { VERSION } from '../version.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { localhostHostValidation } from '@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -4508,6 +4509,14 @@ async function startHttpTransport({ port, host, serverOverrides = {} } = {}) {
   const { createMcpPaymentMiddleware, mcpPricingHandler } = await import('./x402-mcp.js');
 
   const app = express();
+
+  // Binding to 127.0.0.1 does not keep a browser out. Any page the user
+  // visits can POST to http://127.0.0.1:8787/mcp, and the browser will
+  // happily resolve a hostile hostname to 127.0.0.1 for it (DNS rebinding),
+  // which would let a web page drive the user's X account. The MCP spec
+  // requires validating the Host header for exactly this reason, and the
+  // SDK ships the check, so this runs before anything else looks at a body.
+  app.use(localhostHostValidation());
   app.use(express.json({ limit: '4mb' }));
 
   /** @type {Map<string, { server: Server, transport: StreamableHTTPServerTransport }>} */

@@ -204,7 +204,10 @@
   "files": [
     "src",
     "types",
-    "api/config/x402-config.js"
+    "api/config/x402-config.js",
+    "skills",
+    ".claude-plugin",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "mcpName": "io.github.nirholas/xactions",
   "overrides": {

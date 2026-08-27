@@ -28,22 +28,28 @@
       },
       "environmentVariables": [
         {
-          "name": "X_COOKIES",
-          "description": "X/Twitter authentication cookies (JSON string or path to cookies file)",
+          "name": "XACTIONS_SESSION_COOKIE",
+          "description": "X/Twitter auth_token cookie. Without it the server runs on the guest tier: public profiles, tweets and threads work, while search, followers, bookmarks and DMs need this set. Capture it with `xactions login --from-browser <name>`.",
           "isRequired": false,
           "isSecret": true
         },
         {
-          "name": "X_USERNAME",
-          "description": "X/Twitter username for login",
+          "name": "XACTIONS_CSRF_TOKEN",
+          "description": "The ct0 cookie that pairs with the auth_token. Required for search, bookmarks, direct messages and every write.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "XACTIONS_MCP_TOOLS",
+          "description": "Comma separated tool or group names to expose, for example `read,analytics`. All 150 tools load when unset, which costs roughly 16k tokens of context; a narrow list keeps a client's context small.",
           "isRequired": false,
           "isSecret": false
         },
         {
-          "name": "X_PASSWORD",
-          "description": "X/Twitter password for login",
+          "name": "XACTIONS_MCP_REQUIRE_APPROVAL",
+          "description": "Set to 1 to hold every write tool as a draft instead of running it. Approve with the x_approve_draft tool or `xactions drafts approve`.",
           "isRequired": false,
-          "isSecret": true
+          "isSecret": false
         }
       ]
     }

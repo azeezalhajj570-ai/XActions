@@ -21,7 +21,7 @@
  * @license Apache-2.0
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -130,7 +130,48 @@ function buildSmithery() {
   if (after !== before) changes.push({ file: rel, before, after });
 }
 
+/**
+ * Every environment variable a registry advertises must be one the server
+ * actually reads. Until 2026-08-27 server.json told the public MCP Registry
+ * to set X_COOKIES, X_USERNAME and X_PASSWORD, none of which appear anywhere
+ * in src/, so every registry and Smithery install landed unauthenticated and
+ * nothing here noticed. Manifest drift is invisible; this check is not.
+ */
+function checkEnvVarsAreRead() {
+  const declared = new Set();
+  for (const p of readJson('server.json').packages ?? []) {
+    for (const v of p.environmentVariables ?? []) declared.add(v.name);
+  }
+  if (!declared.size) return [];
+
+  const read = new Set();
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) {
+        const src = readFileSync(full, 'utf8');
+        for (const m of src.matchAll(/process\.env\.([A-Z0-9_]+)/g)) read.add(m[1]);
+        for (const m of src.matchAll(/process\.env\[['"]([A-Z0-9_]+)['"]\]/g)) read.add(m[1]);
+      }
+    }
+  };
+  walk(join(ROOT, 'src'));
+
+  return [...declared].filter((name) => !read.has(name));
+}
+
+const phantomEnv = checkEnvVarsAreRead();
+
 console.log(`Registry sync: version ${VERSION}, ${toolPhrase}`);
+
+if (phantomEnv.length) {
+  console.error(
+    `server.json advertises ${phantomEnv.length} environment variable(s) that nothing in src/ reads: ${phantomEnv.join(', ')}`
+  );
+  console.error('Anyone installing from a registry would set them and get an unauthenticated server.');
+  process.exit(1);
+}
 
 if (changes.length === 0) {
   console.log('All registry manifests are in sync.');
