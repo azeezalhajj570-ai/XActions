@@ -27,6 +27,8 @@ import {
   SCRIPT_PRICES,
   SCRIPT_RUN_PRICE,
   getOperationName,
+  pathForOperation,
+  operationForPath,
   SUPPORTED_NETWORKS,
   getAcceptedNetworks,
   ensureConfigValidated,
@@ -106,10 +108,11 @@ function buildRouteConfig() {
   const routes = {};
 
   for (const [operation, price] of Object.entries(AI_OPERATION_PRICES)) {
-    const [category, action] = operation.split(':');
-    const routePath = `POST /api/ai/${category}/${action}`;
-
-    routes[routePath] = paidRoute(price, `XActions ${category}: ${action}`);
+    // The whole operation key is the path. Reading only the first two segments
+    // here meant a three-segment route could never be protected: its price
+    // built a path that did not exist, and the real path matched no route and
+    // was served free.
+    routes[`POST ${pathForOperation(operation)}`] = paidRoute(price, `XActions ${operation}`);
   }
 
   // Script download routes
@@ -269,8 +272,9 @@ async function initializeMiddleware() {
  */
 function extractOperation(requirements) {
   if (!requirements?.resource) return 'unknown';
-  const aiMatch = requirements.resource.match(/\/api\/ai\/([^/]+)\/([^/?]+)/);
-  if (aiMatch) return `${aiMatch[1]}:${aiMatch[2]}`;
+  const aiPath = requirements.resource.match(/(\/api\/ai\/[^?]+)/);
+  const operation = aiPath ? operationForPath(aiPath[1]) : null;
+  if (operation) return operation;
   if (requirements.resource.endsWith('/api/scripts/run')) return 'script:run';
   const scriptMatch = requirements.resource.match(/\/api\/scripts\/((?:automation|src)\/[^/?]+)/);
   if (scriptMatch) return `script:download:${scriptMatch[1]}`;
@@ -390,15 +394,12 @@ export function x402HealthCheck(req, res) {
       }
     },
     pricing: AI_OPERATION_PRICES,
-    endpoints: Object.keys(AI_OPERATION_PRICES).map(op => {
-      const [category, action] = op.split(':');
-      return {
-        operation: op,
-        name: getOperationName(op),
-        path: `/api/ai/${category}/${action}`,
-        price: AI_OPERATION_PRICES[op],
-      };
-    }),
+    endpoints: Object.keys(AI_OPERATION_PRICES).map(op => ({
+      operation: op,
+      name: getOperationName(op),
+      path: pathForOperation(op),
+      price: AI_OPERATION_PRICES[op],
+    })),
   });
 }
 

@@ -26,6 +26,7 @@
 
 import { Buffer } from 'node:buffer';
 import { ask, createSearcher, SUGGESTED_QUESTIONS } from '../src/ask/engine.js';
+import { createActionMatcher } from '../src/ask/actions.js';
 import { buildLaneChain } from '../src/ask/lanes.js';
 import { verifyPayment } from '../src/edge/x402.js';
 
@@ -123,8 +124,10 @@ async function x402Gate(request, url, api) {
   if (path === '/api/ai/' || path === '/api/ai/health' || path === '/api/ai/pricing') return null;
   if (!api.isX402Configured()) return null;
 
-  const match = path.match(/^\/api\/ai\/([^/]+)\/([^/]+)/);
-  const operation = match ? `${match[1]}:${match[2]}` : null;
+  // Derived from the whole path, not the first two segments: a three-segment
+  // route read as its first two is an operation with no price, and a priced
+  // endpoint served free.
+  const operation = api.operationForPath(path);
   const price = operation ? api.AI_OPERATION_PRICES[operation] : null;
   if (!price) return null; // free or unknown endpoint
 
@@ -267,12 +270,21 @@ async function proxyToOrigin(request, url, env) {
 let askSearcher = null;
 async function loadAskSearcher(env, url) {
   if (!askSearcher) {
-    askSearcher = env.ASSETS.fetch(new Request(new URL('/data/ask-index.json', url)))
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`ask index asset HTTP ${res.status}`);
-        const index = await res.json();
-        return { searcher: createSearcher(index), digest: index.digest, counts: index.counts };
-      });
+    askSearcher = Promise.all([
+      env.ASSETS.fetch(new Request(new URL('/data/ask-index.json', url))),
+      env.ASSETS.fetch(new Request(new URL('/data/ask-actions.json', url))),
+    ]).then(async ([indexRes, actionsRes]) => {
+      if (!indexRes.ok) throw new Error(`ask index asset HTTP ${indexRes.status}`);
+      if (!actionsRes.ok) throw new Error(`ask actions asset HTTP ${actionsRes.status}`);
+      const [index, catalog] = await Promise.all([indexRes.json(), actionsRes.json()]);
+      return {
+        searcher: createSearcher(index),
+        matcher: createActionMatcher(catalog),
+        digest: index.digest,
+        counts: index.counts,
+        actionCounts: catalog.counts,
+      };
+    });
     askSearcher.catch(() => { askSearcher = null; });
   }
   return askSearcher;
@@ -282,8 +294,8 @@ async function handleAsk(request, url, env) {
   const cors = corsHeaders(request);
   if (url.pathname === '/api/ask/health') {
     try {
-      const { searcher, digest, counts } = await loadAskSearcher(env, url);
-      return json({ status: 'ok', edge: 'cloudflare', index: { chunks: searcher.size, digest, counts }, lanes: buildLaneChain(env).map((l) => l.name), suggested: SUGGESTED_QUESTIONS }, 200, cors);
+      const { searcher, matcher, digest, counts, actionCounts } = await loadAskSearcher(env, url);
+      return json({ status: 'ok', edge: 'cloudflare', index: { chunks: searcher.size, digest, counts }, actions: { total: matcher.size, counts: actionCounts }, lanes: buildLaneChain(env).map((l) => l.name), suggested: SUGGESTED_QUESTIONS }, 200, cors);
     } catch (error) {
       return json({ status: 'error', message: error.message }, 503, cors);
     }
@@ -296,8 +308,9 @@ async function handleAsk(request, url, env) {
     return json({ error: 'INVALID_INPUT', message: 'question is required' }, 400, cors);
   }
   let searcher;
+  let matcher;
   try {
-    ({ searcher } = await loadAskSearcher(env, url));
+    ({ searcher, matcher } = await loadAskSearcher(env, url));
   } catch (error) {
     return json({ error: 'INDEX_UNAVAILABLE', message: error.message }, 503, cors);
   }
@@ -310,6 +323,7 @@ async function handleAsk(request, url, env) {
           question,
           history: Array.isArray(history) ? history : [],
           searcher,
+          matcher,
           env,
           byok: byok && typeof byok === 'object' ? byok : undefined,
           onEvent: send,

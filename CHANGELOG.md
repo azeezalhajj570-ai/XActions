@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 
+- **Every AI endpoint is now priced or explicitly free, and a check keeps it that way.** 101 endpoints were served without payment while their siblings were charged, and 66 prices pointed at routes that do not exist and answered 404 to anyone who paid attention to the catalogue. Neither is visible by reading either file alone, which is why they drifted. `npm run check:x402` reconciles the price table against the routes mounted under `/api/ai`, and fails on a price with no route, a route with neither a price nor a `FREE_OPERATIONS` declaration, or a free declaration for a route that is gone. It runs in `npm run docs:check` and in `npm test`. The rule behind the prices: this API charges for X data and X actions, and does not charge you to manage your relationship with the API itself, so `billing:*`, `webhooks:*` and `action:validate-session` stay free with a written reason.
+- **A three-segment route could not be priced at all.** Every gate derived the operation from the first two path segments, so `/api/ai/monitor/alert/new-followers` resolved to `monitor:alert`, which has no price, and the endpoint was free no matter what the table said. `operationForPath()` and `pathForOperation()` in the config are now the one definition, used by the Express middleware, the Worker gate and the serverless gate alike.
 - **The Cloudflare Worker treated any `X-PAYMENT` header as proof of payment.** `worker/index.js` passed a request carrying one straight through to the origin without decoding it or asking a facilitator, which would have made every priced endpoint free to anyone sending `X-PAYMENT: x`. It was not the live deployment (xactions.app runs the Pages Functions path, which verifies correctly), but `wrangler.toml` names that file as `main`, so one deploy would have published it. The gate now decodes the payload, matches the chain against the terms it published, verifies with the facilitator, and refuses when the facilitator rejects the payment or cannot be reached.
 - **The x402 client signed whatever a server asked for.** `createX402Client` read the amount and recipient out of the 402 response and signed, with no ceiling, budget, or allowlist: one hostile endpoint could drain the wallet. It now enforces a per-call limit (`X402_MAX_PRICE_USD`, default $1), a session budget (`X402_MAX_TOTAL_USD`, default $10), and an optional payee allowlist (`X402_ALLOWED_PAYEES`), and refuses a 402 whose amount it cannot parse.
 - **A Solana-only deployment advertised Base terms payable to an empty address.** The Express middleware registers the EVM scheme only, but an operator who set `X402_PAY_TO_ADDRESS_SOLANA` alone passed validation and published `{ network: "eip155:8453", payTo: "" }` on every route. It now refuses to initialize rather than serve unpayable terms, and names the two ways to fix it.
@@ -17,8 +19,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **[docs/audits/2026-08-28-x402-audit.md](docs/audits/2026-08-28-x402-audit.md)** — the full audit: all four payment paths, what each one verifies, the nine findings with reproductions, and what is worth keeping.
+- **`tests/x402-routes.test.js` and `scripts/check-x402-routes.mjs`** — the price-to-route reconciliation, in the test suite and as `npm run check:x402`.
 - **`tests/x402-gate.test.js`** — 14 tests against the real gate and the real client, with the facilitator stubbed at the fetch boundary. The existing x402 suite tests a mock middleware defined inside its own test file, and its "valid payment" case asserts that `0xMockSignature` returns 200, so it encoded the bypass as correct behaviour.
 - `writer:comment` is priced like every other writer operation.
+
+### Fixed
+
+- **`/api/ai/alert/new-followers` finally resolves.** The `/alert` mount exists for backward compatibility with that path, but the handler was declared as `/alert/new-followers`, so the mount produced `/api/ai/alert/alert/new-followers` and the documented path never existed.
+- **The x402 client no longer loads a signing library it may never use.** viem is built on the first payment instead of at construction, so creating a client is instant and the spend limits hold whether or not a wallet was configured.
+- **`npm run docs:check` no longer fails on scratch files.** `scripts/audit-docs.mjs` walked `tmp/`, which is gitignored, so a working note left there turned the docs gate red for everyone.
 
 
 ### Added

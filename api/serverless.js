@@ -22,6 +22,7 @@ import {
   NETWORK,
   AI_OPERATION_PRICES,
   isX402Configured,
+  operationForPath,
 } from './config/x402-config.js';
 
 const app = express();
@@ -102,9 +103,9 @@ function x402Gate(req, res, next) {
 
   if (!isX402Configured()) return next();
 
-  // Derive operation from path — only intercept routes with a configured price
-  const match = req.path.match(/^\/api\/ai\/([^/]+)\/([^/]+)/);
-  const operation = match ? `${match[1]}:${match[2]}` : null;
+  // Derive the operation from the whole path, the same way every other gate
+  // does, so a three-segment route is not read as its first two.
+  const operation = operationForPath(req.path);
   const price = operation ? AI_OPERATION_PRICES[operation] : null;
   if (!price) return next(); // free or unknown endpoint — pass through
 

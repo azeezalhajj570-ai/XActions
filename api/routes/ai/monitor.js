@@ -366,7 +366,11 @@ router.post('/compare', async (req, res) => {
  * POST /api/ai/alert/new-followers
  * Get new followers since last check
  */
-router.post('/alert/new-followers', async (req, res) => {
+// Also reachable as /new-followers, which is what /api/ai/alert/new-followers
+// resolves to once index.js mounts this router at /alert. Without the alias the
+// backward-compatible path that mount exists to serve was
+// /api/ai/alert/alert/new-followers, which nothing was ever told to call.
+router.post(['/alert/new-followers', '/new-followers'], async (req, res) => {
   const { username } = req.body;
   
   if (!username) {

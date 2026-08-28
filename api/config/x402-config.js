@@ -332,7 +332,6 @@ export const AI_OPERATION_PRICES = {
   'unroll:thread': '$0.002',         // Thread unroller
   
   // Profile operations
-  'profile:get': '$0.001',           // Get profile info
   'profile:update': '$0.01',         // Update profile fields
   
   // Posting operations
@@ -343,21 +342,12 @@ export const AI_OPERATION_PRICES = {
   'posting:delete': '$0.002',        // Delete a tweet
   
   // Engagement operations
-  'engagement:unlike': '$0.002',     // Unlike a tweet
-  'engagement:reply': '$0.005',      // Reply to a tweet
-  'engagement:bookmark': '$0.002',   // Bookmark a tweet
-  'engagement:auto-like': '$0.02',   // Auto-like by keywords
-  'engagement:analytics': '$0.01',   // Engagement analytics
   
   // Discovery operations
   'discovery:search': '$0.01',       // Search tweets
-  'discovery:trends': '$0.005',      // Get trending topics
   'discovery:explore': '$0.005',     // Explore feed
   
   // Notification operations
-  'notifications:get': '$0.005',     // Get notifications
-  'notifications:mute': '$0.002',    // Mute a user
-  'notifications:unmute': '$0.002',  // Unmute a user
   
   // DM operations
   'messages:send': '$0.01',          // Send a DM
@@ -365,8 +355,6 @@ export const AI_OPERATION_PRICES = {
   'messages:export': '$0.02',        // Export DMs
   
   // Bookmark operations
-  'bookmarks:get': '$0.01',          // Get bookmarks
-  'bookmarks:folder': '$0.005',      // Create folder
   'bookmarks:clear': '$0.01',        // Clear all bookmarks
   
   // Creator operations
@@ -375,8 +363,6 @@ export const AI_OPERATION_PRICES = {
   'creator:subscribers': '$0.01',    // Subscriber list
   
   // Spaces operations
-  'spaces:live': '$0.005',           // Live Spaces
-  'spaces:scheduled': '$0.005',      // Scheduled Spaces
   'spaces:scrape': '$0.01',          // Scrape a Space
   
   // Settings operations
@@ -391,15 +377,11 @@ export const AI_OPERATION_PRICES = {
   'grok:summarize': '$0.02',         // Summarize topic
   
   // Business operations
-  'business:brand-monitor': '$0.03', // Brand monitoring
-  'business:competitor': '$0.03',    // Competitor analysis
   
   // Premium operations
   'premium:check': '$0.001',         // Check premium status
   
   // Article operations
-  'article:publish': '$0.05',        // Publish article
-  'article:analytics': '$0.01',      // Article analytics
 
   // Writer operations
   'writer:analyze-voice': '$0.02',   // Analyze writing voice
@@ -410,29 +392,15 @@ export const AI_OPERATION_PRICES = {
   'writer:comment': '$0.005',        // Generate a reply from a plain-language brief
 
   // Analytics operations (browser scripts: viewAnalytics, engagementAnalytics, etc.)
-  'analytics:health-score': '$0.01',       // Account health monitor
-  'analytics:audience-demographics': '$0.02', // Audience demographics analysis
   'analytics:audience-overlap': '$0.02',   // Audience overlap comparison
   'analytics:best-time': '$0.01',          // Best time to post analysis
   'analytics:competitor': '$0.02',         // Competitor analysis
-  'analytics:leaderboard': '$0.01',        // Engagement leaderboard
-  'analytics:hashtags': '$0.01',           // Hashtag analytics
-  'analytics:sentiment': '$0.02',          // Sentiment analysis
-  'analytics:tweet-performance': '$0.01',  // Tweet performance comparison
-  'analytics:schedule-optimizer': '$0.01', // Tweet schedule optimizer
-  'analytics:overview': '$0.01',           // Analytics overview/dashboard
-  'analytics:viral-detector': '$0.01',     // Viral tweet detector
-  'analytics:follower-growth': '$0.01',    // Follower growth tracker
-  'analytics:follow-ratio': '$0.005',      // Follow ratio manager
-  'analytics:ab-test': '$0.02',            // Tweet A/B testing
 
   // Automation operations (browser scripts: autoReply, autoRepost, etc.)
   'automation:auto-reply': '$0.03',        // Auto-reply to tweets
   'automation:auto-repost': '$0.03',       // Auto-repost matching tweets
   'automation:plug-replies': '$0.02',      // Auto-plug replies on viral tweets
   'automation:engagement-booster': '$0.03', // Systematic engagement booster
-  'automation:quote-tweet': '$0.03',       // Auto quote-tweet automation
-  'automation:repurpose': '$0.02',         // Content repurposer
   'automation:content-calendar': '$0.02',  // Content calendar planner
   'automation:welcome-followers': '$0.02', // Welcome new followers via DM
   'automation:continuous-monitor': '$0.02', // Continuous follower monitoring
@@ -448,9 +416,6 @@ export const AI_OPERATION_PRICES = {
   'community:notes': '$0.005',       // View/contribute community notes
 
   // Lists operations (browser scripts: listManager, advancedLists, etc.)
-  'lists:manage': '$0.01',           // Create/manage lists
-  'lists:advanced': '$0.01',         // Advanced list operations
-  'lists:follow': '$0.005',          // Follow/unfollow lists
 
   // Moderation operations (browser scripts: blockBots, massBlock, etc.)
   'moderation:block-bots': '$0.02',  // Detect and block bots
@@ -471,10 +436,8 @@ export const AI_OPERATION_PRICES = {
   'account:delegate-access': '$0.01', // Manage delegate access
   'account:verify-identity': '$0.005', // ID verification flow
   'account:upload-contacts': '$0.005', // Upload/sync contacts
-  'account:multi': '$0.01',          // Multi-account management
 
   // Ads operations (browser scripts: adCampaignManager, adsManager, etc.)
-  'ads:manage': '$0.03',             // Manage ad campaigns
   'ads:dashboard': '$0.01',          // Ads dashboard/analytics
   'ads:media-studio': '$0.02',       // Media Studio management
 
@@ -483,28 +446,12 @@ export const AI_OPERATION_PRICES = {
   'xpro:manage': '$0.01',            // X Pro column management
 
   // Additional posting operations (browser scripts not yet covered)
-  'posting:edit': '$0.005',          // Edit existing post
-  'posting:pin': '$0.005',           // Pin/unpin/rotate tweets
-  'posting:advanced': '$0.005',      // Advanced post options (undo, formatting)
-  'posting:bulk-delete': '$0.05',    // Bulk delete tweets
-  'posting:clear-reposts': '$0.03',  // Clear all reposts
-  'posting:unlike-all': '$0.03',     // Unlike all posts
-  'posting:format': '$0.002',        // Text formatting (bold, italic, etc.)
-  'posting:captions': '$0.005',      // Add video captions
-  'posting:mention': '$0.005',       // Compose mention post
-  'posting:compose-thread': '$0.01', // Thread composer with preview
 
   // Additional engagement operations
-  'engagement:repost': '$0.002',     // Repost a tweet
-  'engagement:auto-repost': '$0.02', // Auto-repost by keyword
-  'engagement:interactions': '$0.005', // View who liked/reposted/quoted
 
   // Additional scraping operations
-  'scrape:timeline': '$0.005',       // Scrape timeline content
   'scrape:likes': '$0.005',          // Scrape tweet likes
   'scrape:retweets': '$0.005',       // Scrape tweet retweets
-  'scrape:bookmarks': '$0.01',       // Scrape bookmarks
-  'scrape:tweet-details': '$0.002',  // Scrape single tweet details
 
   // Additional discovery operations
   'discovery:trending-monitor': '$0.01', // Trending topic monitor
@@ -513,19 +460,12 @@ export const AI_OPERATION_PRICES = {
   'discovery:topics': '$0.005',      // Manage followed topics
 
   // Additional messages operations
-  'messages:advanced': '$0.01',      // Advanced DM features
-  'messages:encrypted': '$0.01',     // Encrypted DMs
-  'messages:group': '$0.01',         // Group DM management
-  'messages:call': '$0.005',         // DM audio/video calls
 
   // Additional spaces operations
-  'spaces:host': '$0.02',            // Host a new Space
-  'spaces:advanced': '$0.01',        // Advanced Spaces features
 
   // Additional premium operations
   'premium:gift': '$0.02',           // Gift Premium subscription
   'premium:subscribe': '$0.005',     // Premium subscription management
-  'premium:advanced': '$0.01',       // Advanced Premium features
 
   // Additional settings operations
   'settings:advanced': '$0.005',     // Advanced settings
@@ -537,12 +477,8 @@ export const AI_OPERATION_PRICES = {
 
   // Additional monitor operations
   'monitor:following': '$0.01',      // Monitor following changes
-  'monitor:continuous': '$0.02',     // Continuous monitoring
 
   // Utility operations (additional browser scripts)
-  'utility:embed': '$0.002',         // Get embed code/share link
-  'utility:qr-code': '$0.002',       // Generate QR code for profile
-  'utility:follow-account': '$0.005', // Follow specific accounts
 
   // ── New route-level pricing (added for full MCP parity) ──────────────────
 
@@ -626,6 +562,9 @@ export const AI_OPERATION_PRICES = {
   'sentiment:monitor': '$0.03',       // Monitor reputation
   'sentiment:report': '$0.05',        // Reputation report
 
+  // Reputation routes (/api/ai/reputation/*)
+  'reputation:score': '$0.01',        // Risk-score a batch of posts and build the report
+
   // Streams routes (/api/ai/streams/*)
   'streams:start': '$0.01',           // Start stream
   'streams:stop': '$0.002',           // Stop stream
@@ -645,7 +584,6 @@ export const AI_OPERATION_PRICES = {
   'portability:export-account': '$0.10', // Export account
   'portability:migrate': '$0.10',     // Migrate account
   'portability:diff': '$0.02',        // Diff exports
-  'portability:best-time': '$0.01',   // Best time to post
   'portability:platforms': '$0.001',  // List platforms
   'portability:import': '$0.02',      // Import data
   'portability:convert': '$0.002',    // Convert format
@@ -717,6 +655,158 @@ export const AI_OPERATION_PRICES = {
   // Analyze utility routes (/api/ai/analyze/*)
   'analyze:profile': '$0.01',         // Deep profile analysis
   'analyze:tweet': '$0.005',          // Analyze a single tweet
+
+  // Account tools
+  'account:appeal-suspension': '$0.005',
+  'account:connected-accounts': '$0.005',
+  'account:join-date': '$0.005',
+  'account:login-history': '$0.005',
+  'account:multi-account': '$0.005',
+  'account:qr-code': '$0.002',
+
+  // Ads
+  'ads:analytics': '$0.02',
+  'ads:boost': '$0.02',
+  'ads:campaigns': '$0.02',
+
+  // Articles
+  'articles:analytics': '$0.01',
+  'articles:compose': '$0.02',
+  'articles:draft': '$0.01',
+  'articles:list': '$0.005',
+  'articles:publish': '$0.05',
+
+  // Automation
+  'automation:content-repurpose': '$0.02',
+  'automation:quote-tweet-auto': '$0.03',
+
+  // Bookmarks
+  'bookmarks:export': '$0.01',
+  'bookmarks:folders': '$0.005',
+  'bookmarks:import': '$0.01',
+  'bookmarks:organize': '$0.01',
+  'bookmarks:search': '$0.01',
+
+  // Content cleanup
+  'cleanup:archive': '$0.02',
+  'cleanup:bulk-delete': '$0.05',
+  'cleanup:clear-history': '$0.02',
+  'cleanup:clear-reposts': '$0.02',
+  'cleanup:delete-tweets': '$0.02',
+  'cleanup:unlike-all': '$0.02',
+
+  // Communities
+  'community:leave': '$0.01',
+  'community:list': '$0.005',
+  'community:members': '$0.01',
+  'community:search': '$0.01',
+
+  // Discovery
+  'discovery:for-you': '$0.005',
+  'discovery:trending': '$0.005',
+
+  // Lead generation
+  'leads:enrich': '$0.03',
+  'leads:export': '$0.02',
+  'leads:find': '$0.03',
+  'leads:monitor': '$0.02',
+  'leads:qualify': '$0.02',
+  'leads:score': '$0.02',
+
+  // Media studio
+  'media:analytics': '$0.01',
+  'media:captions': '$0.005',
+  'media:download-batch': '$0.02',
+  'media:library': '$0.01',
+  'media:studio': '$0.01',
+  'media:upload': '$0.01',
+
+  // Moderation
+  'moderation:blocked-list': '$0.01',
+  'moderation:muted-list': '$0.01',
+
+  // Monitoring and alerts
+  'alert:account': '$0.01',
+  'alert:alert:new-followers': '$0.01',
+  'alert:compare': '$0.01',
+  'alert:follower-alerts': '$0.01',
+  'alert:followers': '$0.01',
+  'alert:following': '$0.01',
+  'alert:keyword': '$0.01',
+  'alert:track-engagement': '$0.01',
+  'monitor:alert:new-followers': '$0.01',
+  'monitor:new-followers': '$0.01',
+
+  // Premium
+  'premium:features': '$0.001',
+
+  // Settings
+  'settings:update': '$0.005',
+
+  // Timeline
+  'timeline:collect': '$0.01',
+  'timeline:export': '$0.01',
+  'timeline:scroll': '$0.002',
+  'timeline:switch-feed': '$0.002',
+  'timeline:view': '$0.005',
+
+  // Topics
+  'topics:discover': '$0.005',
+  'topics:follow': '$0.002',
+  'topics:list': '$0.005',
+  'topics:unfollow': '$0.002',
+
+  // Download, export, unroll, analyze
+  'analyze:bookmarks': '$0.01',
+  'analyze:thread': '$0.005',
+  'analyze:video': '$0.005',
+  'download:bookmarks': '$0.01',
+  'download:profile': '$0.005',
+  'download:thread': '$0.005',
+  'download:tweet': '$0.005',
+  'export:profile': '$0.005',
+  'export:thread': '$0.005',
+  'export:tweet': '$0.005',
+  'export:video': '$0.005',
+  'unroll:bookmarks': '$0.01',
+  'unroll:profile': '$0.005',
+  'unroll:tweet': '$0.005',
+  'unroll:video': '$0.005',
+
+  // Viral threads
+  'viral:analyze': '$0.02',
+  'viral:generate': '$0.03',
+  'viral:headlines': '$0.02',
+  'viral:research': '$0.03',
+  'viral:trending-hooks': '$0.02',
+
+  // X Pro
+  'xpro:columns': '$0.005',
+};
+
+/**
+ * Endpoints that are deliberately free, and why.
+ *
+ * The rule this API follows: it charges for X data and X actions, and it does
+ * not charge you to manage your relationship with the API itself. An endpoint
+ * that is neither priced above nor listed here fails `npm run check:x402`,
+ * which is what stops a new route from shipping without either decision being
+ * made. A hundred of them had, before that check existed.
+ *
+ * @type {Record<string, string>} operation -> the reason it is free
+ */
+export const FREE_OPERATIONS = {
+  'action:validate-session': 'Checks whether the session cookie you supplied still works. Charging to find out you cannot be charged for anything else is absurd.',
+  'billing:checkout': 'Your billing relationship with us, not data from X.',
+  'billing:portal': 'Your billing relationship with us, not data from X.',
+  'billing:plans': 'This endpoint is the price list itself; charging for it would be circular.',
+  'billing:usage': 'Your own record of what you have already spent here.',
+  'billing:invoices': 'Your own invoices from us, which cost nothing to look at.',
+  'webhooks:create': 'Configuring where we deliver your events.',
+  'webhooks:list': 'Configuring where we deliver your events.',
+  'webhooks:delete': 'Configuring where we deliver your events.',
+  'webhooks:test': 'Configuring where we deliver your events.',
+  'webhooks:events': 'The list of event names this API can deliver, which is documentation.',
 };
 
 // Pricing for browser script downloads (GET /api/scripts/src/:name, GET /api/scripts/automation/:name)
@@ -1152,6 +1242,36 @@ export function buildAccepts({ price, resource, description, maxTimeoutSeconds =
 }
 
 // Get human-readable operation name
+/**
+ * The operation key for a request path, and the path for an operation key.
+ *
+ * Every gate used to derive this itself with `path.split('/')` taking the first
+ * two segments, which silently could not express a three-segment route:
+ * `/api/ai/monitor/alert/new-followers` resolved to the operation
+ * `monitor:alert`, which has no price, so the endpoint was served free no matter
+ * what the price table said. Deriving it in one place from the whole path is
+ * what keeps the price table, the middleware, and the edge gates agreeing.
+ *
+ * @param {string} path - Absolute request path, e.g. /api/ai/scrape/profile
+ * @returns {string|null} operation key, or null when the path is not an AI route
+ */
+export function operationForPath(path) {
+  const match = String(path).match(/^\/api\/ai\/(.+)$/);
+  if (!match) return null;
+  const segments = match[1].split('?')[0].replace(/\/+$/, '').split('/').filter(Boolean);
+  if (segments.length < 2) return null;
+  return segments.join(':');
+}
+
+/**
+ * Inverse of {@link operationForPath}.
+ * @param {string} operation - e.g. "scrape:profile"
+ * @returns {string} absolute path
+ */
+export function pathForOperation(operation) {
+  return `/api/ai/${String(operation).split(':').join('/')}`;
+}
+
 export function getOperationName(operation) {
   const names = {
     'scrape:profile': 'Scrape Profile',

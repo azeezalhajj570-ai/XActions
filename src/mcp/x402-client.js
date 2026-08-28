@@ -243,32 +243,39 @@ export async function createX402Client(config) {
     console.error(`   Within limits: $${usd.toFixed(6)} this call, $${spentUsd.toFixed(6)} of $${maxTotalUsd} spent`);
   }
 
-  // Set up wallet for signing payments (lazy loaded)
+  // The wallet is built on first use, not here.
+  //
+  // viem is several megabytes and constructing a client should not pay for it:
+  // most calls to this client never reach a 402, and the spend limits above are
+  // a security control that must work whether or not a signing library loaded.
   let wallet = null;
   let account = null;
   let currentNetwork = network;
-  
-  if (privateKey) {
-    try {
-      const { viem, viemAccounts } = await loadViem();
-      
-      // Ensure private key has 0x prefix
-      const pk = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
-      account = viemAccounts.privateKeyToAccount(pk);
-      
-      const chain = await getChainForNetwork(network);
-      wallet = viem.createWalletClient({
-        account,
-        chain,
-        transport: viem.http(),
-      });
-      
-      console.error(`💰 x402 wallet initialized: ${account.address}`);
-      console.error(`   Default network: ${NETWORK_CONFIGS[network]?.name || network}`);
-      console.error(`   Auto-select: ${autoSelectNetwork ? 'enabled' : 'disabled'}`);
-    } catch (e) {
-      console.error(`⚠️  Failed to initialize wallet: ${e.message}`);
+  let walletReady = null;
+
+  /**
+   * Build the signing wallet once, on the first payment.
+   * @returns {Promise<void>}
+   */
+  async function ensureWallet() {
+    if (!privateKey || wallet) return;
+    if (!walletReady) {
+      walletReady = (async () => {
+        try {
+          const { viem, viemAccounts } = await loadViem();
+          const pk = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
+          account = viemAccounts.privateKeyToAccount(pk);
+          const chain = await getChainForNetwork(network);
+          wallet = viem.createWalletClient({ account, chain, transport: viem.http() });
+          console.error(`💰 x402 wallet ready: ${account.address}`);
+          console.error(`   Default network: ${NETWORK_CONFIGS[network]?.name || network}`);
+          console.error(`   Auto-select: ${autoSelectNetwork ? 'enabled' : 'disabled'}`);
+        } catch (e) {
+          console.error(`⚠️  Failed to initialize wallet: ${e.message}`);
+        }
+      })();
     }
+    await walletReady;
   }
   
   /**
@@ -305,7 +312,7 @@ export async function createX402Client(config) {
     if (response.status === 402) {
       console.error(`💳 Payment required (402)`);
       
-      if (!wallet) {
+      if (!privateKey) {
         const error = new Error('Payment required but no wallet configured');
         error.code = 'PAYMENT_REQUIRED';
         
@@ -365,6 +372,14 @@ export async function createX402Client(config) {
       // asks for means one hostile or compromised endpoint can drain the
       // wallet, so the terms are checked against this client's limits first.
       assertWithinLimits(selectedAccept);
+
+      // Only now is a signing library needed.
+      await ensureWallet();
+      if (!wallet || !account) {
+        const error = new Error('Payment required but the wallet could not be initialized');
+        error.code = 'PAYMENT_REQUIRED';
+        throw error;
+      }
       
       // Sign payment for the selected network
       const payment = await signPayment(wallet, account, paymentRequired, selectedNetwork, selectedAccept);

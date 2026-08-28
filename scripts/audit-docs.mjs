@@ -36,6 +36,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /** Directories never worth auditing: vendored, generated, or archived. */
 const SKIP_DIRS = new Set([
   'node_modules',
+  // Scratch. `tmp/` is gitignored, so a working note someone left there is not
+  // published anywhere and must not turn the docs gate red for everyone else.
+  'tmp',
   '.git',
   'dist',
   'build',

@@ -58,7 +58,7 @@
     "audit:verbose": "node scripts/audit-console-errors.js --verbose",
     "docs:audit": "node scripts/audit-docs.mjs",
     "docs:scripts": "node scripts/build-browser-scripts-doc.mjs",
-    "docs:check": "node scripts/build-browser-scripts-doc.mjs --check && node scripts/sync-registry.mjs --check && node scripts/build-ask-index.mjs --check && node scripts/audit-docs.mjs",
+    "docs:check": "node scripts/build-browser-scripts-doc.mjs --check && node scripts/sync-registry.mjs --check && node scripts/build-ask-index.mjs --check && node scripts/audit-docs.mjs && node scripts/check-x402-routes.mjs",
     "check:licenses": "node scripts/normalize-license-headers.mjs && node scripts/add-license-notices.mjs",
     "ask:index": "node scripts/build-ask-index.mjs",
     "ask:index:check": "node scripts/build-ask-index.mjs --check",
@@ -94,7 +94,8 @@
     "site:build": "npm run site:docs && npm run site:index && npm run site:scripts && npm run site:sitemap && bash deploy/cloudflare/build.sh",
     "site:deploy": "npm run site:build && npx wrangler pages deploy pages-out --project-name xactions",
     "lint": "eslint .",
-    "registry:sync": "node scripts/sync-registry.mjs"
+    "registry:sync": "node scripts/sync-registry.mjs",
+    "check:x402": "node scripts/check-x402-routes.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
