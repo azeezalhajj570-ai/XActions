@@ -331,6 +331,142 @@ ${rows}
   });
 }
 
+
+// ─── Section indexes ────────────────────────────────────────────────
+
+/**
+ * Human names and one-line purposes for the generated docs subtrees. A subtree
+ * not listed here still gets an index, titled from its directory name.
+ */
+const SUBTREE_META = {
+  guides: {
+    title: 'Guides and reference',
+    lede: 'Reference pages for the CLI, the library, the API and the pieces underneath them.',
+    icon: '📘',
+  },
+  skills: {
+    title: 'Agent skills',
+    lede: 'One page per bundled skill. Each names the exact script, page and arguments for its job.',
+    icon: '🧠',
+  },
+  prompts: {
+    title: 'Prompt library',
+    lede: 'Prompts that drive XActions from a coding agent, copy-ready.',
+    icon: '💬',
+  },
+  'step-by-step': {
+    title: 'Step by step',
+    lede: 'Start-to-finish walkthroughs, one task per page.',
+    icon: '🪜',
+  },
+  learn: {
+    title: 'Learn',
+    lede: 'Start here if you have not run XActions before.',
+    icon: '🎓',
+  },
+  project: {
+    title: 'About the project',
+    lede: 'How XActions is built, governed and released.',
+    icon: '📄',
+  },
+};
+
+/**
+ * Read a generated page's title and description straight out of its HTML.
+ *
+ * The manifest covers most subtrees but not all of them (step-by-step is written
+ * by a different builder), and an index that silently omitted 79 pages would be
+ * worse than no index at all. Parsing the file that will actually be served means
+ * every page is listed, whoever generated it.
+ *
+ * @param {string} file absolute path to a generated .html page
+ * @returns {{title: string, description: string} | null}
+ */
+function readPageMeta(file) {
+  let html;
+  try {
+    html = fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  const title = html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? '';
+  const description = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i)?.[1] ?? '';
+  if (!title) return null;
+  // Titles are rendered as "Page name - XActions"; the suffix is noise in a list
+  // where every entry shares it.
+  return {
+    title: title.replace(/\s*[-|]\s*XActions.*$/i, '').trim() || title.trim(),
+    description: description.replace(/\s*[-|]\s*XActions.*$/i, '').trim(),
+  };
+}
+
+/**
+ * Build an index page for one docs subtree, listing every page in it.
+ *
+ * @param {string} subdir directory name under dashboard/docs/
+ * @param {Array} pages the full manifest, used for reading time where known
+ * @returns {{html: string, count: number} | null}
+ */
+function buildSubtreeIndex(subdir, pages) {
+  const dir = path.join(DASHBOARD, 'docs', subdir);
+  if (!fs.existsSync(dir)) return null;
+
+  const minutesBySlug = new Map(
+    pages.filter((p) => p.outSubdir === subdir).map((p) => [p.slug, p.minutes])
+  );
+
+  const entries = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.html') && f !== 'index.html')
+    .sort()
+    .map((file) => {
+      const meta = readPageMeta(path.join(dir, file));
+      if (!meta) return null;
+      const slug = file.replace(/\.html$/, '');
+      const minutes = minutesBySlug.get(slug);
+      return {
+        href: `/docs/${subdir}/${slug}`,
+        title: meta.title,
+        desc: meta.description,
+        meta: minutes ? `${minutes} min read` : '',
+      };
+    })
+    .filter(Boolean);
+
+  if (entries.length === 0) return null;
+
+  const info = SUBTREE_META[subdir] ?? {
+    title: subdir.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase()),
+    lede: `Every page under /docs/${subdir}.`,
+    icon: '📁',
+  };
+
+  const body = `<main class="content content--wide" id="main">
+  <div class="prose">
+${hero(`${info.icon} Documentation`, info.title, `${escapeHtml(info.lede)} ${entries.length} pages.`)}
+
+    <div class="quick-links">
+      <a class="btn btn--ghost" href="/docs">← All documentation</a>
+    </div>
+
+    <div class="card-grid">
+${entries.map(renderCard).join('\n')}
+    </div>
+  </div>
+</main>`;
+
+  return {
+    count: entries.length,
+    html: renderPage({
+      title: info.title,
+      description: `${info.lede} ${entries.length} pages in the XActions documentation.`,
+      urlPath: `/docs/${subdir}`,
+      navCurrent: 'docs',
+      body,
+    }),
+  };
+}
+
 // ─── Build ──────────────────────────────────────────────────────────
 
 if (!fs.existsSync(MANIFEST)) {
@@ -366,6 +502,25 @@ if (fs.existsSync(tutorialsDir)) {
 }
 
 fs.writeFileSync(path.join(DASHBOARD, 'examples.html'), buildExamplesIndex(examples));
+
+// Every docs subtree gets its own index. Without one, a visitor who lands on a
+// page deep in `guides/` or `skills/` has no way to see its siblings, and the
+// directory itself answers 404: 246 pages across six subtrees were unreachable
+// except by search or an exact URL.
+const subtrees = fs
+  .readdirSync(path.join(DASHBOARD, 'docs'), { withFileTypes: true })
+  .filter((e) => e.isDirectory())
+  .map((e) => e.name)
+  .sort();
+
+let subtreeCount = 0;
+for (const subdir of subtrees) {
+  const built = buildSubtreeIndex(subdir, pages);
+  if (!built) continue;
+  fs.writeFileSync(path.join(DASHBOARD, 'docs', subdir, 'index.html'), built.html);
+  subtreeCount += 1;
+  console.log(`  /docs/${subdir.padEnd(12)} ${built.count} pages indexed`);
+}
 
 console.log(`  /docs        ${pages.length} pages indexed`);
 const countReal = (section) => pages.filter((p) => p.section === section && p.slug !== 'readme').length;
