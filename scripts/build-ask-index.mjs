@@ -14,7 +14,9 @@
  *
  * Output: dashboard/data/ask-index.json (served as /data/ask-index.json), plus a
  * browser copy of the engine at dashboard/js/ask/ so the page can answer even
- * when no API origin is reachable.
+ * when no API origin is reachable. Delegates to build-ask-actions.mjs for the
+ * catalog of runnable scripts, commands and MCP tools, so one command (and one
+ * --check) keeps every Ask artifact in step.
  *
  * Usage:
  *   node scripts/build-ask-index.mjs           # write
@@ -28,6 +30,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSy
 import { join, dirname, relative, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dashboard', 'data', 'ask-index.json');
@@ -248,6 +251,9 @@ for (const f of engineFiles) {
   const out = join(ENGINE_OUT, f);
   if (!existsSync(out) || readFileSync(out, 'utf8') !== readFileSync(join(ENGINE_SRC, f), 'utf8')) stale.push(rel(out));
 }
+
+// The action catalog ships beside the index and is checked with it.
+execFileSync(process.execPath, [join(ROOT, 'scripts', 'build-ask-actions.mjs'), ...(CHECK ? ['--check'] : [])], { stdio: 'inherit' });
 
 if (CHECK) {
   if (stale.length) {

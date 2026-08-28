@@ -1,8 +1,18 @@
 # Ask XActions
 
-> Ask how to do anything with XActions in plain language and get a sourced answer. Live at [xactions.app/ask](https://xactions.app/ask). Free, no account, no API key.
+> Ask how to do anything with XActions in plain language and get a sourced answer **plus the exact thing to run**. On the web at [xactions.app/ask](https://xactions.app/ask), in your terminal as `xactions ask`, and to an AI agent as the `x_ask` MCP tool. Free, no account, no API key.
 
-Ask XActions is a conversational assistant for the toolkit. It searches the documentation, the 49 agent skills, the browser scripts, the marketing pages, and the GitHub repository, then streams an answer that cites its sources with clickable `[1]` `[2]` markers. Ask "how do I unfollow all users" and it tells you the exact script, where to paste it, and what safety features it has, with links to the pages it read.
+Ask XActions is a conversational assistant for the toolkit. It searches the documentation, the 49 agent skills, the browser scripts, the marketing pages, and the GitHub repository, then streams an answer that cites its sources with clickable `[1]` `[2]` markers.
+
+An explanation is only half of what someone asking "how do I unfollow all users" wants. The other half is the thing they run, so every answer ends with the **runnable actions** behind it: the browser script to paste (copied straight from source, with the x.com page to paste it on), the terminal command to type, and the MCP tool an agent should call. Those come from a catalog built out of the repository itself, so it cannot drift from what the code actually offers.
+
+## Three ways to ask
+
+| Surface | Use it when |
+|---|---|
+| [xactions.app/ask](https://xactions.app/ask) | You are reading the docs and want an answer with buttons |
+| `xactions ask "..."` | You are in a terminal and want the command without leaving it |
+| `x_ask` MCP tool | An AI agent needs to know how the toolkit works before acting |
 
 ## Using it
 
@@ -17,6 +27,42 @@ https://xactions.app/ask?q=how+do+i+unfollow+everyone
 - Every answer has **Copy** and **Retry**, code blocks have a copy button, and source chips open the doc, script page, or GitHub file that backed the answer.
 - Keyboard: `Enter` sends, `Shift+Enter` adds a line, `/` focuses the box, `Esc` stops a streaming answer, `Ctrl/Cmd+Shift+O` starts a new conversation.
 
+## In the terminal
+
+```bash
+xactions ask "how do I unfollow everyone?"
+xactions ask "scrape followers" --json          # machine-readable: answer, sources, actions
+echo "how do I download a video" | xactions ask # reads a piped question
+xactions ask "post a thread" --provider groq --key gsk_...  # answer with your own key
+```
+
+The answer streams as it is written, wrapped to your terminal, and ends with a **Run it** block and the sources. Retrieval is local to the installed package, so it still answers with no network once the lanes are unreachable. Flags: `--json`, `--quiet`, `--no-sources`, `--provider`, `--key`, `--model`.
+
+## As an MCP tool
+
+`x_ask` lets an agent read the manual instead of guessing at it. Point Claude Desktop, Cursor, or any MCP client at the XActions server ([MCP setup](mcp-setup.md)) and the agent can ask before it acts:
+
+```json
+{ "name": "x_ask", "arguments": { "question": "how do I unfollow everyone?" } }
+```
+
+```json
+{
+  "question": "how do I unfollow everyone?",
+  "answer": "Paste the Unfollow Everyone script into the DevTools console on ...",
+  "lane": "llm7",
+  "actions": [
+    { "kind": "script", "id": "unfollow-everyone", "run": "Open x.com/YOUR_USERNAME/following, press F12, paste into the Console tab", "raw": "https://raw.githubusercontent.com/..." },
+    { "kind": "mcp", "id": "x_unfollow_all", "run": "Call x_unfollow_all with confirm" }
+  ],
+  "sources": [{ "n": 1, "title": "Unfollow Everyone", "url": "https://..." }]
+}
+```
+
+Pass `actionsOnly: true` to skip the written answer and get just the matching scripts, commands and tools. That path never calls a model, so it returns in milliseconds: use it when the agent only needs to know *which* tool does the job.
+
+`x_ask` is a read tool. It touches no X account, needs no session, and works with no API key.
+
 ## How it works
 
 ```
@@ -28,7 +74,20 @@ question ──► BM25 search over dashboard/data/ask-index.json  ─┐
 
 1. **Index.** `npm run ask:index` (`scripts/build-ask-index.mjs`) strips YAML frontmatter and SEO keyword lists (both matched queries while teaching the reader nothing), then chunks `docs/**/*.md`, `skills/*/SKILL.md`, `tutorials/**/*.md`, the top-level README/CHANGELOG, the header comments of every browser script in `src/` and `scripts/`, and the text of the dashboard pages (FAQ, pricing, features, ...). Each chunk carries the live URL it came from: the rendered docs page when one exists (via `dashboard/docs/_pages-manifest.json`), the `/scripts/<slug>` page for a script, or the GitHub blob URL. The result is `dashboard/data/ask-index.json`, served at `/data/ask-index.json`. `npm run docs:check` fails when the committed index is stale.
 2. **Retrieval.** `src/ask/engine.js` builds a BM25 searcher over the chunks at startup (about 20 ms per query), with a small synonym map bridging how people ask ("all", "twitter", "retweet") to how the docs are written ("everyone", "X", "repost"). Titles are boosted, results are capped per document, and a live GitHub issues/PR search is merged in so recent bug reports show up too.
-3. **Answer.** The sources and the question go to the first lane that accepts the request in `src/ask/lanes.js`; the reply streams back as Server-Sent Events.
+3. **Actions.** `src/ask/actions.js` ranks the catalog in `dashboard/data/ask-actions.json` against the question *and* the passages retrieval just found. A passage from `docs/examples/unfollow-everyone.md` is direct evidence that `src/unfollowEveryone.js` is the answer, which survives phrasing ("clean out my following", "start fresh") that no keyword match would. Terms carried by a large share of the catalog are ignored, so the product's own name cannot make "is XActions safe?" look like a request to run something, and a conceptual question correctly returns nothing runnable.
+4. **Answer.** The sources, the question, and the matched actions go to the first lane that accepts the request in `src/ask/lanes.js`; the reply streams back as Server-Sent Events. The model is given the actions so its prose agrees with the buttons beside it instead of inventing a script name.
+
+### The action catalog
+
+`scripts/build-ask-actions.mjs` reads all three executable surfaces from source, so nothing is hand-maintained:
+
+| Surface | Read from | Carries |
+|---|---|---|
+| Browser scripts | `src/*.js`, `scripts/*.js` headers | title, description, the x.com page to paste it on, raw source URL, `/scripts/<slug>` page, whether `core.js` must be pasted first |
+| CLI commands | the `.command()`/`.description()` calls in `src/cli/**` | full invocation including subcommand prefixes |
+| MCP tools | the tool definitions in `src/mcp/server.js` | name, description, required arguments |
+
+61 scripts exist in both `src/` and `scripts/`; the catalog keeps whichever copy the generated page was built from, so the source quoted beside a link always matches the page it links to.
 
 ## Free LLM lanes
 
@@ -77,6 +136,7 @@ The response is `text/event-stream`. Each `data:` line is one JSON event:
 
 ```
 data: {"type":"sources","sources":[{"n":1,"title":"Unfollow Everyone","url":"https://...","kind":"doc","path":"docs/examples/unfollow-everyone.md"}]}
+data: {"type":"actions","actions":[{"kind":"script","id":"unfollow-everyone","title":"Unfollow Everyone","run":"Open x.com/YOUR_USERNAME/following, press F12, paste into the Console tab","raw":"https://raw.githubusercontent.com/...","page":"/scripts/unfollow-everyone","why":"named by a cited source"}]}
 data: {"type":"lane","lane":"llm7"}
 data: {"type":"delta","text":"To unfollow everyone"}
 data: {"type":"delta","text":" on X, paste"}
@@ -93,9 +153,11 @@ curl -N https://xactions.app/api/ask \
   -d '{"question":"how do I unfollow everyone?"}'
 ```
 
+The `actions` event arrives before the first token, so a client can show what to run while the prose is still streaming.
+
 ### `GET /api/ask/health`
 
-Index size and digest, the lanes configured on this deployment, and the suggested questions.
+Index size and digest, action-catalog size, the lanes configured on this deployment, and the suggested questions.
 
 ## Where it runs
 
@@ -106,9 +168,11 @@ Index size and digest, the lanes configured on this deployment, and the suggeste
 ## Development
 
 ```bash
-npm run ask:index          # rebuild dashboard/data/ask-index.json and mirror src/ask/ into dashboard/js/ask/
-npm run ask:index:check    # exit 1 if the committed index or the browser mirror is stale (part of npm run docs:check)
-npx vitest run tests/ask   # retrieval on the real index, chain construction, one live keyless completion
+npm run ask:index          # rebuild the index AND the action catalog, and mirror src/ask/ into dashboard/js/ask/
+npm run ask:index:check    # exit 1 if either is stale (part of npm run docs:check)
+npx vitest run tests/ask   # retrieval, action matching, lane failover, and the CLI and MCP surfaces end to end
 ```
 
-Rebuild the index whenever you change docs, skills, tutorials, a script header, or a dashboard page. Related: [MCP setup](mcp-setup.md), [Browser scripts](browser-scripts.md), [REST API](rest-api.md).
+Rebuild whenever you change docs, skills, tutorials, a script header, a dashboard page, a CLI command, or an MCP tool. The action catalog is derived from source, so adding a script or a command is enough to make it answerable: no list to update by hand.
+
+Related: [MCP setup](mcp-setup.md), [CLI reference](cli-reference.md), [Browser scripts](browser-scripts.md), [REST API](rest-api.md).

@@ -16,6 +16,7 @@
  */
 
 import { buildLaneChain, streamCompletion } from './lanes.js';
+import { publicActions } from './actions.js';
 
 export const REPO = 'nirholas/XActions';
 export const SITE = 'https://xactions.app';
@@ -263,10 +264,12 @@ export function publicSources(sources) {
  * @param {Record<string, string|undefined>} [args.env]
  * @param {{ provider: string, apiKey: string, model?: string }} [args.byok]
  * @param {boolean} [args.browserSafe]  drop lanes that reject browser origins
+ * @param {{ match: Function }} [args.matcher]  action matcher; when present the
+ *   answer is followed by the scripts, commands and MCP tools that run it
  * @param {(event: object) => void} args.onEvent
  * @param {AbortSignal} [args.signal]
  */
-export async function ask({ question, history = [], searcher, env = {}, byok, browserSafe = false, onEvent, signal }) {
+export async function ask({ question, history = [], searcher, matcher, env = {}, byok, browserSafe = false, onEvent, signal }) {
   const q = String(question || '').trim().slice(0, 2000);
   if (!q) throw new Error('question is required');
   const [local, live] = await Promise.all([
@@ -277,16 +280,26 @@ export async function ask({ question, history = [], searcher, env = {}, byok, br
   const pub = publicSources(sources);
   onEvent({ type: 'sources', sources: pub });
 
+  // Emitted before the answer streams so the page can show what to run while
+  // the prose is still arriving, and so the model can point at it by name.
+  const actions = matcher ? publicActions(matcher.match(q, sources)) : [];
+  if (actions.length) onEvent({ type: 'actions', actions });
+
   const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
   for (const turn of history.slice(-6)) {
     if ((turn.role === 'user' || turn.role === 'assistant') && typeof turn.content === 'string') {
       messages.push({ role: turn.role, content: turn.content.slice(0, 4000) });
     }
   }
+  const actionsBlock = actions.length
+    ? `\n\nRUNNABLE (the reader sees these as buttons under your answer; refer to them by name, never invent others):\n${actions
+        .map((a) => `- ${a.kind}: ${a.title} — ${a.run}`)
+        .join('\n')}`
+    : '';
   messages.push({
     role: 'user',
     content: sources.length
-      ? `SOURCES:\n\n${sourcesBlock(sources)}\n\nQUESTION: ${q}`
+      ? `SOURCES:\n\n${sourcesBlock(sources)}${actionsBlock}\n\nQUESTION: ${q}`
       : `No sources matched. Answer from general XActions knowledge only if you are certain, otherwise point to https://xactions.app/docs.\n\nQUESTION: ${q}`,
   });
 
@@ -305,11 +318,11 @@ export async function ask({ question, history = [], searcher, env = {}, byok, br
     if (!digest) throw error;
     onEvent({ type: 'lane', lane: 'docs' });
     onEvent({ type: 'delta', text: digest });
-    onEvent({ type: 'done', lane: 'docs', model: 'retrieval', digest: true, sources: pub });
-    return { lane: 'docs', model: 'retrieval', text: digest, digest: true, sources: pub };
+    onEvent({ type: 'done', lane: 'docs', model: 'retrieval', digest: true, sources: pub, actions });
+    return { lane: 'docs', model: 'retrieval', text: digest, digest: true, sources: pub, actions };
   }
-  onEvent({ type: 'done', lane: result.lane, model: result.model, partial: Boolean(result.partial), sources: pub });
-  return { ...result, sources: pub };
+  onEvent({ type: 'done', lane: result.lane, model: result.model, partial: Boolean(result.partial), sources: pub, actions });
+  return { ...result, sources: pub, actions };
 }
 
 /** Suggested questions shown on the empty state; every one resolves against the index. */

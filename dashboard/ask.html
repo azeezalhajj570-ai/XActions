@@ -262,6 +262,47 @@
     .meta-btn:focus-visible { outline: none; box-shadow: var(--ring); }
     .meta-btn svg { width: 14px; height: 14px; }
 
+
+    /* Runnable actions: the bridge from "here is how" to "here it is" */
+    .act-rail { margin-top: 16px; }
+    .act-rail-title { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .act-rail-title span { text-transform: none; letter-spacing: 0; font-weight: 400; background: var(--accent-light); color: var(--accent); border-radius: 9999px; padding: 2px 8px; font-size: 0.75rem; }
+    .act-list { list-style: none; display: grid; gap: 10px; margin: 0; padding: 0; }
+    .act {
+      border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(32,35,39,0.55), rgba(22,24,28,0.75));
+      animation: rise 0.32s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms);
+      transition: border-color 0.2s var(--ease), transform 0.16s var(--ease);
+    }
+    .act:hover { border-color: var(--border-glow); transform: translateY(-1px); }
+    .act-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+    .act-kind { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .act-kind svg { width: 14px; height: 14px; }
+    .act-why { color: var(--text-secondary); font-size: 0.75rem; text-align: right; }
+    .act-title { font-weight: 700; font-size: 1rem; }
+    .act-desc { color: var(--text-secondary); font-size: 0.875rem; margin-top: 2px; }
+    .act-run {
+      display: block; margin-top: 10px; padding: 9px 12px; border-radius: 10px;
+      background: #0b0d10; border: 1px solid var(--border); color: var(--text-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8125rem;
+      overflow-x: auto; white-space: pre; scrollbar-width: thin;
+    }
+    .act-note { margin-top: 8px; font-size: 0.75rem; color: var(--warning); }
+    .act-note code { background: rgba(255,173,31,0.12); border-radius: 5px; padding: 1px 5px; }
+    .act-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .act-btn {
+      background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);
+      border-radius: 9999px; padding: 7px 14px; font: inherit; font-size: 0.8125rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+      transition: border-color 0.2s var(--ease), transform 0.16s var(--ease), filter 0.2s;
+    }
+    .act-btn:hover { border-color: var(--border-glow); transform: translateY(-1px); }
+    .act-btn:active { transform: translateY(0); }
+    .act-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+    .act-btn:disabled { opacity: 0.6; cursor: progress; }
+    .act-primary { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 8px 22px -10px rgba(29,155,240,0.7); }
+    .act-primary:hover { filter: brightness(1.06); }
+    @media (max-width: 640px) { .act-links { flex-direction: column; } .act-btn { justify-content: center; } .act-why { display: none; } }
     .thinking { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.9375rem; }
     .thinking-dots { display: inline-flex; gap: 4px; }
     .thinking-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite ease-in-out; }

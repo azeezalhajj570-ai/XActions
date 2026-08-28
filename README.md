@@ -28,7 +28,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 </p>
 
 <p>
-  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-151-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="151 MCP Tools"></a>&nbsp;
+  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-152-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="152 MCP Tools"></a>&nbsp;
   <a href="https://smithery.ai/server/xactions"><img src="https://smithery.ai/badge/xactions" alt="Smithery"></a>&nbsp;
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP_Registry-deployed-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="MCP Registry"></a>&nbsp;
   <a href="Dockerfile"><img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>&nbsp;
@@ -104,10 +104,10 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | Feature | **XActions** | twikit | twscrape | x-use | xmcp (official) | bird | twitter-cli | Agent-Reach |
 |---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **No API Key Required** | ✅ | ✅ Cookies | ✅ Account pool | ✅ Browser | ❌ X API keys | ✅ Cookies | ❌ X API keys | ✅ |
-| **MCP Server (AI agents)** | ✅ **151 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
+| **MCP Server (AI agents)** | ✅ **152 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
 | **Browser Console Scripts** | ✅ 94 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **AI Voice Agent in Spaces** | ✅ Join, listen, speak | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CLI** | ✅ 55 commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **CLI** | ✅ 56 commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
 | **Language** | JavaScript | Python | Python | TypeScript | TypeScript | TypeScript | Python | Python |
 
 **XActions is the only toolkit that works in the browser, terminal, and with AI agents — all without an API key.**
@@ -125,7 +125,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | **`--json` everywhere** | Every read command accepts `--json` and puts data on stdout and nothing else. It outranks `--output`, so a pipe is never silently turned into a file write. |
 | **Reliability** | Public reads no longer need a browser at all. Profiles and timelines come from the internal GraphQL API in about a second, with no Chromium download. |
 | **Honest failures** | Nothing reports empty results as success anymore. A read that cannot complete says why, and says what to do about it. |
-| **Ask XActions** | [xactions.app/ask](https://xactions.app/ask) answers "how do I..." questions in plain language, grounded in these docs, the skills, the scripts, and the repo, with clickable sources. Streams from free LLM lanes (three need no key at all), or lead with your own Groq, OpenRouter, xAI, OpenAI, Gemini, Mistral, or Cerebras key. [Docs](docs/ask.md). |
+| **Ask XActions** | [xactions.app/ask](https://xactions.app/ask) answers "how do I..." in plain language from these docs, the skills, the scripts and the repo, and ends every answer with the thing to run: the console script (copied from source), the terminal command, or the MCP tool. Also `xactions ask "how do I unfollow everyone?"` in a terminal, and `x_ask` so an agent can read the manual before it acts. Free LLM lanes, three of which need no key. [Docs](docs/ask.md). |
 | **Examples** | [`examples/`](examples/) — 8 runnable programs, each verified against the live API. |
 | **Tutorials** | [`tutorials/`](tutorials/) — six guided walkthroughs, from a first scrape with no account to scripting XActions inside your own pipelines. |
 | **Docs that stay true** | `npm run docs:check` fails the build on a dead link, a stale version, a wrong tool count, or a documented command that does not exist. |

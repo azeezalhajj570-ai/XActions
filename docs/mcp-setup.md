@@ -4,6 +4,19 @@
 
 ---
 
+
+## x_ask: let the agent read the manual
+
+`x_ask` answers questions about XActions itself, grounded in the documentation, the skills, the browser scripts and the repository. Use it before guessing at a workflow, inventing a script name, or telling a user something is unsupported.
+
+```json
+{ "name": "x_ask", "arguments": { "question": "how do I unfollow everyone?" } }
+```
+
+It returns the written answer, the sources behind it, and the exact runnable action (browser script, CLI command, or another MCP tool). Pass `actionsOnly: true` to skip the model entirely and get just the matching actions in milliseconds.
+
+It is a read tool: no X session, no account access, no API key. Full guide: [Ask XActions](ask.md).
+
 ## 30-Second Quickstart
 
 ```bash

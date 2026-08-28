@@ -1325,6 +1325,31 @@ const TOOLS = [
       required: ['url'],
     },
   },
+  // ====== Ask XActions ======
+  {
+    name: 'x_ask',
+    description:
+      'Ask how to do something with XActions and get an answer grounded in the ' +
+      'toolkit\'s own documentation, skills, browser scripts and repository, with ' +
+      'sources and the exact runnable action (browser script, CLI command or MCP ' +
+      'tool). Use this before guessing at a workflow, inventing a script name, or ' +
+      'telling a user something is unsupported: it is the toolkit describing itself. ' +
+      'Needs no API key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        question: {
+          type: 'string',
+          description: 'A plain-language question, e.g. "how do I unfollow everyone?"',
+        },
+        actionsOnly: {
+          type: 'boolean',
+          description: 'Skip the written answer and return only the matching scripts, commands and tools (fast, no LLM call).',
+        },
+      },
+      required: ['question'],
+    },
+  },
   // ====== Cross-Platform ======
   {
     name: 'x_list_platforms',
@@ -2367,6 +2392,79 @@ async function initializeBackend() {
  * @param {{ account?: string }} [options] server options; `account` is the
  *   ledger account daily action caps are read from and charged to
  */
+/**
+ * x_ask: the toolkit answering questions about itself.
+ *
+ * An agent driving XActions has the same problem a person does: 149 tools, 94
+ * browser scripts and 120 CLI commands are more surface than fits in a prompt.
+ * Rather than guess at a workflow or invent a script name, it can ask, and get
+ * back the documented answer, the sources behind it, and the exact thing to
+ * run next. Retrieval is local to the install; the written answer uses the
+ * same keyless lanes as the website, and degrades to the documentation digest
+ * when they are all busy.
+ */
+let askCatalogs = null;
+async function loadAskCatalogs() {
+  if (!askCatalogs) {
+    askCatalogs = (async () => {
+      const { readFile } = await import('node:fs/promises');
+      const dataUrl = (name) => fileURLToPath(new URL(`../../dashboard/data/${name}`, import.meta.url));
+      const [engine, actions, index, catalog] = await Promise.all([
+        import('../ask/engine.js'),
+        import('../ask/actions.js'),
+        readFile(dataUrl('ask-index.json'), 'utf8').then(JSON.parse),
+        readFile(dataUrl('ask-actions.json'), 'utf8').then(JSON.parse),
+      ]);
+      return {
+        ask: engine.ask,
+        searcher: engine.createSearcher(index),
+        matcher: actions.createActionMatcher(catalog),
+        publicActions: actions.publicActions,
+      };
+    })();
+    askCatalogs.catch(() => { askCatalogs = null; });
+  }
+  return askCatalogs;
+}
+
+async function executeAskTool(args) {
+  const question = String(args.question || '').trim();
+  if (!question) throw new Error('x_ask: "question" is required');
+
+  const { ask, searcher, matcher, publicActions } = await loadAskCatalogs();
+
+  // actionsOnly skips the LLM entirely: an agent that just wants "which tool
+  // does this" should not wait on a completion for it.
+  if (args.actionsOnly) {
+    const sources = searcher.search(question, { limit: 8 });
+    return {
+      question,
+      actions: publicActions(matcher.match(question, sources)),
+      sources: sources.slice(0, 5).map((s) => ({ title: s.t, url: s.u, path: s.p })),
+    };
+  }
+
+  let answer = '';
+  const result = await ask({
+    question,
+    searcher,
+    matcher,
+    env: process.env,
+    onEvent: (event) => {
+      if (event.type === 'delta') answer += event.text;
+    },
+  });
+
+  return {
+    question,
+    answer,
+    lane: result.lane,
+    fromDocumentationIndex: Boolean(result.digest),
+    actions: result.actions,
+    sources: result.sources,
+  };
+}
+
 async function executeTool(name, args, options = {}) {
   // Add session cookie to args if provided globally
   if (SESSION_COOKIE && !args.cookie && name === 'x_login') {
@@ -2386,6 +2484,11 @@ async function executeTool(name, args, options = {}) {
   // Platform directory: reads the scraper registry, needs no browser
   if (name === 'x_list_platforms') {
     return await executePlatformTool();
+  }
+
+  // Ask XActions: reads the shipped documentation index, needs no browser
+  if (name === 'x_ask') {
+    return await executeAskTool(args);
   }
 
   // Handle Space agent tools (xspace-agent integration)

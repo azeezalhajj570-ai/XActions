@@ -18,17 +18,27 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ask, createSearcher, SUGGESTED_QUESTIONS } from '../../src/ask/engine.js';
+import { createActionMatcher } from '../../src/ask/actions.js';
 import { buildLaneChain } from '../../src/ask/lanes.js';
 
 const router = express.Router();
-const INDEX_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../dashboard/data/ask-index.json');
+const DATA_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../dashboard/data');
+const INDEX_PATH = path.join(DATA_DIR, 'ask-index.json');
+const ACTIONS_PATH = path.join(DATA_DIR, 'ask-actions.json');
 
 let searcherPromise = null;
 function getSearcher() {
   if (!searcherPromise) {
-    searcherPromise = readFile(INDEX_PATH, 'utf8').then((raw) => {
-      const index = JSON.parse(raw);
-      return { searcher: createSearcher(index), digest: index.digest, counts: index.counts };
+    searcherPromise = Promise.all([readFile(INDEX_PATH, 'utf8'), readFile(ACTIONS_PATH, 'utf8')]).then(([rawIndex, rawActions]) => {
+      const index = JSON.parse(rawIndex);
+      const catalog = JSON.parse(rawActions);
+      return {
+        searcher: createSearcher(index),
+        matcher: createActionMatcher(catalog),
+        digest: index.digest,
+        counts: index.counts,
+        actionCounts: catalog.counts,
+      };
     });
     searcherPromise.catch(() => { searcherPromise = null; });
   }
@@ -37,10 +47,11 @@ function getSearcher() {
 
 router.get('/health', async (req, res) => {
   try {
-    const { searcher, digest, counts } = await getSearcher();
+    const { searcher, matcher, digest, counts, actionCounts } = await getSearcher();
     res.set('cache-control', 'no-store').json({
       status: 'ok',
       index: { chunks: searcher.size, digest, counts },
+      actions: { total: matcher.size, counts: actionCounts },
       lanes: buildLaneChain(process.env).map((l) => l.name),
       suggested: SUGGESTED_QUESTIONS,
     });
@@ -55,8 +66,9 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'INVALID_INPUT', message: 'question is required' });
   }
   let searcher;
+  let matcher;
   try {
-    ({ searcher } = await getSearcher());
+    ({ searcher, matcher } = await getSearcher());
   } catch (error) {
     return res.status(503).json({ error: 'INDEX_UNAVAILABLE', message: error.message });
   }
@@ -77,6 +89,7 @@ router.post('/', async (req, res) => {
       question,
       history: Array.isArray(history) ? history : [],
       searcher,
+      matcher,
       env: process.env,
       byok: byok && typeof byok === 'object' ? byok : undefined,
       onEvent: send,

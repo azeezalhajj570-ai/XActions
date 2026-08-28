@@ -21,6 +21,7 @@ import os from 'os';
 import scrapers from '../scrapers/index.js';
 import { registerConnectCommand } from './commands/connect.js';
 import { registerDoctorCommand } from './commands/doctor.js';
+import { registerAskCommand } from './commands/ask.js';
 import { registerReportCommand } from './commands/report.js';
 import { registerQuickstartCommand } from './commands/quickstart.js';
 import { registerCompletionCommand } from './commands/completion.js';
@@ -255,6 +256,7 @@ program
 
 registerConnectCommand(program);
 registerDoctorCommand(program);
+registerAskCommand(program);
 registerReportCommand(program, { createHttpScraper, smartOutput });
 registerEngageCommand(program, { createHttpScraper, loadConfig, configDir: CONFIG_DIR });
 registerQuickstartCommand(program, { version: VERSION });

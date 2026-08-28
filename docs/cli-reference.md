@@ -9,6 +9,28 @@ The XActions CLI provides command-line tools for X/Twitter automation, scraping,
 
 ---
 
+
+## ask
+
+Ask how to do something with XActions and get a sourced answer plus what to run. No API key needed.
+
+```bash
+xactions ask "how do I unfollow everyone?"
+xactions ask "scrape followers" --json
+echo "how do I download a video" | xactions ask
+```
+
+| Option | Description |
+|---|---|
+| `--json` | Print the answer, sources and actions as JSON |
+| `-q, --quiet` | Answer only, no progress or lane line |
+| `--no-sources` | Skip the source list |
+| `-p, --provider <name>` | Answer with your own key (`groq`, `openrouter`, `xai`, `openai`, `gemini`, `mistral`, `cerebras`) |
+| `-k, --key <key>` | API key for `--provider` (defaults to `<PROVIDER>_API_KEY`) |
+| `-m, --model <model>` | Model override for `--provider` |
+
+The answer streams as it is written and ends with a **Run it** block naming the browser script, CLI command or MCP tool that does the job. Retrieval is local to the install, so it answers with no network once the free lanes are unreachable. Full guide: [Ask XActions](ask.md).
+
 ## Table of Contents
 
 - [Installation](#installation)

@@ -161,10 +161,53 @@ function appendUser(text) {
 function appendAssistant(message) {
   const el = document.createElement('div');
   el.className = 'msg msg-assistant';
-  el.innerHTML = `<div class="avatar" aria-hidden="true">⚡</div><div class="answer"><div class="body"></div><div class="sources"></div><div class="meta"></div></div>`;
+  el.innerHTML = `<div class="avatar" aria-hidden="true">⚡</div><div class="answer"><div class="body"></div><div class="acts"></div><div class="sources"></div><div class="meta"></div></div>`;
   thread.append(el);
   paintAssistant(el, message);
   return el;
+}
+
+
+// ---- Runnable actions -----------------------------------------------------
+
+const ACTION_META = {
+  script: { label: 'Browser script', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>' },
+  cli: { label: 'Terminal', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="6 9 9 12 6 15"/><line x1="12" y1="15" x2="17" y2="15"/></svg>' },
+  mcp: { label: 'MCP tool', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M14.1 9.9 17 7M9.9 14.1 7 17"/></svg>' },
+};
+
+function actionCard(action, i) {
+  const meta = ACTION_META[action.kind] || ACTION_META.script;
+  const links = [];
+  if (action.kind === 'script') {
+    // The script itself is fetched on click, so the button copies real source
+    // rather than a link the reader then has to go and open.
+    links.push(`<button type="button" class="act-btn act-primary" data-copy-script="${escapeHtml(action.raw)}" data-label="${escapeHtml(action.title)}">Copy script</button>`);
+    if (action.page) links.push(`<a class="act-btn" href="${escapeHtml(action.page)}">Open page</a>`);
+    if (action.runOnUrl) links.push(`<a class="act-btn" href="${escapeHtml(action.runOnUrl)}" target="_blank" rel="noopener noreferrer">Go to X</a>`);
+  } else if (action.kind === 'cli') {
+    links.push(`<button type="button" class="act-btn act-primary" data-copy-text="${escapeHtml(action.run)}">Copy command</button>`);
+    links.push(`<button type="button" class="act-btn" data-copy-text="${escapeHtml(action.install)}">Copy install</button>`);
+  } else {
+    links.push(`<button type="button" class="act-btn act-primary" data-copy-text="${escapeHtml(action.id)}">Copy tool name</button>`);
+    links.push(`<a class="act-btn" href="/mcp">Set up MCP</a>`);
+  }
+  return `<li class="act" style="--i:${i}">
+    <div class="act-head"><span class="act-kind" title="${escapeHtml(meta.label)}">${meta.icon}<span>${escapeHtml(meta.label)}</span></span><span class="act-why">${escapeHtml(action.why || '')}</span></div>
+    <div class="act-title">${escapeHtml(action.title)}</div>
+    ${action.description ? `<div class="act-desc">${escapeHtml(action.description)}</div>` : ''}
+    <code class="act-run">${escapeHtml(action.run)}</code>
+    ${action.needsCore ? '<div class="act-note">Paste <code>src/automation/core.js</code> first</div>' : ''}
+    <div class="act-links">${links.join('')}</div>
+  </li>`;
+}
+
+function renderActions(actions) {
+  if (!actions || !actions.length) return '';
+  return `<section class="act-rail" aria-label="Runnable actions">
+    <h3 class="act-rail-title">Run it${actions.length > 1 ? ` <span>${actions.length} ways</span>` : ''}</h3>
+    <ul class="act-list">${actions.map(actionCard).join('')}</ul>
+  </section>`;
 }
 
 function paintAssistant(el, message, { live = false } = {}) {
@@ -178,6 +221,7 @@ function paintAssistant(el, message, { live = false } = {}) {
     body.innerHTML = renderMarkdown(message.content || '', sources) + (live ? '<span class="cursor" aria-hidden="true"></span>' : '');
   }
   el.querySelector('.sources').innerHTML = sources.map(sourceChip).join('');
+  el.querySelector('.acts').innerHTML = renderActions(message.actions);
   const meta = el.querySelector('.meta');
   if (message.lane && !live) {
     const via = message.digest
@@ -242,18 +286,25 @@ async function askViaApi(question, history, byok, onEvent, signal) {
 async function loadEngine() {
   if (engine) return engine;
   showToast('API offline. Answering in your browser.');
-  const [{ ask, createSearcher }, res] = await Promise.all([
+  const [{ ask, createSearcher }, { createActionMatcher }, indexRes, actionsRes] = await Promise.all([
     import('/js/ask/engine.js'),
+    import('/js/ask/actions.js'),
     fetch('/data/ask-index.json'),
+    fetch('/data/ask-actions.json'),
   ]);
-  if (!res.ok) throw new Error(`docs index unavailable (${res.status})`);
-  engine = { ask, searcher: createSearcher(await res.json()) };
+  if (!indexRes.ok) throw new Error(`docs index unavailable (${indexRes.status})`);
+  if (!actionsRes.ok) throw new Error(`action catalog unavailable (${actionsRes.status})`);
+  engine = {
+    ask,
+    searcher: createSearcher(await indexRes.json()),
+    matcher: createActionMatcher(await actionsRes.json()),
+  };
   return engine;
 }
 
 async function askLocally(question, history, byok, onEvent, signal) {
-  const { ask, searcher } = await loadEngine();
-  await ask({ question, history, searcher, env: {}, byok, browserSafe: true, onEvent: (e) => onEvent(e.type === 'done' ? { ...e, local: true } : e), signal });
+  const { ask, searcher, matcher } = await loadEngine();
+  await ask({ question, history, searcher, matcher, env: {}, byok, browserSafe: true, onEvent: (e) => onEvent(e.type === 'done' ? { ...e, local: true } : e), signal });
 }
 
 async function submit(question) {
@@ -268,7 +319,7 @@ async function submit(question) {
   const history = current.messages.map((m) => ({ role: m.role, content: m.content }));
   current.messages.push({ role: 'user', content: question });
   appendUser(question);
-  const message = { role: 'assistant', content: '', sources: [], lane: null };
+  const message = { role: 'assistant', content: '', sources: [], actions: [], lane: null };
   current.messages.push(message);
   const el = appendAssistant(message);
   paintAssistant(el, message, { live: true });
@@ -295,7 +346,8 @@ async function submit(question) {
     if (e.type === 'sources') message.sources = e.sources;
     else if (e.type === 'lane') message.lane = e.lane;
     else if (e.type === 'delta') message.content += e.text;
-    else if (e.type === 'done') { message.lane = e.lane; message.partial = e.partial; message.digest = Boolean(e.digest); message.local = Boolean(e.local); }
+    else if (e.type === 'actions') message.actions = e.actions;
+    else if (e.type === 'done') { message.lane = e.lane; message.partial = e.partial; message.digest = Boolean(e.digest); message.local = Boolean(e.local); if (e.actions?.length) message.actions = e.actions; }
     else if (e.type === 'error') message.error = e.message;
     repaint();
   };
@@ -431,6 +483,37 @@ laneKeyInput.addEventListener('change', () => {
 });
 
 thread.addEventListener('click', async (e) => {
+  // Copy the script's real source, fetched from GitHub raw on demand. Nobody
+  // wants a link when what they asked for is the thing to paste.
+  const copyScript = e.target.closest('[data-copy-script]');
+  if (copyScript) {
+    const original = copyScript.textContent;
+    copyScript.disabled = true;
+    copyScript.textContent = 'Fetching...';
+    try {
+      const res = await fetch(copyScript.dataset.copyScript);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const source = await res.text();
+      await navigator.clipboard.writeText(source);
+      copyScript.textContent = 'Copied';
+      showToast(`${copyScript.dataset.label} copied. Paste it into the DevTools console.`);
+    } catch (err) {
+      copyScript.textContent = 'Open instead';
+      showToast(`Could not fetch the script (${err.message}). Use "Open page".`);
+    } finally {
+      copyScript.disabled = false;
+      setTimeout(() => { copyScript.textContent = original; }, 2200);
+    }
+    return;
+  }
+  const copyText = e.target.closest('[data-copy-text]');
+  if (copyText) {
+    await navigator.clipboard.writeText(copyText.dataset.copyText);
+    const original = copyText.textContent;
+    copyText.textContent = 'Copied';
+    setTimeout(() => { copyText.textContent = original; }, 1500);
+    return;
+  }
   const copyCode = e.target.closest('.copy-code');
   if (copyCode) {
     await navigator.clipboard.writeText(copyCode.parentElement.querySelector('code')?.textContent || '');
