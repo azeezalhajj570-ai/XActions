@@ -107,7 +107,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | **MCP Server (AI agents)** | ✅ **151 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
 | **Browser Console Scripts** | ✅ 94 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **AI Voice Agent in Spaces** | ✅ Join, listen, speak | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CLI** | ✅ 50+ commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **CLI** | ✅ 55 commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
 | **Language** | JavaScript | Python | Python | TypeScript | TypeScript | TypeScript | Python | Python |
 
 **XActions is the only toolkit that works in the browser, terminal, and with AI agents — all without an API key.**
@@ -146,6 +146,43 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 
 ---
 
+## 📦 Installation
+
+<table>
+<tr>
+<td><strong>npm</strong></td>
+<td>
+
+```bash
+npm install xactions
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>CLI</strong></td>
+<td>
+
+```bash
+npm install -g xactions
+xactions quickstart          # guided first run
+xactions doctor              # check what works right now
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>Browser</strong></td>
+<td>
+
+No install needed — copy-paste scripts into your browser console on x.com
+
+</td>
+</tr>
+</table>
+
+---
+
 ### 📖 Table of Contents
 
 **Learn**
@@ -170,6 +207,142 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 - [API Reference](#-api-reference) — Full function documentation
 - [Claude Tutorials](#-claude-tutorials) — 23 ready-to-paste prompts
 - [Contributing](#-contributing) — Help make XActions better
+
+---
+
+## ✨ How It Works
+
+<table>
+<tr>
+<td width="33%" align="center"><strong>1. Paste</strong><br><br>Copy a script into the<br>x.com DevTools console</td>
+<td width="33%" align="center"><strong>2. Run</strong><br><br>Use the CLI, MCP server,<br>or browser extension</td>
+<td width="33%" align="center"><strong>3. Done</strong><br><br>Everything runs locally.<br>No data leaves your machine</td>
+</tr>
+</table>
+
+> Your x.com tab does all the work. Nothing gets scraped to our servers. **You're in control.**
+
+---
+
+## 💰 Pricing
+
+### 🆓 100% Free & Open Source
+
+Everything is **completely free** — browser scripts, CLI, Node.js library, MCP server, and API.
+
+No API keys. No subscriptions. No paywalls. Just clone and run.
+
+<details>
+<summary>🤖 Optional: Remote API for AI Agents</summary>
+
+If you self-host the XActions API for remote AI agent access, you can optionally enable pay-per-request micropayments via the [x402](https://x402.org) protocol. This is entirely optional and disabled by default.
+
+| Operation | Price |
+|-----------|-------|
+| Profile scrape | $0.001 |
+| Followers/Following | $0.01 |
+| Tweet scrape | $0.005 |
+| Search tweets | $0.01 |
+| Unfollow non-followers | $0.05 |
+| Detect unfollowers | $0.02 |
+| Auto-like | $0.02 |
+| Video download | $0.005 |
+
+This only applies to the hosted remote API. Local mode is always free.
+
+</details>
+
+---
+
+## 🎯 Why XActions?
+
+<table>
+<tr>
+<td></td>
+<td align="center"><strong>XActions</strong></td>
+<td align="center"><strong>Others</strong></td>
+</tr>
+<tr><td><strong>Scope</strong></td><td>Browser + CLI + Node.js + MCP + Extension</td><td>Usually 1 thing</td></tr>
+<tr><td><strong>API Key</strong></td><td>Not needed</td><td>Most need Twitter API ($100/mo)</td></tr>
+<tr><td><strong>MCP Tools</strong></td><td>149 for Claude, GPT, Cursor</td><td>0–2 tools</td></tr>
+<tr><td><strong>AI Features</strong></td><td>Sentiment, Grok, reputation</td><td>None</td></tr>
+<tr><td><strong>Export</strong></td><td>JSON, CSV, Markdown, HTML</td><td>JSON only (if any)</td></tr>
+<tr><td><strong>Migration</strong></td><td>Bluesky & Mastodon stubs</td><td>None</td></tr>
+<tr><td><strong>Tutorials</strong></td><td>23 Claude prompts</td><td>None</td></tr>
+</table>
+
+---
+
+## 🐳 Docker
+
+Run XActions anywhere with one command:
+
+```bash
+# Quick start
+docker build -t xactions .
+docker run -it xactions xactions profile elonmusk
+
+# Run the MCP server
+docker run -p 3000:3000 xactions npm run mcp
+
+# With environment variables
+docker run -e XACTIONS_SESSION_COOKIE=your_cookie xactions xactions followers elonmusk
+```
+
+Or use Docker Compose:
+
+```bash
+docker compose up
+```
+
+See [Dockerfile](Dockerfile) for details.
+
+---
+
+## 📖 API Reference
+
+Full TypeScript-compatible API with type declarations included.
+
+```typescript
+import { createBrowser, createPage, scrapeProfile, scrapeFollowers } from 'xactions';
+import { scrapeFollowing, scrapeTweets, searchTweets } from 'xactions/scrapers';
+```
+
+**Core Functions:**
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `createBrowser(options?)` | Launch Puppeteer browser | `Browser` |
+| `createPage(browser)` | Create stealth page | `Page` |
+| `scrapeProfile(page, username)` | Get user profile data | `Profile` |
+| `scrapeFollowers(page, username, options?)` | List followers | `User[]` |
+| `scrapeFollowing(page, username, options?)` | List following | `User[]` |
+| `scrapeTweets(page, username, options?)` | Get user tweets | `Tweet[]` |
+| `searchTweets(page, query, options?)` | Search tweets | `Tweet[]` |
+| `downloadVideo(page, tweetUrl)` | Extract video URLs | `VideoResult` |
+| `exportBookmarks(page, options?)` | Export bookmarks | `Bookmark[]` |
+| `unrollThread(page, tweetUrl)` | Unroll a thread | `Thread` |
+
+See [docs/api-reference.md](docs/api-reference.md) for the complete reference with all parameters and return types.
+
+---
+
+## 📝 Claude Tutorials
+
+**23 ready-to-paste prompt files** that turn Claude into your personal X automation expert.
+
+| Tutorial | What You'll Learn |
+|----------|------------------|
+| [MCP Setup](tutorials/claude-prompts/01-mcp-setup-and-first-commands.md) | Install and connect XActions to Claude Desktop |
+| [Unfollow Cleanup](tutorials/claude-prompts/02-unfollow-non-followers-cleanup.md) | Remove non-followers, detect unfollowers |
+| [Growth Suite](tutorials/claude-prompts/03-growth-automation-suite.md) | Auto-follow, auto-like, keyword targeting |
+| [Scraping](tutorials/claude-prompts/04-scraping-research-analysis.md) | Extract profiles, tweets, hashtags |
+| [Content Posting](tutorials/claude-prompts/05-content-posting-threads-scheduling.md) | Tweets, threads, polls, scheduling |
+| [Analytics](tutorials/claude-prompts/06-analytics-competitor-intelligence.md) | Performance tracking, competitor analysis |
+| [Autonomous Space Agent](tutorials/claude-prompts/23-autonomous-space-agent.md) | Deploy AI voice agents in live X Spaces |
+| [Power User Playbook](tutorials/claude-prompts/22-advanced-power-user-playbook.md) | 10 advanced multi-feature strategies |
+
+**[See all 23 tutorials →](tutorials/claude-prompts/README.md)**
 
 ---
 
@@ -372,142 +545,6 @@ XActions is open-source and completely free for humans. AI agents pay micropayme
 
 ---
 
-## ✨ How It Works
-
-<table>
-<tr>
-<td width="33%" align="center"><strong>1. Paste</strong><br><br>Copy a script into the<br>x.com DevTools console</td>
-<td width="33%" align="center"><strong>2. Run</strong><br><br>Use the CLI, MCP server,<br>or browser extension</td>
-<td width="33%" align="center"><strong>3. Done</strong><br><br>Everything runs locally.<br>No data leaves your machine</td>
-</tr>
-</table>
-
-> Your x.com tab does all the work. Nothing gets scraped to our servers. **You're in control.**
-
----
-
-## 💰 Pricing
-
-### 🆓 100% Free & Open Source
-
-Everything is **completely free** — browser scripts, CLI, Node.js library, MCP server, and API.
-
-No API keys. No subscriptions. No paywalls. Just clone and run.
-
-<details>
-<summary>🤖 Optional: Remote API for AI Agents</summary>
-
-If you self-host the XActions API for remote AI agent access, you can optionally enable pay-per-request micropayments via the [x402](https://x402.org) protocol. This is entirely optional and disabled by default.
-
-| Operation | Price |
-|-----------|-------|
-| Profile scrape | $0.001 |
-| Followers/Following | $0.01 |
-| Tweet scrape | $0.005 |
-| Search tweets | $0.01 |
-| Unfollow non-followers | $0.05 |
-| Detect unfollowers | $0.02 |
-| Auto-like | $0.02 |
-| Video download | $0.005 |
-
-This only applies to the hosted remote API. Local mode is always free.
-
-</details>
-
----
-
-## 🎯 Why XActions?
-
-<table>
-<tr>
-<td></td>
-<td align="center"><strong>XActions</strong></td>
-<td align="center"><strong>Others</strong></td>
-</tr>
-<tr><td><strong>Scope</strong></td><td>Browser + CLI + Node.js + MCP + Extension</td><td>Usually 1 thing</td></tr>
-<tr><td><strong>API Key</strong></td><td>Not needed</td><td>Most need Twitter API ($100/mo)</td></tr>
-<tr><td><strong>MCP Tools</strong></td><td>149 for Claude, GPT, Cursor</td><td>0–2 tools</td></tr>
-<tr><td><strong>AI Features</strong></td><td>Sentiment, Grok, reputation</td><td>None</td></tr>
-<tr><td><strong>Export</strong></td><td>JSON, CSV, Markdown, HTML</td><td>JSON only (if any)</td></tr>
-<tr><td><strong>Migration</strong></td><td>Bluesky & Mastodon stubs</td><td>None</td></tr>
-<tr><td><strong>Tutorials</strong></td><td>23 Claude prompts</td><td>None</td></tr>
-</table>
-
----
-
-## 🐳 Docker
-
-Run XActions anywhere with one command:
-
-```bash
-# Quick start
-docker build -t xactions .
-docker run -it xactions xactions profile elonmusk
-
-# Run the MCP server
-docker run -p 3000:3000 xactions npm run mcp
-
-# With environment variables
-docker run -e XACTIONS_SESSION_COOKIE=your_cookie xactions xactions followers elonmusk
-```
-
-Or use Docker Compose:
-
-```bash
-docker compose up
-```
-
-See [Dockerfile](Dockerfile) for details.
-
----
-
-## 📖 API Reference
-
-Full TypeScript-compatible API with type declarations included.
-
-```typescript
-import { createBrowser, createPage, scrapeProfile, scrapeFollowers } from 'xactions';
-import { scrapeFollowing, scrapeTweets, searchTweets } from 'xactions/scrapers';
-```
-
-**Core Functions:**
-
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `createBrowser(options?)` | Launch Puppeteer browser | `Browser` |
-| `createPage(browser)` | Create stealth page | `Page` |
-| `scrapeProfile(page, username)` | Get user profile data | `Profile` |
-| `scrapeFollowers(page, username, options?)` | List followers | `User[]` |
-| `scrapeFollowing(page, username, options?)` | List following | `User[]` |
-| `scrapeTweets(page, username, options?)` | Get user tweets | `Tweet[]` |
-| `searchTweets(page, query, options?)` | Search tweets | `Tweet[]` |
-| `downloadVideo(page, tweetUrl)` | Extract video URLs | `VideoResult` |
-| `exportBookmarks(page, options?)` | Export bookmarks | `Bookmark[]` |
-| `unrollThread(page, tweetUrl)` | Unroll a thread | `Thread` |
-
-See [docs/api-reference.md](docs/api-reference.md) for the complete reference with all parameters and return types.
-
----
-
-## 📝 Claude Tutorials
-
-**23 ready-to-paste prompt files** that turn Claude into your personal X automation expert.
-
-| Tutorial | What You'll Learn |
-|----------|------------------|
-| [MCP Setup](tutorials/claude-prompts/01-mcp-setup-and-first-commands.md) | Install and connect XActions to Claude Desktop |
-| [Unfollow Cleanup](tutorials/claude-prompts/02-unfollow-non-followers-cleanup.md) | Remove non-followers, detect unfollowers |
-| [Growth Suite](tutorials/claude-prompts/03-growth-automation-suite.md) | Auto-follow, auto-like, keyword targeting |
-| [Scraping](tutorials/claude-prompts/04-scraping-research-analysis.md) | Extract profiles, tweets, hashtags |
-| [Content Posting](tutorials/claude-prompts/05-content-posting-threads-scheduling.md) | Tweets, threads, polls, scheduling |
-| [Analytics](tutorials/claude-prompts/06-analytics-competitor-intelligence.md) | Performance tracking, competitor analysis |
-| [Autonomous Space Agent](tutorials/claude-prompts/23-autonomous-space-agent.md) | Deploy AI voice agents in live X Spaces |
-| [Power User Playbook](tutorials/claude-prompts/22-advanced-power-user-playbook.md) | 10 advanced multi-feature strategies |
-
-**[See all 23 tutorials →](tutorials/claude-prompts/README.md)**
-
----
-
 ## ⚠️ Disclaimer
 
 > [!WARNING]
@@ -523,43 +560,6 @@ See [docs/api-reference.md](docs/api-reference.md) for the complete reference wi
 > **For X/Twitter:** If you have concerns about this project or would like us to modify or remove any functionality, please contact [@nichxbt](https://x.com/nichxbt) directly. We're happy to work with you.
 >
 > **Acknowledgment:** This project was inspired by the innovation happening at X and xAI. We admire Elon Musk's vision for making X the everything app and Grok's approach to AI. XActions aims to help developers and researchers explore the platform's capabilities while respecting its ecosystem.
-
----
-
-## 📦 Installation
-
-<table>
-<tr>
-<td><strong>npm</strong></td>
-<td>
-
-```bash
-npm install xactions
-```
-
-</td>
-</tr>
-<tr>
-<td><strong>CLI</strong></td>
-<td>
-
-```bash
-npm install -g xactions
-xactions quickstart          # guided first run
-xactions doctor              # check what works right now
-```
-
-</td>
-</tr>
-<tr>
-<td><strong>Browser</strong></td>
-<td>
-
-No install needed — copy-paste scripts into your browser console on x.com
-
-</td>
-</tr>
-</table>
 
 ---
 
@@ -1190,38 +1190,48 @@ Use browser scripts &nbsp;·&nbsp; Copy-paste console scripts &nbsp;·&nbsp; Vie
 
 ## 📁 Project Structure
 
+Every top-level directory, so nothing here is a surprise.
+
 ```
-xactions/
-├── src/
-│   ├── index.js          # Main entry point
-│   ├── scrapers/         # Multi-platform scrapers
-│   │   ├── index.js      # Unified interface: scrape(platform, type, opts)
-│   │   ├── twitter/      # X/Twitter scrapers (Puppeteer)
-│   │   ├── bluesky/      # Bluesky scrapers (AT Protocol)
-│   │   ├── mastodon/     # Mastodon scrapers (REST API)
-│   │   └── threads/      # Threads scrapers (Puppeteer)
-│   ├── cli/              # Command-line interface
-│   ├── mcp/              # MCP server (151 tools for AI agents)
-│   ├── spaces/           # Autonomous Space agent (xspace-agent integration)
-│   ├── automation/       # Browser console automation scripts
-│   ├── plugins/          # Plugin system (loader, manager, template)
-│   ├── streaming/        # Real-time event streams (Socket.IO)
-│   ├── workflows/        # Declarative automation pipelines
-│   ├── analytics/        # Sentiment analysis & reputation monitoring
-│   ├── portability/      # Account export, migration, archive viewer
-│   └── graph/            # Social graph analysis & visualization
-├── api/                  # Express REST API
-│   ├── routes/           # 39 route modules
-│   ├── services/         # Business logic + Bull job queue
-│   ├── middleware/       # Auth, x402, AI detection
-│   └── realtime/         # Socket.IO handler
-├── dashboard/            # Website (static HTML pages)
-├── extension/            # Chrome/Edge browser extension (Manifest V3)
-├── docs/                 # Documentation
-├── skills/               # 49 Agent Skills (skills/*/SKILL.md)
-├── tests/                # Vitest test suite
-└── prisma/               # Database schema
+src/            The library. cli/ mcp/ scrapers/ client/ automation/ agents/
+                analytics/ streaming/ workflows/ plugins/ portability/ graph/
+                a2a/ spaces/ ai/ auth/ scheduler/ notifications/, plus the
+                browser console scripts that sit at the top level
+api/            Express REST API: routes/ services/ middleware/ realtime/
+bin/            Legacy command name (unfollowx), forwards to the CLI
+packages/       xactions-mcp, the thin MCP wrapper published to npm
+skills/         49 Agent Skills, one directory each
+extension/      Chrome and Edge extension (Manifest V3)
+integrations/   Third-party glue (n8n and friends)
+worker/         Cloudflare Worker entry point
+functions/      Cloudflare Pages Functions for the /api/* edge surface
+
+site/           The marketing landing page served at /
+dashboard/      The signed-in app shell at /dashboard, plus the generated
+                docs, guides, skills and script pages the site serves
+public/         Static assets: OG images, robots.txt, sitemap
+playground/     Standalone in-browser playground
+
+docs/           Documentation source (Markdown)
+tutorials/      Guided walkthroughs
+examples/       Runnable programs, verified against the live API
+prompts/        Prompt library for coding agents
+
+tests/          Vitest suite
+scripts/        Build, docs and maintenance scripts
+config/         Agent, niche and persona configuration
+prisma/         Database schema and migrations
+deploy/         Cloudflare and GCP deployment assets
+types/          TypeScript declarations
+data/           Runtime output (gitignored, keeps a .gitkeep)
+archive/        Retired code, kept for reference. Do not modify
+
+python/         xeepy, the Python twin of the library
+xspace-agents/  The Spaces agent monorepo
 ```
+
+Both `python/` and `xspace-agents/` are self-contained projects that live in this
+repository but build on their own. Start from their READMEs, not this one.
 
 ---
 

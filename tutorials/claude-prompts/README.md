@@ -24,7 +24,7 @@ Each prompt is designed to:
 | # | Tutorial | Description |
 |---|----------|-------------|
 | 01 | [MCP Setup & First Commands](01-mcp-setup-and-first-commands.md) | Install XActions MCP server, connect to Claude Desktop, run your first commands |
-| 15 | [CLI Mastery Guide](15-cli-mastery-guide.md) | Master the `xactions` command-line tool — all 12 commands with examples |
+| 15 | [CLI Mastery Guide](15-cli-mastery-guide.md) | Master the `xactions` command-line tool — all 55 commands with examples |
 | 16 | [Browser Automation Framework](16-browser-automation-framework.md) | Learn the core.js + actions.js browser automation system |
 
 ### Follower Management
@@ -115,7 +115,7 @@ These 23 tutorials cover **every XActions feature**:
 
 - ✅ **151 MCP tools** — Covered across tutorials 01-23
 - ✅ **15 browser automation scripts** — Tutorials 03, 07, 16, 19, 20
-- ✅ **12 CLI commands** — Tutorial 15
+- ✅ **55 CLI commands** — Tutorial 15
 - ✅ **5 scraper modules** — Tutorials 04, 17
 - ✅ **40+ standalone scripts** — Tutorials 04, 12, 13, 17
 - ✅ **Autonomous Space Agent** — Tutorial 23

@@ -56,7 +56,7 @@ xactions followers elonmusk --count 500 --output followers.csv
 xactions non-followers myhandle
 ```
 
-See the full [CLI Reference](cli-reference.md) for all 111 commands.
+See the full [CLI Reference](cli-reference.md) for all 55 commands.
 
 ---
 
@@ -194,7 +194,7 @@ X/Twitter enforces aggressive rate limits. All XActions tools include built-in d
 
 | Guide | Description |
 |-------|-------------|
-| [CLI Reference](cli-reference.md) | All 111 CLI commands |
+| [CLI Reference](cli-reference.md) | All 55 CLI commands |
 | [API Reference](api-reference.md) | Node.js library functions |
 | [MCP Setup](mcp-setup.md) | AI agent integration |
 | [Browser Scripts](browser-scripts.md) | Complete script catalog |
