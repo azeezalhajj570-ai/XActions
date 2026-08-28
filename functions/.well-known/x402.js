@@ -53,7 +53,7 @@ export async function onRequestGet({ request, env }) {
       name: 'XActions',
       description:
         'Public X (Twitter) data for agents. Pay per call in USDC on Solana or Base. No API key, no account, no rate-limit tier.',
-      documentation: `${origin}/docs/x402`,
+      documentation: 'https://github.com/nirholas/XActions/blob/main/docs/x402.md',
       openapi: `${origin}/openapi.json`,
       resources,
     },
@@ -61,3 +61,8 @@ export async function onRequestGet({ request, env }) {
     corsHeaders(request),
   );
 }
+
+// A discovery crawler probes with HEAD before it does anything else. Pages
+// routes an unclaimed method to functions/api/[[path]].js, whose 503 made every
+// endpoint here look like it needed a backend that was not deployed.
+export const onRequestHead = onRequestGet;

@@ -128,3 +128,7 @@ export async function onRequestPost({ request, env }) {
     headers: { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', ...cors },
   });
 }
+
+// A discovery crawler probes with HEAD first; Pages would otherwise route that
+// to functions/api/[[path]].js and answer 503 for an endpoint that is live.
+export const onRequestHead = onRequestGet;

@@ -23,24 +23,22 @@ export async function onRequestOptions({ request }) {
   return preflightResponse(request);
 }
 
-export async function onRequestGet({ request }) {
-  return jsonResponse(
-    { error: 'method_not_allowed', message: 'POST a { username, limit } body to this endpoint.' },
-    405,
-    corsHeaders(request),
-  );
-}
-
-export const onRequestPost = withX402(
+const paidHandler = withX402(
   { price: RESOURCE.price, description: RESOURCE.description },
   async ({ request, payment }) => {
     const cors = corsHeaders(request);
 
-    let body;
-    try {
-      body = await request.json();
-    } catch {
-      body = {};
+    // Both methods are first class. GET with query parameters is what a
+    // discovery crawler probes with, and what a human can paste into a browser
+    // to see the 402 terms; POST with a JSON body is what an agent SDK sends.
+    const query = new URL(request.url).searchParams;
+    let body = Object.fromEntries(query);
+    if (request.method === 'POST') {
+      try {
+        body = { ...body, ...(await request.json()) };
+      } catch {
+        // A POST with no body is still a valid probe: fall back to the query.
+      }
     }
 
     const handle = normalizeHandle(body?.username ?? body?.handle ?? body?.url);
@@ -74,3 +72,20 @@ export const onRequestPost = withX402(
     }
   },
 );
+
+// Every method is claimed here, not just GET and POST. Pages Functions route an
+// unclaimed method to functions/api/[[path]].js, whose honest 503 ("this needs
+// the Node backend") is wrong for this endpoint and, because discovery crawlers
+// probe with HEAD before anything else, was enough to get the resource rejected
+// as "no 402 response found".
+export async function onRequest(context) {
+  const { request } = context;
+  if (request.method === 'GET' || request.method === 'POST' || request.method === 'HEAD') {
+    return paidHandler(context);
+  }
+  return jsonResponse(
+    { error: 'method_not_allowed', message: 'Use GET with query parameters or POST with a JSON body.' },
+    405,
+    { ...corsHeaders(request), allow: 'GET, POST, HEAD, OPTIONS' },
+  );
+}

@@ -20,7 +20,8 @@
 /**
  * @typedef {object} PaidResource
  * @property {string} path - Absolute path on this site.
- * @property {string} method
+ * @property {string} method - The method a crawler should probe with. Both GET
+ *   (query parameters) and POST (JSON body) are accepted by every resource.
  * @property {string} operation - The key in AI_OPERATION_PRICES.
  * @property {string} price - Dollar string, the source of truth for the gate.
  * @property {string} description
@@ -32,7 +33,7 @@
 export const PAID_RESOURCES = [
   {
     path: '/api/ai/scrape/profile',
-    method: 'POST',
+    method: 'GET',
     operation: 'scrape:profile',
     price: '$0.001',
     description:
@@ -78,7 +79,7 @@ export const PAID_RESOURCES = [
   },
   {
     path: '/api/ai/scrape/tweets',
-    method: 'POST',
+    method: 'GET',
     operation: 'scrape:tweets',
     price: '$0.005',
     description:

@@ -94,13 +94,13 @@ export function readPayment(request) {
  * @param {string} [options.error] - Why payment is being asked for.
  * @returns {object|null} null when no chain is configured to receive.
  */
-export function buildPaymentRequired({ api, price, resource, description, error }) {
+export function buildPaymentRequired({ api, price, resource, description, error, method = 'POST' }) {
   const accepts = api.buildAccepts({ price, resource, description });
   if (!accepts.length) return null;
   return {
     x402Version: 1,
     error: error || 'Payment required',
-    resource: { url: resource, method: 'POST', description, mimeType: 'application/json' },
+    resource: { url: resource, method, description, mimeType: 'application/json' },
     accepts: accepts.map((entry) => ({ ...entry, maxAmountRequired: entry.amount })),
   };
 }
@@ -203,8 +203,17 @@ export function withX402({ price, description }, handler) {
 
     if (!api.isX402Configured()) return handler({ ...context, payment: null });
 
-    const resource = new URL(request.url).toString();
-    const paymentRequired = buildPaymentRequired({ api, price, resource, description });
+    const url = new URL(request.url);
+    // Query parameters are inputs, not part of the resource identity: an agent
+    // that reads the terms for ?username=nasa must be able to reuse them.
+    const resource = `${url.origin}${url.pathname}`;
+    const paymentRequired = buildPaymentRequired({
+      api,
+      price,
+      resource,
+      description,
+      method: request.method,
+    });
     if (!paymentRequired) return handler({ ...context, payment: null });
 
     const attached = readPayment(request);

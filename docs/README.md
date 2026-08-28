@@ -26,6 +26,7 @@
 | [Skills Reference](skills.md) | 49 agent skills for AI assistants |
 | [DOM Selectors](dom-selectors.md) | X/Twitter DOM selector reference |
 | [Troubleshooting](troubleshooting.md) | Common issues and fixes |
+| [x402 payments](x402.md) | Pay per call in USDC on Solana or Base: no API key, no account, and how identity works over x402 and MCP |
 | [Portability](portability.md) | Import your X data archive, export and migrate to Bluesky or Mastodon |
 | [Audits](audits/2026-08-27-competitive-and-structural-audit.md) | Competitive gap analysis and repo health, with the open backlog |
 | [Live site audit](audits/2026-08-27-live-site-feature-audit.md) | Every feature on xactions.app exercised in a real browser, with the root cause of each failure |

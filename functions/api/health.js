@@ -35,3 +35,8 @@ export async function onRequestGet({ request, env }) {
     timestamp: new Date().toISOString(),
   }, 200, corsHeaders(request));
 }
+
+// A discovery crawler probes with HEAD before it does anything else. Pages
+// routes an unclaimed method to functions/api/[[path]].js, whose 503 made every
+// endpoint here look like it needed a backend that was not deployed.
+export const onRequestHead = onRequestGet;
