@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **`/api/ai/alert/new-followers` finally resolves.** The `/alert` mount exists for backward compatibility with that path, but the handler was declared as `/alert/new-followers`, so the mount produced `/api/ai/alert/alert/new-followers` and the documented path never existed.
 - **The x402 client no longer loads a signing library it may never use.** viem is built on the first payment instead of at construction, so creating a client is instant and the spend limits hold whether or not a wallet was configured.
+- **The old x402 suite no longer asserts that a fake signature is accepted.** Its "With valid payment" block attached `0xMockSignature` and expected a 200 from the mock middleware defined in the same file, which encoded the header-is-payment bypass as correct behaviour. Acceptance is tested against the real gates in `tests/x402-gate.test.js`; what remains here is a contract test for the 402 document.
 - **`npm run docs:check` no longer fails on scratch files.** `scripts/audit-docs.mjs` walked `tmp/`, which is gitignored, so a working note left there turned the docs gate red for everyone.
 
 
