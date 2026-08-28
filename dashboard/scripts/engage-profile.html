@@ -125,7 +125,7 @@
         <div class="meta-row">
           <span>v1.0.0</span>
           <span>Updated: 2026-08-27</span>
-          <span>1094 lines</span>
+          <span>1263 lines</span>
           <span>by <a href="https://x.com/nichxbt" rel="noopener">@nichxbt</a></span>
         </div>
 
@@ -149,11 +149,17 @@
           <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td><code>dryRun</code></td><td><code>true</code></td><td>Log what would happen, touch nothing. SET FALSE TO RUN.</td></tr>
-<tr><td><code>maxPosts</code></td><td><code>0</code></td><td>0 = the entire profile. Set e.g. 50 for a first run.</td></tr>
-<tr><td><code>includeReplies</code></td><td><code>false</code></td><td>Also engage the account's replies (open x.com/USER/with_replies)</td></tr>
-<tr><td><code>includeReposts</code></td><td><code>false</code></td><td>Also engage posts the account reposted from others</td></tr>
+<tr><td><code>maxPosts</code></td><td><code>0</code></td><td>0 = the whole feed. Set e.g. 50 for a first run.</td></tr>
+<tr><td><code>includeReplies</code></td><td><code>false</code></td><td>Also engage replies (a profile's /with_replies tab, or replies in a search)</td></tr>
+<tr><td><code>includeReposts</code></td><td><code>false</code></td><td>Also engage posts that are reposts of someone else</td></tr>
 <tr><td><code>skipAlreadyEngaged</code></td><td><code>true</code></td><td>Skip a post for an action you already did on it</td></tr>
-<tr><td><code>newestFirst</code></td><td><code>true</code></td><td>Profile order. Nothing to change here, documented for clarity.</td></tr>
+<tr><td><code>onlyFrom</code></td><td><code>[]</code></td><td>Only these authors, e.g. ['nasa', 'nichxbt']. Empty = anyone.</td></tr>
+<tr><td><code>skipUsers</code></td><td><code>[]</code></td><td>Never these authors</td></tr>
+<tr><td><code>keywords</code></td><td><code>[]</code></td><td>Post must contain one of these words. Empty = any post.</td></tr>
+<tr><td><code>skipKeywords</code></td><td><code>[]</code></td><td>Skip posts containing any of these words</td></tr>
+<tr><td><code>minLikes</code></td><td><code>0</code></td><td>Only posts with at least this many likes</td></tr>
+<tr><td><code>maxLikes</code></td><td><code>0</code></td><td>Only posts with at most this many likes (0 = no ceiling)</td></tr>
+<tr><td><code>skipVerified</code></td><td><code>false</code></td><td>Skip blue-check accounts (they notice you least)</td></tr>
 <tr><td><code>speed</code></td><td><code>'safe'</code></td><td>'stealth' | 'safe' | 'moderate' | 'fast'</td></tr>
 <tr><td><code>restEvery</code></td><td><code>20</code></td><td>After this many posts, take a longer break</td></tr>
 <tr><td><code>restForSeconds</code></td><td><code>90</code></td><td>Length of that break</td></tr>
@@ -183,11 +189,19 @@
       comment: true,
     },
 
-    maxPosts: 0,                   // 0 = the entire profile. Set e.g. 50 for a first run.
-    includeReplies: false,         // Also engage the account's replies (open x.com/USER/with_replies)
-    includeReposts: false,         // Also engage posts the account reposted from others
+    maxPosts: 0,                   // 0 = the whole feed. Set e.g. 50 for a first run.
+    includeReplies: false,         // Also engage replies (a profile's /with_replies tab, or replies in a search)
+    includeReposts: false,         // Also engage posts that are reposts of someone else
     skipAlreadyEngaged: true,      // Skip a post for an action you already did on it
-    newestFirst: true,             // Profile order. Nothing to change here, documented for clarity.
+
+    // Filters. They matter most on feeds that mix authors: search, lists, hashtags, home.
+    onlyFrom: [],                  // Only these authors, e.g. ['nasa', 'nichxbt']. Empty = anyone.
+    skipUsers: [],                 // Never these authors
+    keywords: [],                  // Post must contain one of these words. Empty = any post.
+    skipKeywords: [],              // Skip posts containing any of these words
+    minLikes: 0,                   // Only posts with at least this many likes
+    maxLikes: 0,                   // Only posts with at most this many likes (0 = no ceiling)
+    skipVerified: false,           // Skip blue-check accounts (they notice you least)
 
     // Pacing. 'safe' is what a fast human looks like. Faster presets get accounts limited.
     speed: 'safe',                 // 'stealth' | 'safe' | 'moderate' | 'fast'
@@ -232,14 +246,18 @@
             <button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextElementSibling.querySelector('code').textContent).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Script',2000)})">Copy Script</button>
             <pre><code>// Copyright (c) 2024-2026 nich (@nichxbt). Licensed under the Apache License, Version 2.0.
 // scripts/engageProfile.js
-// Like, repost, and comment on every post of one profile, with template or AI-written comments
-// Paste in DevTools console on x.com/USERNAME (the profile you want to sweep)
+// Like, repost, and comment on every post in a feed: a profile, a search, a list, a hashtag, or home
+// Paste in DevTools console on x.com/USERNAME, a search, a list, a hashtag, or x.com/home
 // by nichxbt
 //
-// What it does: walks the whole profile top to bottom, and for every post it has not
-// touched yet it likes, reposts, and/or replies. Comments come from your templates or
-// from an LLM given a one-line brief (&quot;be supportive, ask a follow-up question&quot;).
-// Progress is saved per profile, so a reload picks up where it stopped.
+// What it does: walks the feed you have open, top to bottom, and for every post it has
+// not touched yet it likes, reposts, and/or replies. Comments come from your templates
+// or from an LLM given a one-line brief (&quot;be supportive, ask a follow-up question&quot;).
+// Progress is saved per feed, so a reload picks up where it stopped.
+//
+// Works on: a profile (x.com/USERNAME), a profile's replies (/with_replies), search
+// results, a list (x.com/i/lists/ID), a hashtag, and your home timeline. On feeds that
+// mix authors, the author and keyword filters in the panel are what keep a sweep aimed.
 //
 // AI comments from the console:
 //   x.com's Content-Security-Policy only lets the page talk to a short list of hosts,
@@ -286,11 +304,19 @@
       comment: true,
     },
 
-    maxPosts: 0,                   // 0 = the entire profile. Set e.g. 50 for a first run.
-    includeReplies: false,         // Also engage the account's replies (open x.com/USER/with_replies)
-    includeReposts: false,         // Also engage posts the account reposted from others
+    maxPosts: 0,                   // 0 = the whole feed. Set e.g. 50 for a first run.
+    includeReplies: false,         // Also engage replies (a profile's /with_replies tab, or replies in a search)
+    includeReposts: false,         // Also engage posts that are reposts of someone else
     skipAlreadyEngaged: true,      // Skip a post for an action you already did on it
-    newestFirst: true,             // Profile order. Nothing to change here, documented for clarity.
+
+    // Filters. They matter most on feeds that mix authors: search, lists, hashtags, home.
+    onlyFrom: [],                  // Only these authors, e.g. ['nasa', 'nichxbt']. Empty = anyone.
+    skipUsers: [],                 // Never these authors
+    keywords: [],                  // Post must contain one of these words. Empty = any post.
+    skipKeywords: [],              // Skip posts containing any of these words
+    minLikes: 0,                   // Only posts with at least this many likes
+    maxLikes: 0,                   // Only posts with at most this many likes (0 = no ceiling)
+    skipVerified: false,           // Skip blue-check accounts (they notice you least)
 
     // Pacing. 'safe' is what a fast human looks like. Faster presets get accounts limited.
     speed: 'safe',                 // 'stealth' | 'safe' | 'moderate' | 'fast'
@@ -363,18 +389,75 @@
   // STATE
   // ═══════════════════════════════════════════════════════════
 
-  const owner = (() =&gt; {
-    const m = location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/(with_replies|media|highlights))?\/?$/);
-    return m ? { handle: m[1].toLowerCase(), tab: m[2] || 'posts' } : null;
+  /**
+   * Work out which feed is on screen.
+   *
+   * The sweep behaves the same everywhere, but three things depend on the
+   * feed: what to call it in the panel, which progress file to use, and
+   * whether a post by someone other than the page owner counts as a repost.
+   * Reserved first path segments (i, home, search, explore, ...) are what
+   * separate a profile from every other page X serves under one slug.
+   */
+  const RESERVED = new Set([
+    'i', 'home', 'explore', 'search', 'notifications', 'messages', 'settings',
+    'compose', 'bookmarks', 'hashtag', 'topics', 'lists', 'communities',
+    'jobs', 'about', 'tos', 'privacy', 'login', 'signup', 'intent',
+  ]);
+
+  const target = (() =&gt; {
+    const path = location.pathname;
+    const params = new URLSearchParams(location.search);
+
+    const profile = path.match(/^\/([A-Za-z0-9_]{1,15})(?:\/(with_replies|media|highlights|likes))?\/?$/);
+    if (profile &amp;&amp; !RESERVED.has(profile[1].toLowerCase())) {
+      const handle = profile[1].toLowerCase();
+      const tab = profile[2] || 'posts';
+      return { kind: 'profile', handle, tab, label: `@${handle}${tab === 'with_replies' ? ' + replies' : ''}`, key: `profile_${handle}` };
+    }
+
+    const list = path.match(/^\/i\/lists\/(\d+)/);
+    if (list) return { kind: 'list', listId: list[1], label: `list ${list[1]}`, key: `list_${list[1]}` };
+
+    const hashtag = path.match(/^\/hashtag\/([^/?]+)/);
+    if (hashtag) {
+      const tag = decodeURIComponent(hashtag[1]).toLowerCase();
+      return { kind: 'hashtag', tag, label: `#${tag}`, key: `hashtag_${tag.replace(/[^a-z0-9]/g, '')}` };
+    }
+
+    if (path === '/search') {
+      const query = params.get('q') || '';
+      const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'query';
+      return { kind: 'search', query, label: `search &quot;${query}&quot;`, key: `search_${slug}` };
+    }
+
+    if (path === '/home') return { kind: 'home', label: 'your home timeline', key: 'home' };
+    if (path === '/notifications' || path.startsWith('/notifications/')) {
+      return { kind: 'notifications', label: 'your notifications', key: 'notifications' };
+    }
+    if (path === '/i/bookmarks') return { kind: 'bookmarks', label: 'your bookmarks', key: 'bookmarks' };
+
+    return null;
   })();
 
-  if (!owner) {
-    console.error('❌ Open a profile first: x.com/USERNAME (or x.com/USERNAME/with_replies to include replies).');
+  if (!target) {
+    console.error([
+      '❌ This page has no post feed to sweep. Open one of:',
+      '   x.com/USERNAME                 a profile',
+      '   x.com/USERNAME/with_replies    a profile including its replies',
+      '   x.com/search?q=...             search results',
+      '   x.com/i/lists/ID               a list',
+      '   x.com/hashtag/TAG              a hashtag',
+      '   x.com/home                     your timeline',
+    ].join('\n'));
     return;
   }
-  if (owner.tab === 'with_replies') CONFIG.includeReplies = true;
+  if (target.tab === 'with_replies') CONFIG.includeReplies = true;
+  // On a mixed feed every post is by someone else, so treating &quot;not the page
+  // owner&quot; as a repost would filter the entire page out.
+  const MIXED_FEED = target.kind !== 'profile';
+  if (MIXED_FEED) CONFIG.includeReposts = true;
 
-  const STORAGE_KEY = `xactions_engage_${owner.handle}`;
+  const STORAGE_KEY = `xactions_engage_${target.key}`;
   const KEY_STORAGE = 'xactions_engage_ai_key';
 
   const persisted = (() =&gt; {
@@ -401,13 +484,22 @@
     lastTemplate: -1,
   };
 
+  // Your own handle, read from the sidebar account switcher. A home-timeline
+  // sweep that replies to your own posts looks unhinged, and X counts it.
+  const me = (() =&gt; {
+    const link = document.querySelector('[data-testid=&quot;AppTabBar_Profile_Link&quot;], [data-testid=&quot;SideNav_AccountSwitcher_Button&quot;] a[href^=&quot;/&quot;]');
+    const href = link?.getAttribute('href') || '';
+    const m = href.match(/^\/([A-Za-z0-9_]{1,15})$/);
+    return m ? m[1].toLowerCase() : '';
+  })();
+
   const savedKey = (() =&gt; { try { return localStorage.getItem(KEY_STORAGE) || ''; } catch { return ''; } })();
   if (savedKey &amp;&amp; !CONFIG.comments.apiKey) CONFIG.comments.apiKey = savedKey;
 
   const persist = () =&gt; {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        owner: owner.handle,
+        target: target.key,
         updatedAt: Date.now(),
         done: Object.fromEntries(STATE.done),
       }));
@@ -465,10 +557,15 @@
   // ═══════════════════════════════════════════════════════════
 
   const readArticle = (article) =&gt; {
+    // The permalink is the anchor wrapping the timestamp. Picking that rather
+    // than the first /status/ link in the DOM is what makes this work on a
+    // mixed feed: a quoted post inside the article also carries a status link,
+    // and engaging the quote instead of the post is a silent wrong action.
+    const timeAnchor = $('time', article)?.closest('a[href*=&quot;/status/&quot;]');
     const statusLinks = $$('a[href*=&quot;/status/&quot;]', article)
       .map((a) =&gt; a.getAttribute('href') || '')
       .filter((h) =&gt; /^\/[A-Za-z0-9_]+\/status\/\d+/.test(h));
-    const ownLink = statusLinks.find((h) =&gt; h.toLowerCase().startsWith(`/${owner.handle}/status/`)) || statusLinks[0];
+    const ownLink = timeAnchor?.getAttribute('href') || statusLinks[0];
     if (!ownLink) return null;
     const idMatch = ownLink.match(/\/status\/(\d+)/);
     const authorMatch = ownLink.match(/^\/([A-Za-z0-9_]+)\/status\//);
@@ -480,7 +577,10 @@
     const author = (authorMatch ? authorMatch[1] : '').toLowerCase();
 
     const social = ($(SEL.socialContext, article)?.textContent || '').toLowerCase();
-    const isRepost = /reposted|retweeted/.test(social) || author !== owner.handle;
+    const isRepost = /reposted|retweeted/.test(social)
+      || (target.kind === 'profile' &amp;&amp; author !== target.handle);
+    const isVerified = !!$('[data-testid=&quot;icon-verified&quot;]', article)
+      || !!$('svg[aria-label*=&quot;Verified&quot;]', article);
     const isPinned = /pinned/.test(social);
     const isReply = /replying to/i.test(article.textContent || '') &amp;&amp; !isRepost;
     const isAd = !!$(SEL.placement, article) || $$('span', article).some((s) =&gt; s.textContent.trim() === 'Ad');
@@ -501,16 +601,36 @@
       isPinned,
       isReply,
       isAd,
+      isVerified,
+      likes: (() =&gt; {
+        const label = $('[data-testid=&quot;like&quot;], [data-testid=&quot;unlike&quot;]', article)?.getAttribute('aria-label') || '';
+        const n = label.match(/([\d,.]+)\s*(K|M)?\s*(likes?|Like)/i);
+        if (!n) return 0;
+        const base = parseFloat(n[1].replace(/,/g, '')) || 0;
+        return n[2] === 'M' ? base * 1e6 : n[2] === 'K' ? base * 1e3 : base;
+      })(),
       liked: !!$(SEL.unlike, article),
       reposted: !!$(SEL.unretweet, article),
     };
   };
+
+  const listHas = (list, value) =&gt; list.some((entry) =&gt; String(entry).replace(/^@/, '').toLowerCase() === value);
+  const textHas = (list, text) =&gt; list.some((word) =&gt; text.includes(String(word).toLowerCase()));
 
   const eligible = (info) =&gt; {
     if (!info) return { ok: false, why: 'unreadable' };
     if (info.isAd) return { ok: false, why: 'ad' };
     if (info.isRepost &amp;&amp; !CONFIG.includeReposts) return { ok: false, why: 'repost' };
     if (info.isReply &amp;&amp; !CONFIG.includeReplies) return { ok: false, why: 'reply' };
+    if (me &amp;&amp; info.author === me) return { ok: false, why: 'your own post' };
+    if (CONFIG.skipUsers.length &amp;&amp; listHas(CONFIG.skipUsers, info.author)) return { ok: false, why: `@${info.author} is on the skip list` };
+    if (CONFIG.onlyFrom.length &amp;&amp; !listHas(CONFIG.onlyFrom, info.author)) return { ok: false, why: `@${info.author} is not on the only-from list` };
+    if (CONFIG.skipVerified &amp;&amp; info.isVerified) return { ok: false, why: 'verified account' };
+    const lowerText = info.text.toLowerCase();
+    if (CONFIG.keywords.length &amp;&amp; !textHas(CONFIG.keywords, lowerText)) return { ok: false, why: 'no keyword match' };
+    if (CONFIG.skipKeywords.length &amp;&amp; textHas(CONFIG.skipKeywords, lowerText)) return { ok: false, why: 'matched a skip keyword' };
+    if (CONFIG.minLikes &amp;&amp; info.likes &lt; CONFIG.minLikes) return { ok: false, why: `only ${info.likes} likes` };
+    if (CONFIG.maxLikes &amp;&amp; info.likes &gt; CONFIG.maxLikes) return { ok: false, why: `${info.likes} likes, above the ceiling` };
     if (!info.text &amp;&amp; !info.hasMedia) return { ok: false, why: 'empty' };
     return { ok: true };
   };
@@ -879,7 +999,7 @@
     STATE.processed = 0; STATE.liked = 0; STATE.reposted = 0; STATE.commented = 0; STATE.skipped = 0; STATE.failed = 0;
     STATE.consecutiveFailures = 0;
     setButtons('running');
-    addLog(`🚀 Sweeping @${owner.handle}${CONFIG.dryRun ? ' (DRY RUN, nothing is touched)' : ''}`);
+    addLog(`🚀 Sweeping ${target.label}${CONFIG.dryRun ? ' (DRY RUN, nothing is touched)' : ''}`);
     addLog(`   like=${CONFIG.actions.like} repost=${CONFIG.actions.repost} comment=${CONFIG.actions.comment} (${CONFIG.comments.mode}) speed=${CONFIG.speed} max=${CONFIG.maxPosts || '∞'}`);
     if (STATE.done.size) addLog(`   ${STATE.done.size} posts already done from earlier runs will be skipped`);
 
@@ -1034,7 +1154,7 @@
   panel.innerHTML = `
     &lt;style&gt;${css}&lt;/style&gt;
     &lt;div class=&quot;xep-head&quot; id=&quot;xep-drag&quot;&gt;
-      &lt;span aria-hidden=&quot;true&quot;&gt;⚡&lt;/span&gt;&lt;b&gt;Sweep @${esc(owner.handle)}&lt;/b&gt;
+      &lt;span aria-hidden=&quot;true&quot;&gt;⚡&lt;/span&gt;&lt;b&gt;Sweep ${esc(target.label)}&lt;/b&gt;
       &lt;button id=&quot;xep-min&quot; title=&quot;Minimize&quot; aria-label=&quot;Minimize&quot;&gt;–&lt;/button&gt;
       &lt;button id=&quot;xep-close&quot; title=&quot;Close panel&quot; aria-label=&quot;Close&quot;&gt;✕&lt;/button&gt;
     &lt;/div&gt;
@@ -1065,10 +1185,28 @@
               &lt;option value=&quot;fast&quot;&gt;Fast (3-7s)&lt;/option&gt;
             &lt;/select&gt;&lt;/label&gt;
         &lt;/div&gt;
-        &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;Include the account's replies&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-replies&quot; ${CONFIG.includeReplies ? 'checked' : ''}&gt;&lt;/label&gt;
-        &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;Include posts it reposted from others&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-reposts&quot; ${CONFIG.includeReposts ? 'checked' : ''}&gt;&lt;/label&gt;
+        &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;Include replies&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-replies&quot; ${CONFIG.includeReplies ? 'checked' : ''}&gt;&lt;/label&gt;
+        &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;Include reposts${MIXED_FEED ? ' (on by default here: this feed mixes authors)' : ' of other accounts'}&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-reposts&quot; ${CONFIG.includeReposts ? 'checked' : ''}&gt;&lt;/label&gt;
         &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;Skip posts already engaged&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-skipDone&quot; ${CONFIG.skipAlreadyEngaged ? 'checked' : ''}&gt;&lt;/label&gt;
         &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;&lt;b&gt;Dry run&lt;/b&gt; (log only, touch nothing)&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-dry&quot; ${CONFIG.dryRun ? 'checked' : ''}&gt;&lt;/label&gt;
+      &lt;/div&gt;
+
+      &lt;div class=&quot;xep-section&quot;&gt;
+        &lt;b&gt;Filters&lt;/b&gt;
+        &lt;div class=&quot;xep-hint&quot;&gt;Aimed at mixed feeds (search, lists, hashtags, home). Leave blank on a profile sweep.&lt;/div&gt;
+        &lt;div class=&quot;xep-grid&quot;&gt;
+          &lt;label&gt;&lt;span class=&quot;xep-label&quot;&gt;Only from (handles)&lt;/span&gt;&lt;input type=&quot;text&quot; id=&quot;xep-onlyFrom&quot; value=&quot;${esc(CONFIG.onlyFrom.join(', '))}&quot; placeholder=&quot;nasa, nichxbt&quot;&gt;&lt;/label&gt;
+          &lt;label&gt;&lt;span class=&quot;xep-label&quot;&gt;Never these handles&lt;/span&gt;&lt;input type=&quot;text&quot; id=&quot;xep-skipUsers&quot; value=&quot;${esc(CONFIG.skipUsers.join(', '))}&quot; placeholder=&quot;spammer1&quot;&gt;&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;xep-grid&quot;&gt;
+          &lt;label&gt;&lt;span class=&quot;xep-label&quot;&gt;Must contain&lt;/span&gt;&lt;input type=&quot;text&quot; id=&quot;xep-keywords&quot; value=&quot;${esc(CONFIG.keywords.join(', '))}&quot; placeholder=&quot;solana, rust&quot;&gt;&lt;/label&gt;
+          &lt;label&gt;&lt;span class=&quot;xep-label&quot;&gt;Must not contain&lt;/span&gt;&lt;input type=&quot;text&quot; id=&quot;xep-skipKeywords&quot; value=&quot;${esc(CONFIG.skipKeywords.join(', '))}&quot; placeholder=&quot;giveaway, airdrop&quot;&gt;&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;xep-grid&quot;&gt;
+          &lt;label&gt;&lt;span class=&quot;xep-label&quot;&gt;Min likes&lt;/span&gt;&lt;input type=&quot;number&quot; id=&quot;xep-minLikes&quot; min=&quot;0&quot; value=&quot;${CONFIG.minLikes}&quot;&gt;&lt;/label&gt;
+          &lt;label&gt;&lt;span class=&quot;xep-label&quot;&gt;Max likes (0 = any)&lt;/span&gt;&lt;input type=&quot;number&quot; id=&quot;xep-maxLikes&quot; min=&quot;0&quot; value=&quot;${CONFIG.maxLikes}&quot;&gt;&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;label class=&quot;xep-toggle&quot;&gt;&lt;span&gt;Skip verified accounts&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xep-skipVerified&quot; ${CONFIG.skipVerified ? 'checked' : ''}&gt;&lt;/label&gt;
       &lt;/div&gt;
 
       &lt;div class=&quot;xep-section&quot; id=&quot;xep-commentSection&quot;&gt;
@@ -1185,6 +1323,14 @@
     CONFIG.includeReposts = el('xep-reposts').checked;
     CONFIG.skipAlreadyEngaged = el('xep-skipDone').checked;
     CONFIG.dryRun = el('xep-dry').checked;
+    const list = (id) =&gt; el(id).value.split(/[,\n]/).map((s) =&gt; s.trim().replace(/^@/, '')).filter(Boolean);
+    CONFIG.onlyFrom = list('xep-onlyFrom');
+    CONFIG.skipUsers = list('xep-skipUsers');
+    CONFIG.keywords = list('xep-keywords');
+    CONFIG.skipKeywords = list('xep-skipKeywords');
+    CONFIG.minLikes = Math.max(0, parseInt(el('xep-minLikes').value, 10) || 0);
+    CONFIG.maxLikes = Math.max(0, parseInt(el('xep-maxLikes').value, 10) || 0);
+    CONFIG.skipVerified = el('xep-skipVerified').checked;
     const c = CONFIG.comments;
     c.mode = el('xep-mode').value;
     c.templates = el('xep-templates').value.split('\n').map((s) =&gt; s.trim()).filter(Boolean);
@@ -1248,17 +1394,17 @@
   el('xep-reset').addEventListener('click', () =&gt; {
     STATE.done.clear();
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* nothing to clear */ }
-    addLog(`Cleared saved progress for @${owner.handle}. Every post is eligible again.`);
+    addLog(`Cleared saved progress for ${target.label}. Every post is eligible again.`);
   });
   el('xep-export').addEventListener('click', () =&gt; {
     const blob = new Blob([JSON.stringify({
-      owner: owner.handle, exportedAt: new Date().toISOString(), dryRun: CONFIG.dryRun, config: { ...CONFIG, comments: { ...CONFIG.comments, apiKey: CONFIG.comments.apiKey ? '[redacted]' : '' } },
+      target: target.label, feed: target.kind, exportedAt: new Date().toISOString(), dryRun: CONFIG.dryRun, config: { ...CONFIG, comments: { ...CONFIG.comments, apiKey: CONFIG.comments.apiKey ? '[redacted]' : '' } },
       stats: { processed: STATE.processed, liked: STATE.liked, reposted: STATE.reposted, commented: STATE.commented, skipped: STATE.skipped, failed: STATE.failed },
       results: STATE.results,
     }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `xactions-engage-${owner.handle}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    a.download = `xactions-engage-${target.key}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
     a.click();
     setTimeout(() =&gt; URL.revokeObjectURL(a.href), 2000);
     addLog('⬇ Exported session log');
@@ -1308,9 +1454,44 @@
   // CONSOLE API
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * What the sweep sees on the page right now: every post it can read, and
+   * for each one whether it would be engaged or why it would not.
+   *
+   * This is the answer to &quot;why is it skipping everything?&quot;, which is
+   * otherwise guesswork: run XEngage.inspect() in the console and the reason
+   * per post is right there. It reads the DOM and changes nothing.
+   *
+   * @returns {Array&lt;object&gt;} one row per visible post
+   */
+  const inspect = () =&gt; {
+    readPanel();
+    return $$(SEL.article).map((article) =&gt; {
+      const info = readArticle(article);
+      if (!info) return { id: null, eligible: false, why: 'unreadable' };
+      const check = eligible(info);
+      const record = STATE.done.get(info.id);
+      return {
+        id: info.id,
+        author: info.author,
+        text: info.text.slice(0, 80),
+        likes: info.likes,
+        liked: info.liked,
+        reposted: info.reposted,
+        isRepost: info.isRepost,
+        isReply: info.isReply,
+        isVerified: info.isVerified,
+        doneEarlier: record ? { ...record } : null,
+        eligible: check.ok,
+        why: check.why || null,
+      };
+    });
+  };
+
   window.XEngage = {
     config: CONFIG,
     state: STATE,
+    inspect,
     start: () =&gt; el('xep-start').click(),
     pause: () =&gt; el('xep-pause').click(),
     stop: () =&gt; el('xep-stop').click(),
@@ -1320,8 +1501,10 @@
     testAi: () =&gt; el('xep-testAi').click(),
   };
 
-  addLog(`Loaded on @${owner.handle} (${owner.tab}). ${STATE.done.size ? `${STATE.done.size} posts done earlier.` : ''}`);
+  addLog(`Loaded on ${target.label} (${target.kind}). ${STATE.done.size ? `${STATE.done.size} posts done earlier.` : ''}`);
   addLog('Dry run is ON. Read one pass of the log, then untick it. Alt+Shift+S starts/stops, Alt+Shift+P pauses.', 'dim');
+  if (MIXED_FEED) addLog('This feed mixes authors. Set the author and keyword filters before you turn dry run off.', 'warn');
+  if (!me) addLog('Could not read your own handle from the sidebar, so a post of yours in this feed could be engaged.', 'dim');
 })();
 </code></pre>
           </div>

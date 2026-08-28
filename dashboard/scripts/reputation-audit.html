@@ -1,14 +1,226 @@
-// Copyright (c) 2024-2026 nich (@nichxbt). Licensed under the Apache License, Version 2.0.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reputation Audit — Free X/Twitter Script | XActions</title>
+  <meta name="description" content="AI-scores your own posts across professional, hostile, legal, and spam risk, then renders a shareable score card and offers one-click cleanup of what it flags.">
+  <meta name="keywords" content="xactions, twitter automation, x automation, browser script, devtools console, free, open source, reputation, audit, other tools">
+  <meta name="author" content="nich (@nichxbt)">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Reputation Audit — XActions">
+  <meta property="og:description" content="AI-scores your own posts across professional, hostile, legal, and spam risk, then renders a shareable score card and offers one-click cleanup of what it flags.">
+  <meta property="og:url" content="https://xactions.app/scripts/reputation-audit">
+  <meta property="og:site_name" content="XActions">
+  <meta property="og:image" content="https://xactions.app/og-image.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@nichxbt">
+  <meta name="twitter:title" content="Reputation Audit — XActions">
+  <meta name="twitter:description" content="AI-scores your own posts across professional, hostile, legal, and spam risk, then renders a shareable score card and offers one-click cleanup of what it flags.">
+
+  <link rel="canonical" href="https://xactions.app/scripts/reputation-audit">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Reputation Audit — Free X/Twitter Script | XActions",
+    "description": "AI-scores your own posts across professional, hostile, legal, and spam risk, then renders a shareable score card and offers one-click cleanup of what it flags.",
+    "url": "https://xactions.app/scripts/reputation-audit",
+    "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
+    "publisher": { "@type": "Organization", "name": "XActions", "url": "https://xactions.app" },
+    "datePublished": "2026-03-30",
+    "dateModified": "2026-03-30",
+    "articleSection": "Other Tools",
+    "keywords": "xactions, twitter automation, x automation, browser script, devtools console, free, open source, reputation, audit, other tools"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xactions.app" },
+      { "@type": "ListItem", "position": 2, "name": "Scripts", "item": "https://xactions.app/scripts" },
+      { "@type": "ListItem", "position": 3, "name": "Other Tools", "item": "https://xactions.app/scripts#other-tools" },
+      { "@type": "ListItem", "position": 4, "name": "Reputation Audit", "item": "https://xactions.app/scripts/reputation-audit" }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .article { padding: 24px 20px; }
+    .article h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+    .article h2 { font-size: 1.375rem; font-weight: 700; margin: 32px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .article h3 { font-size: 1.125rem; font-weight: 600; margin: 24px 0 8px; color: var(--accent); }
+    .article p { color: var(--text-secondary); font-size: 0.9375rem; margin-bottom: 16px; }
+    .article a { color: var(--accent); text-decoration: none; }
+    .article a:hover { text-decoration: underline; }
+    .article strong { color: var(--text-primary); }
+    .article code { background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: 'Monaco','Menlo','Consolas', monospace; font-size: 0.875rem; color: var(--accent); }
+    .article pre { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; margin: 16px 0; }
+    .article pre code { background: none; padding: 0; color: var(--text-primary); font-size: 0.8125rem; display: block; }
+    .article table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.875rem; }
+    .article th { background: var(--bg-secondary); padding: 10px 12px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+    .article td { padding: 10px 12px; border: 1px solid var(--border); color: var(--text-secondary); }
+    .cat-badge { display: inline-block; background: var(--accent-light); color: var(--accent); padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 16px; }
+    .meta-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; font-size: 0.8125rem; color: var(--text-secondary); }
+    .meta-row span { display: flex; align-items: center; gap: 4px; }
+    .usage-steps { margin-left: 24px; margin-bottom: 16px; }
+    .usage-steps li { color: var(--text-secondary); font-size: 0.9375rem; margin-bottom: 8px; padding-left: 4px; }
+    .warning-box { background: rgba(244, 33, 46, 0.1); border: 1px solid var(--error); border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .warning-box p { color: var(--error); margin: 0; font-size: 0.875rem; }
+    .controls-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .controls-box h3 { margin: 0 0 8px; font-size: 1rem; }
+    .code-block { position: relative; }
+    .copy-btn { position: absolute; top: 8px; right: 8px; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; z-index: 10; transition: all .2s; }
+    .copy-btn:hover { background: var(--accent); color: #fff; }
+    .full-code { margin-top: 32px; }
+    .full-code pre { max-height: 600px; overflow-y: auto; }
+    .cta-box { background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary)); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin: 32px 0; text-align: center; }
+    .cta-box h3 { font-size: 1.25rem; margin-bottom: 8px; color: var(--text-primary); }
+    .cta-box p { color: var(--text-secondary); margin-bottom: 16px; }
+    .cta-box a { display: inline-block; padding: 12px 24px; background: var(--accent); color: #fff; border-radius: 9999px; text-decoration: none; font-weight: 700; transition: background .2s; }
+    .cta-box a:hover { background: var(--accent-hover); }
+    .sidebar-right { width: 350px; padding: 16px 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .sidebar-card { background: var(--bg-secondary); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+    .sidebar-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+    .sidebar-card a { display: block; color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; padding: 6px 0; border-bottom: 1px solid var(--border); transition: color .2s; }
+    .sidebar-card a:last-child { border-bottom: none; }
+    .sidebar-card a:hover { color: var(--accent); }
+    .breadcrumb { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 4px; }
+    .breadcrumb a { color: var(--accent); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .source-badge { display: inline-block; background: var(--bg-tertiary); color: var(--text-secondary); padding: 2px 8px; border-radius: 6px; font-size: 0.6875rem; margin-left: 8px; }
+    @media (max-width: 1024px) { .sidebar-right { display: none; } }
+    @media (max-width: 768px) {
+      .article pre { font-size: 0.75rem; }
+      .meta-row { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-nav">Skip to main content</a>
+  <div class="layout">
+    <aside class="sidebar-left" aria-label="Main navigation"></aside>
+    <script src="/js/sidebar.js"></script>
+
+    <main class="main-content" id="main-content">
+      <header class="main-header">
+        <h1>⚡ Reputation Audit</h1>
+        <div class="breadcrumb">
+          <a href="/">Home</a> › <a href="/scripts">Scripts</a> › <a href="/scripts#other-tools">Other Tools</a> › Reputation Audit
+        </div>
+      </header>
+
+      <article class="article">
+        <span class="cat-badge">Other Tools</span>
+        <span class="source-badge">scripts</span>
+
+        <div class="meta-row">
+          <span>v1.0.0</span>
+          <span>Updated: 2026-08-28</span>
+          <span>1204 lines</span>
+          <span>by <a href="https://x.com/nichxbt" rel="noopener">@nichxbt</a></span>
+        </div>
+
+        <p>AI-scores your own posts across professional, hostile, legal, and spam risk, then renders a shareable score card and offers one-click cleanup of what it flags.</p>
+
+        
+
+        <h2>How to Use</h2>
+        <ol class="usage-steps">
+        <li>Navigate to <a href="https://x.com" rel="noopener">x.com</a> and log in</li>
+        <li>Open DevTools Console (F12 or Cmd+Option+I)</li>
+        
+        <li>Paste the script below and press Enter</li>
+      </ol>
+        
+
+        
+        <section class="config-section">
+        <h2>Configuration Options</h2>
+        <table>
+          <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>maxPosts</code></td><td><code>60</code></td><td>How many of your recent posts to score. Each one is an LLM call.</td></tr>
+<tr><td><code>includeReposts</code></td><td><code>false</code></td><td>Score posts you reposted from others, not just your own</td></tr>
+<tr><td><code>professional</code></td><td><code>true</code></td><td>Would this embarrass you to an employer, client, or partner?</td></tr>
+<tr><td><code>hostile</code></td><td><code>true</code></td><td>Is this a personal attack on someone?</td></tr>
+<tr><td><code>legal</code></td><td><code>true</code></td><td>Defamation, doxxing, threats, leaked confidential info?</td></tr>
+<tr><td><code>spam</code></td><td><code>true</code></td><td>Low-effort filler that adds nothing?</td></tr>
+<tr><td><code>customQuestion</code></td><td><code>''</code></td><td>An extra risk question specific to you, scored alongside the above</td></tr>
+<tr><td><code>provider</code></td><td><code>'xai'</code></td><td>'xai' (works from the console) | 'bridge' (XActions extension, any provider)</td></tr>
+<tr><td><code>apiKey</code></td><td><code>''</code></td><td>xAI key. Stored only if &quot;remember&quot; is ticked in the panel.</td></tr>
+<tr><td><code>concurrency</code></td><td><code>3</code></td><td>Posts scored in parallel. X.com does not rate-limit reads, the LLM provider might.</td></tr>
+<tr><td><code>dryRun</code></td><td><code>true</code></td><td>false = PERMANENT deletion of whatever you select in the flagged list.</td></tr>
+          </tbody>
+        </table>
+      </section>
+        <section class="config-code">
+        <h2>Default Configuration</h2>
+        <div class="code-block">
+          <button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextElementSibling.querySelector('code').textContent).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})">Copy</button>
+          <pre><code>const CONFIG = {
+    scan: {
+      maxPosts: 60,          // How many of your recent posts to score. Each one is an LLM call.
+      includeReposts: false, // Score posts you reposted from others, not just your own
+      excludePinned: true,
+    },
+
+    dimensions: {
+      professional: true,    // Would this embarrass you to an employer, client, or partner?
+      hostile: true,         // Is this a personal attack on someone?
+      legal: true,           // Defamation, doxxing, threats, leaked confidential info?
+      spam: true,            // Low-effort filler that adds nothing?
+    },
+    customQuestion: '',      // An extra risk question specific to you, scored alongside the above
+
+    ai: {
+      provider: 'xai',       // 'xai' (works from the console) | 'bridge' (XActions extension, any provider)
+      apiKey: '',            // xAI key. Stored only if &quot;remember&quot; is ticked in the panel.
+      model: 'grok-3-mini',
+      bridgeProvider: 'openrouter',
+      bridgeBaseUrl: '',
+      concurrency: 3,        // Posts scored in parallel. X.com does not rate-limit reads, the LLM provider might.
+    },
+
+    cleanup: {
+      dryRun: true,          // false = PERMANENT deletion of whatever you select in the flagged list.
+      minDelay: 3000,
+      maxDelay: 7000,
+      menuDelay: 1200,
+    },
+
+    // Posts already scored are cached (by id + rubric) so re-running the scan
+    // after a cleanup, or the next day, does not re-bill the same post twice.
+    useCache: true,
+    cacheDays: 14,
+  };</code></pre>
+        </div>
+      </section>
+
+        <section class="full-code">
+          <h2>Full Script</h2>
+          <p>Copy and paste this entire script into your browser DevTools console on <a href="https://x.com" rel="noopener">x.com</a>.</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextElementSibling.querySelector('code').textContent).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Script',2000)})">Copy Script</button>
+            <pre><code>// Copyright (c) 2024-2026 nich (@nichxbt). Licensed under the Apache License, Version 2.0.
 // scripts/reputationAudit.js
 // AI-score your own timeline for professional, hostile, legal, and spam risk, get a shareable score card, and clean up what it flags
 // Paste in DevTools console on x.com/USERNAME (your own profile, or /with_replies)
 // by nichxbt
 //
 // What it does: reads your recent posts, sends each one to an LLM with a strict
-// rubric ("would this embarrass you to an employer", "is this hostile", "legal
-// exposure", "low-value spam"), and turns the verdicts into one 0-100 reputation
+// rubric (&quot;would this embarrass you to an employer&quot;, &quot;is this hostile&quot;, &quot;legal
+// exposure&quot;, &quot;low-value spam&quot;), and turns the verdicts into one 0-100 reputation
 // score with a letter grade. It renders that as a PNG card you can download or
-// copy straight to your clipboard, in the same spirit as a "wrapped" recap card,
+// copy straight to your clipboard, in the same spirit as a &quot;wrapped&quot; recap card,
 // except it is a real risk audit, not a joke. Flagged and borderline posts get a
 // one-click cleanup pass, reusing the same verified-delete logic as
 // scripts/searchSweep.js.
@@ -38,7 +250,7 @@
  * @repository  https://github.com/nirholas/XActions
  * ============================================================
  */
-(() => {
+(() =&gt; {
   'use strict';
 
   if (document.getElementById('xra-panel')) {
@@ -67,7 +279,7 @@
 
     ai: {
       provider: 'xai',       // 'xai' (works from the console) | 'bridge' (XActions extension, any provider)
-      apiKey: '',            // xAI key. Stored only if "remember" is ticked in the panel.
+      apiKey: '',            // xAI key. Stored only if &quot;remember&quot; is ticked in the panel.
       model: 'grok-3-mini',
       bridgeProvider: 'openrouter',
       bridgeBaseUrl: '',
@@ -100,31 +312,31 @@
   };
 
   const SEL = {
-    article: 'article[data-testid="tweet"]',
-    tweetText: '[data-testid="tweetText"]',
-    userName: '[data-testid="User-Name"]',
-    socialContext: '[data-testid="socialContext"]',
-    caret: '[data-testid="caret"]',
-    menu: '[role="menu"]',
-    menuItem: '[role="menuitem"]',
-    confirmSheet: '[data-testid="confirmationSheetConfirm"]',
-    like: '[data-testid="like"]',
-    unlike: '[data-testid="unlike"]',
-    retweet: '[data-testid="retweet"]',
-    unretweet: '[data-testid="unretweet"]',
-    closeModal: '[data-testid="app-bar-close"]',
-    toast: '[data-testid="toast"]',
-    placement: '[data-testid="placementTracking"]',
-    profileLink: 'a[data-testid="AppTabBar_Profile_Link"]',
-    accountSwitcher: '[data-testid="SideNav_AccountSwitcher_Button"]',
-    retryButton: '[data-testid="primaryColumn"] [role="button"]',
+    article: 'article[data-testid=&quot;tweet&quot;]',
+    tweetText: '[data-testid=&quot;tweetText&quot;]',
+    userName: '[data-testid=&quot;User-Name&quot;]',
+    socialContext: '[data-testid=&quot;socialContext&quot;]',
+    caret: '[data-testid=&quot;caret&quot;]',
+    menu: '[role=&quot;menu&quot;]',
+    menuItem: '[role=&quot;menuitem&quot;]',
+    confirmSheet: '[data-testid=&quot;confirmationSheetConfirm&quot;]',
+    like: '[data-testid=&quot;like&quot;]',
+    unlike: '[data-testid=&quot;unlike&quot;]',
+    retweet: '[data-testid=&quot;retweet&quot;]',
+    unretweet: '[data-testid=&quot;unretweet&quot;]',
+    closeModal: '[data-testid=&quot;app-bar-close&quot;]',
+    toast: '[data-testid=&quot;toast&quot;]',
+    placement: '[data-testid=&quot;placementTracking&quot;]',
+    profileLink: 'a[data-testid=&quot;AppTabBar_Profile_Link&quot;]',
+    accountSwitcher: '[data-testid=&quot;SideNav_AccountSwitcher_Button&quot;]',
+    retryButton: '[data-testid=&quot;primaryColumn&quot;] [role=&quot;button&quot;]',
   };
 
   // ═══════════════════════════════════════════════════════════
   // WHO AM I, AND AM I ON A PROFILE
   // ═══════════════════════════════════════════════════════════
 
-  const ownHandle = (() => {
+  const ownHandle = (() =&gt; {
     const href = document.querySelector(SEL.profileLink)?.getAttribute('href') || '';
     const fromNav = href.match(/^\/([A-Za-z0-9_]{1,15})$/);
     if (fromNav) return fromNav[1].toLowerCase();
@@ -137,8 +349,8 @@
   const RESERVED = ['home', 'explore', 'notifications', 'messages', 'i', 'search', 'settings', 'compose',
     'hashtag', 'bookmarks', 'lists', 'topics', 'communities', 'jobs'];
   const pathMatch = location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/([A-Za-z0-9_]+))?\/?$/);
-  const pathUser = pathMatch && !RESERVED.includes(pathMatch[1].toLowerCase()) ? pathMatch[1] : null;
-  const onProfile = Boolean(pathUser) && (!pathMatch[2] || PROFILE_TABS.includes(pathMatch[2].toLowerCase()));
+  const pathUser = pathMatch &amp;&amp; !RESERVED.includes(pathMatch[1].toLowerCase()) ? pathMatch[1] : null;
+  const onProfile = Boolean(pathUser) &amp;&amp; (!pathMatch[2] || PROFILE_TABS.includes(pathMatch[2].toLowerCase()));
 
   if (!onProfile) {
     console.error(ownHandle
@@ -146,7 +358,7 @@
       : '❌ Run this on your own profile timeline (x.com/YOUR_USERNAME).');
     return;
   }
-  if (ownHandle && pathUser.toLowerCase() !== ownHandle.toLowerCase()) {
+  if (ownHandle &amp;&amp; pathUser.toLowerCase() !== ownHandle.toLowerCase()) {
     console.error(`❌ This audits your OWN reputation, not @${pathUser}'s. Run it on https://x.com/${ownHandle}.`);
     return;
   }
@@ -160,16 +372,16 @@
   // UTILITIES
   // ═══════════════════════════════════════════════════════════
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const jitter = ([min, max]) => Math.floor(min + Math.random() * (max - min));
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const clampScore = (n) => Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
+  const sleep = (ms) =&gt; new Promise((r) =&gt; setTimeout(r, ms));
+  const jitter = ([min, max]) =&gt; Math.floor(min + Math.random() * (max - min));
+  const $ = (sel, root = document) =&gt; root.querySelector(sel);
+  const $$ = (sel, root = document) =&gt; Array.from(root.querySelectorAll(sel));
+  const esc = (s) =&gt; String(s).replace(/[&amp;&lt;&gt;&quot;']/g, (c) =&gt; ({ '&amp;': '&amp;amp;', '&lt;': '&amp;lt;', '&gt;': '&amp;gt;', '&quot;': '&amp;quot;', &quot;'&quot;: '&amp;#39;' }[c]));
+  const clampScore = (n) =&gt; Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
 
-  const waitFor = async (sel, timeout = 6000, root = document) => {
+  const waitFor = async (sel, timeout = 6000, root = document) =&gt; {
     const start = Date.now();
-    while (Date.now() - start < timeout) {
+    while (Date.now() - start &lt; timeout) {
       const el = root.querySelector(sel);
       if (el) return el;
       await sleep(120);
@@ -177,38 +389,38 @@
     return null;
   };
 
-  const waitForGone = async (sel, timeout = 6000) => {
+  const waitForGone = async (sel, timeout = 6000) =&gt; {
     const start = Date.now();
-    while (Date.now() - start < timeout) {
+    while (Date.now() - start &lt; timeout) {
       if (!document.querySelector(sel)) return true;
       await sleep(120);
     }
     return false;
   };
 
-  const pressEscape = () => {
+  const pressEscape = () =&gt; {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
     const close = $(SEL.closeModal);
     if (close) close.click();
   };
 
-  const throttleToast = () => {
+  const throttleToast = () =&gt; {
     const toast = $(SEL.toast);
     if (!toast) return null;
     const text = toast.textContent || '';
     return /rate limit|try again later|too many|temporarily|unable to|something went wrong|limit/i.test(text) ? text.trim() : null;
   };
 
-  const cache = (() => {
-    if (!CONFIG.useCache) return { get: () => null, set: () => {}, clear: () => {} };
+  const cache = (() =&gt; {
+    if (!CONFIG.useCache) return { get: () =&gt; null, set: () =&gt; {}, clear: () =&gt; {} };
     let store;
     try { store = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { store = {}; }
     const maxAge = CONFIG.cacheDays * 86400000;
-    const rubricKey = () => Object.keys(CONFIG.dimensions).filter((k) => CONFIG.dimensions[k]).sort().join(',') + '|' + CONFIG.customQuestion.trim();
+    const rubricKey = () =&gt; Object.keys(CONFIG.dimensions).filter((k) =&gt; CONFIG.dimensions[k]).sort().join(',') + '|' + CONFIG.customQuestion.trim();
     return {
       get(id) {
         const hit = store[id];
-        if (!hit || hit.rubric !== rubricKey() || Date.now() - hit.at > maxAge) return null;
+        if (!hit || hit.rubric !== rubricKey() || Date.now() - hit.at &gt; maxAge) return null;
         return hit.result;
       },
       set(id, result) {
@@ -226,10 +438,10 @@
   // READING YOUR POSTS
   // ═══════════════════════════════════════════════════════════
 
-  const readArticle = (article) => {
-    const statusLinks = $$('a[href*="/status/"]', article)
-      .filter((a) => /^\/[A-Za-z0-9_]+\/status\/\d+/.test(a.getAttribute('href') || ''));
-    const permalink = statusLinks.find((a) => a.querySelector('time')) || statusLinks[0];
+  const readArticle = (article) =&gt; {
+    const statusLinks = $$('a[href*=&quot;/status/&quot;]', article)
+      .filter((a) =&gt; /^\/[A-Za-z0-9_]+\/status\/\d+/.test(a.getAttribute('href') || ''));
+    const permalink = statusLinks.find((a) =&gt; a.querySelector('time')) || statusLinks[0];
     const link = permalink?.getAttribute('href') || '';
     if (!link) return null;
     const id = (link.match(/\/status\/(\d+)/) || [])[1];
@@ -237,19 +449,19 @@
     if (!id || !author) return null;
 
     const nameEl = $(SEL.userName, article);
-    const nameSpans = nameEl ? $$('span', nameEl).map((s) => s.textContent.trim()).filter(Boolean) : [];
-    const authorName = nameSpans.find((t) => t && !t.startsWith('@')) || '';
+    const nameSpans = nameEl ? $$('span', nameEl).map((s) =&gt; s.textContent.trim()).filter(Boolean) : [];
+    const authorName = nameSpans.find((t) =&gt; t &amp;&amp; !t.startsWith('@')) || '';
 
     const social = ($(SEL.socialContext, article)?.textContent || '').toLowerCase();
     const isRepost = /reposted|retweeted/.test(social);
     const isPinned = /pinned/.test(social);
     const isReply = /replying to/i.test(article.textContent || '');
-    const isAd = !!$(SEL.placement, article) || $$('span', article).some((s) => s.textContent.trim() === 'Ad');
+    const isAd = !!$(SEL.placement, article) || $$('span', article).some((s) =&gt; s.textContent.trim() === 'Ad');
 
     const time = $('time', article)?.getAttribute('datetime') || '';
     const text = $(SEL.tweetText, article)?.textContent?.trim() || '';
     const quotedText = $$(SEL.tweetText, article)[1]?.textContent?.trim() || '';
-    const hasMedia = !!$('[data-testid="tweetPhoto"], [data-testid="videoPlayer"], video', article);
+    const hasMedia = !!$('[data-testid=&quot;tweetPhoto&quot;], [data-testid=&quot;videoPlayer&quot;], video', article);
 
     return {
       id, url: `https://x.com${link.split('?')[0]}`, author, authorName, text, quotedText, hasMedia,
@@ -257,11 +469,11 @@
     };
   };
 
-  const eligible = (info) => {
+  const eligible = (info) =&gt; {
     if (!info || !info.isMine) return false;
     if (info.isAd) return false;
-    if (CONFIG.scan.excludePinned && info.isPinned) return false;
-    if (info.isRepost && !CONFIG.scan.includeReposts) return false;
+    if (CONFIG.scan.excludePinned &amp;&amp; info.isPinned) return false;
+    if (info.isRepost &amp;&amp; !CONFIG.scan.includeReposts) return false;
     return Boolean(info.text) || info.hasMedia;
   };
 
@@ -270,7 +482,7 @@
    * pairs so the cleanup step can act on the live DOM node later without a
    * second lookup.
    */
-  const collectPosts = async (onProgress) => {
+  const collectPosts = async (onProgress) =&gt; {
     const found = [];
     const seen = new Set();
     let idleRounds = 0;
@@ -278,10 +490,10 @@
     window.scrollTo({ top: 0 });
     await sleep(1000);
 
-    while (found.length < CONFIG.scan.maxPosts && idleRounds < 6) {
+    while (found.length &lt; CONFIG.scan.maxPosts &amp;&amp; idleRounds &lt; 6) {
       let addedThisRound = false;
       for (const article of $$(SEL.article)) {
-        if (found.length >= CONFIG.scan.maxPosts) break;
+        if (found.length &gt;= CONFIG.scan.maxPosts) break;
         const info = readArticle(article);
         if (!info || seen.has(info.id)) continue;
         seen.add(info.id);
@@ -291,8 +503,8 @@
         if (onProgress) onProgress(found.length);
       }
       idleRounds = addedThisRound ? 0 : idleRounds + 1;
-      if (found.length >= CONFIG.scan.maxPosts) break;
-      const retry = $$(SEL.retryButton).find((b) => /retry|try again/i.test(b.textContent || ''));
+      if (found.length &gt;= CONFIG.scan.maxPosts) break;
+      const retry = $$(SEL.retryButton).find((b) =&gt; /retry|try again/i.test(b.textContent || ''));
       if (retry) { retry.click(); await sleep(2500); }
       window.scrollBy({ top: Math.round(window.innerHeight * 0.9), behavior: 'smooth' });
       await sleep(jitter([1200, 2200]));
@@ -304,22 +516,22 @@
   // AI RISK SCORING
   // ═══════════════════════════════════════════════════════════
 
-  const activeDimensions = () => {
-    const keys = Object.keys(DIMENSION_META).filter((k) => CONFIG.dimensions[k]);
-    const dims = keys.map((k) => ({ key: k, ...DIMENSION_META[k] }));
+  const activeDimensions = () =&gt; {
+    const keys = Object.keys(DIMENSION_META).filter((k) =&gt; CONFIG.dimensions[k]);
+    const dims = keys.map((k) =&gt; ({ key: k, ...DIMENSION_META[k] }));
     if (CONFIG.customQuestion.trim()) dims.push({ key: 'custom', label: 'Custom', emoji: '🔎', question: CONFIG.customQuestion.trim() });
     return dims;
   };
 
-  const buildRiskSystemPrompt = (dims) => {
-    const schema = dims.map((d) => `    "${d.key}": { "score": <0-100 integer>, "reason": "<one short clause, under 15 words>" }`).join(',\n');
+  const buildRiskSystemPrompt = (dims) =&gt; {
+    const schema = dims.map((d) =&gt; `    &quot;${d.key}&quot;: { &quot;score&quot;: &lt;0-100 integer&gt;, &quot;reason&quot;: &quot;&lt;one short clause, under 15 words&gt;&quot; }`).join(',\n');
     return [
       'You are a careful, unsentimental reviewer scoring a single social media post for risk before its author decides whether to keep it public.',
       '',
       'Score each dimension below from 0 (no risk at all) to 100 (severe, obvious risk). Judge the post as written, not the author\'s intent. A post with no signal for a dimension scores near 0 on it, not a defensive middle value.',
       '',
       'Dimensions:',
-      ...dims.map((d) => `- ${d.key}: ${d.question}`),
+      ...dims.map((d) =&gt; `- ${d.key}: ${d.question}`),
       '',
       'Respond with ONLY a single JSON object, no markdown fences, no commentary, in exactly this shape:',
       '{', schema, '}',
@@ -328,44 +540,44 @@
     ].join('\n');
   };
 
-  const buildRiskUserPrompt = (info) => {
-    const parts = [`Post${info.isReply ? ' (a reply)' : ''} by @${info.author}:`, `"""${(info.text || '').trim()}"""`];
-    if (info.quotedText) parts.push('', 'It quotes:', `"""${info.quotedText.trim()}"""`);
+  const buildRiskUserPrompt = (info) =&gt; {
+    const parts = [`Post${info.isReply ? ' (a reply)' : ''} by @${info.author}:`, `&quot;&quot;&quot;${(info.text || '').trim()}&quot;&quot;&quot;`];
+    if (info.quotedText) parts.push('', 'It quotes:', `&quot;&quot;&quot;${info.quotedText.trim()}&quot;&quot;&quot;`);
     if (info.hasMedia) parts.push('', '(It also has an image or video attached that you cannot see. Score the text only.)');
     parts.push('', 'Score it now, as JSON only.');
     return parts.join('\n');
   };
 
-  const extractJsonObject = (raw) => {
+  const extractJsonObject = (raw) =&gt; {
     const text = String(raw || '').trim();
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
     const candidate = fenced ? fenced[1].trim() : text;
     try { return JSON.parse(candidate); } catch { /* fall through to brace-scan below */ }
     const start = candidate.indexOf('{');
     const end = candidate.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) throw new Error(`No JSON object found in the model's response: "${text.slice(0, 120)}"`);
+    if (start === -1 || end === -1 || end &lt;= start) throw new Error(`No JSON object found in the model's response: &quot;${text.slice(0, 120)}&quot;`);
     return JSON.parse(candidate.slice(start, end + 1));
   };
 
-  const parseRiskResponse = (raw, dims) => {
+  const parseRiskResponse = (raw, dims) =&gt; {
     const parsed = extractJsonObject(raw);
     const dimensions = {};
     for (const { key, label } of dims) {
       const entry = parsed[key];
-      if (!entry || typeof entry !== 'object') throw new Error(`Model response is missing dimension "${key}" (${label})`);
+      if (!entry || typeof entry !== 'object') throw new Error(`Model response is missing dimension &quot;${key}&quot; (${label})`);
       dimensions[key] = { score: clampScore(entry.score), reason: String(entry.reason || '').trim().slice(0, 200) };
     }
     let worstDimension = dims[0].key;
     let overall = 0;
     for (const [key, { score }] of Object.entries(dimensions)) {
-      if (score > overall) { overall = score; worstDimension = key; }
+      if (score &gt; overall) { overall = score; worstDimension = key; }
     }
-    const verdict = overall >= FLAG_THRESHOLD ? 'flagged' : overall >= REVIEW_THRESHOLD ? 'review' : 'clean';
+    const verdict = overall &gt;= FLAG_THRESHOLD ? 'flagged' : overall &gt;= REVIEW_THRESHOLD ? 'review' : 'clean';
     return { dimensions, overall, verdict, worstDimension };
   };
 
   /** Direct call to xAI. The only LLM host x.com's CSP lets the page reach. */
-  const completeViaXai = async (messages) => {
+  const completeViaXai = async (messages) =&gt; {
     const c = CONFIG.ai;
     if (!c.apiKey) throw new Error('No xAI API key. Paste one in the panel (console.x.ai) or switch provider to bridge.');
     const res = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -374,7 +586,7 @@
       body: JSON.stringify({ model: c.model || 'grok-3-mini', messages, temperature: 0, max_tokens: 400 }),
     });
     if (!res.ok) {
-      const detail = await res.text().catch(() => '');
+      const detail = await res.text().catch(() =&gt; '');
       throw new Error(`xAI ${res.status}: ${detail.slice(0, 200)}`);
     }
     const data = await res.json();
@@ -382,22 +594,22 @@
   };
 
   /** Through the XActions extension, which can reach any provider. */
-  const completeViaBridge = (messages) => new Promise((resolve, reject) => {
+  const completeViaBridge = (messages) =&gt; new Promise((resolve, reject) =&gt; {
     if (!window.__xactions_bridge_loaded) {
       reject(new Error('XActions extension not detected on this tab. Install extension/ and reload, or use provider xai.'));
       return;
     }
     const c = CONFIG.ai;
     const id = `xra-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const timer = setTimeout(() => { cleanup(); reject(new Error('Extension bridge timed out after 45s')); }, 45000);
-    const onMessage = (event) => {
+    const timer = setTimeout(() =&gt; { cleanup(); reject(new Error('Extension bridge timed out after 45s')); }, 45000);
+    const onMessage = (event) =&gt; {
       if (event.source !== window || !event.data || event.data.source !== 'xactions-extension') return;
       if (event.data.type !== 'LLM_RESPONSE' || event.data.id !== id) return;
       cleanup();
       if (event.data.error) reject(new Error(event.data.error));
       else resolve(String(event.data.text || '').trim());
     };
-    const cleanup = () => { clearTimeout(timer); window.removeEventListener('message', onMessage); };
+    const cleanup = () =&gt; { clearTimeout(timer); window.removeEventListener('message', onMessage); };
     window.addEventListener('message', onMessage);
     window.postMessage({
       source: 'xactions-page', type: 'LLM_REQUEST', id,
@@ -405,7 +617,7 @@
     }, '*');
   });
 
-  const scoreOnePost = async (info, dims) => {
+  const scoreOnePost = async (info, dims) =&gt; {
     const cached = cache.get(info.id);
     if (cached) return { ...cached, fromCache: true };
     const complete = CONFIG.ai.provider === 'bridge' ? completeViaBridge : completeViaXai;
@@ -420,13 +632,13 @@
   };
 
   /** Score every post with bounded concurrency. One failure never aborts the batch. */
-  const scoreAll = async (entries, dims, onProgress) => {
+  const scoreAll = async (entries, dims, onProgress) =&gt; {
     const results = new Array(entries.length);
     const concurrency = Math.max(1, Math.min(CONFIG.ai.concurrency, 6, entries.length));
     let cursor = 0;
     let done = 0;
     async function worker() {
-      while (cursor < entries.length) {
+      while (cursor &lt; entries.length) {
         const i = cursor++;
         try {
           results[i] = await scoreOnePost(entries[i].info, dims);
@@ -445,17 +657,17 @@
   // AGGREGATION
   // ═══════════════════════════════════════════════════════════
 
-  const scoreToGrade = (score) => {
+  const scoreToGrade = (score) =&gt; {
     const s = clampScore(score);
-    if (s >= 97) return 'A+';
-    if (s >= 90) return 'A';
-    if (s >= 80) return 'B';
-    if (s >= 65) return 'C';
-    if (s >= 45) return 'D';
+    if (s &gt;= 97) return 'A+';
+    if (s &gt;= 90) return 'A';
+    if (s &gt;= 80) return 'B';
+    if (s &gt;= 65) return 'C';
+    if (s &gt;= 45) return 'D';
     return 'F';
   };
 
-  const gradeColor = (grade) => ({
+  const gradeColor = (grade) =&gt; ({
     'A+': '#00ba7c', A: '#00ba7c', B: '#7ac943', C: '#ffd166', D: '#ff9f1c', F: '#f4212e',
   }[grade] || '#8b98a5');
 
@@ -465,9 +677,9 @@
    * blends the average risk (typical post) with the single worst post, so
    * one severe outlier still pulls the grade down.
    */
-  const buildReport = (entries, scores) => {
-    const paired = entries.map((e, i) => ({ ...e, score: scores[i] })).filter((p) => p.score && !p.score.error);
-    const errors = scores.filter((s) => s && s.error).length;
+  const buildReport = (entries, scores) =&gt; {
+    const paired = entries.map((e, i) =&gt; ({ ...e, score: scores[i] })).filter((p) =&gt; p.score &amp;&amp; !p.score.error);
+    const errors = scores.filter((s) =&gt; s &amp;&amp; s.error).length;
 
     if (paired.length === 0) {
       return { scanned: entries.length, scoredOk: 0, errors, reputationScore: 100, grade: 'A+', verdictCounts: { clean: 0, review: 0, flagged: 0 }, dimensionAverages: {}, dimensionPeaks: {}, worstPosts: [] };
@@ -494,10 +706,10 @@
     for (const key of Object.keys(dimensionTotals)) dimensionAverages[key] = Math.round(dimensionTotals[key] / dimensionCounts[key]);
 
     const avgRisk = riskTotal / paired.length;
-    const worstRisk = Math.max(...paired.map((p) => p.score.overall));
+    const worstRisk = Math.max(...paired.map((p) =&gt; p.score.overall));
     const reputationScore = clampScore(100 - (avgRisk * 0.6 + worstRisk * 0.4));
 
-    const worstPosts = [...paired].sort((a, b) => b.score.overall - a.score.overall).filter((p) => p.score.overall >= REVIEW_THRESHOLD);
+    const worstPosts = [...paired].sort((a, b) =&gt; b.score.overall - a.score.overall).filter((p) =&gt; p.score.overall &gt;= REVIEW_THRESHOLD);
 
     return { scanned: entries.length, scoredOk: paired.length, errors, reputationScore, grade: scoreToGrade(reputationScore), verdictCounts, dimensionAverages, dimensionPeaks, worstPosts };
   };
@@ -510,7 +722,7 @@
   const CARD_H = 675;
 
   /** Rounded-rect path, since CanvasRenderingContext2D.roundRect is not on every engine yet. */
-  const roundRect = (ctx, x, y, w, h, r) => {
+  const roundRect = (ctx, x, y, w, h, r) =&gt; {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -520,7 +732,7 @@
     ctx.closePath();
   };
 
-  const drawGauge = (ctx, cx, cy, radius, score, color) => {
+  const drawGauge = (ctx, cx, cy, radius, score, color) =&gt; {
     const start = Math.PI * 0.75;
     const end = Math.PI * 2.25;
     ctx.save();
@@ -549,7 +761,7 @@
    * the canvas so callers can either turn it into a download or a clipboard
    * write without rendering twice.
    */
-  const renderCard = (report) => {
+  const renderCard = (report) =&gt; {
     const canvas = document.createElement('canvas');
     canvas.width = CARD_W;
     canvas.height = CARD_H;
@@ -564,11 +776,11 @@
 
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < CARD_W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CARD_H); ctx.stroke(); }
-    for (let y = 0; y < CARD_H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CARD_W, y); ctx.stroke(); }
+    for (let x = 0; x &lt; CARD_W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CARD_H); ctx.stroke(); }
+    for (let y = 0; y &lt; CARD_H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CARD_W, y); ctx.stroke(); }
 
     ctx.fillStyle = '#e7e9ea';
-    ctx.font = '600 26px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    ctx.font = '600 26px -apple-system, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif';
     ctx.fillText('🛡️ XActions Reputation Score', 48, 64);
     ctx.fillStyle = '#8b98a5';
     ctx.font = '400 18px -apple-system, sans-serif';
@@ -605,7 +817,7 @@
       ctx.fillText(peak === avg ? `${avg}` : `avg ${avg} · worst ${peak}`, barsX + barW, barsY);
       ctx.textAlign = 'left';
       barsY += 12;
-      const riskColor = (n) => (n >= FLAG_THRESHOLD ? '#f4212e' : n >= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c');
+      const riskColor = (n) =&gt; (n &gt;= FLAG_THRESHOLD ? '#f4212e' : n &gt;= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c');
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
       roundRect(ctx, barsX, barsY, barW, 12, 6);
       ctx.fill();
@@ -648,7 +860,7 @@
     ctx.stroke();
     ctx.fillStyle = '#536471';
     ctx.font = '400 15px -apple-system, sans-serif';
-    ctx.fillText('Free & open source · scripts/reputationAudit.js · github.com/nirholas/XActions', 48, CARD_H - 28);
+    ctx.fillText('Free &amp; open source · scripts/reputationAudit.js · github.com/nirholas/XActions', 48, CARD_H - 28);
     ctx.textAlign = 'right';
     ctx.fillText('xactions.app', CARD_W - 48, CARD_H - 28);
     ctx.textAlign = 'left';
@@ -656,10 +868,10 @@
     return canvas;
   };
 
-  const cardFilename = (report) => `xactions-reputation-${profileUser}-${report.reputationScore}-${new Date().toISOString().slice(0, 10)}.png`;
+  const cardFilename = (report) =&gt; `xactions-reputation-${profileUser}-${report.reputationScore}-${new Date().toISOString().slice(0, 10)}.png`;
 
-  const downloadCard = (canvas, report) => {
-    canvas.toBlob((blob) => {
+  const downloadCard = (canvas, report) =&gt; {
+    canvas.toBlob((blob) =&gt; {
       if (!blob) { addLog('Could not render the card image.', 'warn'); return; }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -667,18 +879,18 @@
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      setTimeout(() =&gt; URL.revokeObjectURL(a.href), 4000);
       addLog('📥 Downloaded the score card');
     }, 'image/png');
   };
 
-  const copyCard = async (canvas) => {
+  const copyCard = async (canvas) =&gt; {
     if (!navigator.clipboard || !window.ClipboardItem) {
       addLog('This browser cannot copy images to the clipboard. Use Download instead.', 'warn');
       return false;
     }
-    return new Promise((resolve) => {
-      canvas.toBlob(async (blob) => {
+    return new Promise((resolve) =&gt; {
+      canvas.toBlob(async (blob) =&gt; {
         if (!blob) { resolve(false); return; }
         try {
           await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })]);
@@ -696,7 +908,7 @@
   // CLEANUP: delete what got flagged (reuses searchSweep's verified-delete logic)
   // ═══════════════════════════════════════════════════════════
 
-  const openCaretMenu = async (article) => {
+  const openCaretMenu = async (article) =&gt; {
     const caret = $(SEL.caret, article);
     if (!caret) throw new Error('post menu button missing');
     caret.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -708,9 +920,9 @@
     return menu;
   };
 
-  const menuItemMatching = (pattern) => $$(SEL.menuItem).find((item) => pattern.test((item.textContent || '').trim()));
+  const menuItemMatching = (pattern) =&gt; $$(SEL.menuItem).find((item) =&gt; pattern.test((item.textContent || '').trim()));
 
-  const deleteOnePost = async (article, info) => {
+  const deleteOnePost = async (article, info) =&gt; {
     if (!info.isMine) throw new Error(`@${info.author} is not you, refusing to delete`);
     await openCaretMenu(article);
     const item = menuItemMatching(/^\s*delete\b/i) || menuItemMatching(/\bdelete post\b/i)
@@ -728,21 +940,21 @@
     }
     await sleep(jitter([600, 1200]));
     const toast = throttleToast();
-    if (toast) throw new Error(`X pushed back: "${toast}"`);
+    if (toast) throw new Error(`X pushed back: &quot;${toast}&quot;`);
     return true;
   };
 
-  const runCleanup = async (selected) => {
+  const runCleanup = async (selected) =&gt; {
     if (selected.length === 0) { addLog('Nothing selected to clean up.', 'warn'); return; }
     const c = CONFIG.cleanup;
     addLog(`${c.dryRun ? '🔍 DRY RUN: ' : '⚠️ LIVE: '}cleaning up ${selected.length} flagged post${selected.length === 1 ? '' : 's'}`);
     let done = 0, failed = 0;
     for (const { article, info } of selected) {
       if (!article.isConnected) { addLog(`  · ${info.id} is no longer on screen, skip`, 'dim'); continue; }
-      if (c.dryRun) { addLog(`  🔍 [DRY] would delete "${info.text.slice(0, 60)}${info.text.length > 60 ? '…' : ''}"`); done++; continue; }
+      if (c.dryRun) { addLog(`  🔍 [DRY] would delete &quot;${info.text.slice(0, 60)}${info.text.length &gt; 60 ? '…' : ''}&quot;`); done++; continue; }
       try {
         await deleteOnePost(article, info);
-        addLog(`  🗑️ deleted "${info.text.slice(0, 60)}${info.text.length > 60 ? '…' : ''}"`);
+        addLog(`  🗑️ deleted &quot;${info.text.slice(0, 60)}${info.text.length &gt; 60 ? '…' : ''}&quot;`);
         done++;
       } catch (err) {
         addLog(`  ⚠️ ${info.id}: ${err.message}`, 'warn');
@@ -767,7 +979,7 @@
     selectedForCleanup: new Set(),
   };
 
-  const persistSummary = () => {
+  const persistSummary = () =&gt; {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         at: Date.now(),
@@ -778,7 +990,7 @@
     } catch { /* best-effort */ }
   };
 
-  const runScan = async () => {
+  const runScan = async () =&gt; {
     if (STATE.running) return;
     STATE.running = true;
     setButtons('running');
@@ -786,9 +998,9 @@
     if (dims.length === 0) { addLog('Pick at least one dimension to score against.', 'warn'); STATE.running = false; setButtons('idle'); return; }
 
     try {
-      addLog(`🚀 Scanning @${profileUser} for up to ${CONFIG.scan.maxPosts} posts across ${dims.map((d) => d.key).join(', ')}`);
+      addLog(`🚀 Scanning @${profileUser} for up to ${CONFIG.scan.maxPosts} posts across ${dims.map((d) =&gt; d.key).join(', ')}`);
       setStatus('Collecting posts…');
-      STATE.entries = await collectPosts((n) => setStatus(`Collecting posts… ${n}/${CONFIG.scan.maxPosts}`));
+      STATE.entries = await collectPosts((n) =&gt; setStatus(`Collecting posts… ${n}/${CONFIG.scan.maxPosts}`));
       if (STATE.entries.length === 0) {
         addLog('No eligible posts found on this timeline. Try scrolling down manually first, or /with_replies.', 'warn');
         return;
@@ -796,7 +1008,7 @@
       addLog(`📝 Collected ${STATE.entries.length} posts. Scoring…`);
 
       setStatus(`Scoring 0/${STATE.entries.length}…`);
-      STATE.scores = await scoreAll(STATE.entries, dims, (done, total, result) => {
+      STATE.scores = await scoreAll(STATE.entries, dims, (done, total, result) =&gt; {
         setStatus(`Scoring ${done}/${total}…`);
         if (result?.error) addLog(`  ⚠️ scoring failed for one post: ${result.error}`, 'warn');
         updateProgress(done, total);
@@ -821,7 +1033,7 @@
   // ═══════════════════════════════════════════════════════════
 
   const css = `
-    #xra-panel{position:fixed;right:16px;bottom:16px;width:400px;max-height:88vh;display:flex;flex-direction:column;z-index:2147483000;background:#0f1419;color:#e7e9ea;border:1px solid #2f3336;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.55);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;transition:transform .2s ease,opacity .2s ease}
+    #xra-panel{position:fixed;right:16px;bottom:16px;width:400px;max-height:88vh;display:flex;flex-direction:column;z-index:2147483000;background:#0f1419;color:#e7e9ea;border:1px solid #2f3336;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.55);font:13px/1.4 -apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,Helvetica,Arial,sans-serif;transition:transform .2s ease,opacity .2s ease}
     #xra-panel.xra-min .xra-body,#xra-panel.xra-min .xra-foot{display:none}
     #xra-panel *{box-sizing:border-box}
     .xra-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #2f3336;cursor:move;user-select:none}
@@ -842,7 +1054,7 @@
     #xra-panel input[type=text],#xra-panel input[type=password],#xra-panel input[type=number],#xra-panel select,#xra-panel textarea{width:100%;background:#16181c;color:#e7e9ea;border:1px solid #2f3336;border-radius:8px;padding:7px 9px;font:inherit;outline:none;transition:border-color .15s}
     #xra-panel input:focus,#xra-panel select:focus,#xra-panel textarea:focus{border-color:#1d9bf0}
     .xra-section{border:1px solid #2f3336;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
-    .xra-section>b{font-size:12px;color:#8b98a5;text-transform:uppercase;letter-spacing:.04em}
+    .xra-section&gt;b{font-size:12px;color:#8b98a5;text-transform:uppercase;letter-spacing:.04em}
     .xra-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer}
     .xra-toggle input{accent-color:#1d9bf0;width:16px;height:16px}
     .xra-score{display:flex;align-items:center;gap:16px;padding:8px 0}
@@ -883,9 +1095,9 @@
   style.textContent = css;
   document.head.appendChild(style);
 
-  const dimensionChip = (key) => {
+  const dimensionChip = (key) =&gt; {
     const meta = DIMENSION_META[key];
-    return `<label class="xra-chip ${CONFIG.dimensions[key] ? 'on' : ''}" id="xra-chip-${key}" tabindex="0"><input type="checkbox" id="xra-d-${key}" ${CONFIG.dimensions[key] ? 'checked' : ''}>${meta.emoji} ${meta.label}</label>`;
+    return `&lt;label class=&quot;xra-chip ${CONFIG.dimensions[key] ? 'on' : ''}&quot; id=&quot;xra-chip-${key}&quot; tabindex=&quot;0&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xra-d-${key}&quot; ${CONFIG.dimensions[key] ? 'checked' : ''}&gt;${meta.emoji} ${meta.label}&lt;/label&gt;`;
   };
 
   const panel = document.createElement('div');
@@ -893,79 +1105,79 @@
   panel.setAttribute('role', 'region');
   panel.setAttribute('aria-label', 'XActions reputation audit');
   panel.innerHTML = `
-    <div class="xra-head" id="xra-drag">
-      <b>🛡️ Reputation audit</b>
-      <button id="xra-min" title="Minimise" aria-label="Minimise panel">_</button>
-      <button id="xra-close" title="Close" aria-label="Close panel">✕</button>
-    </div>
-    <div class="xra-body">
-      <div class="xra-section">
-        <b>Score against</b>
-        <div class="xra-chips">${Object.keys(DIMENSION_META).map(dimensionChip).join('')}</div>
-        <label><span class="xra-label">Custom risk question (optional)</span><input type="text" id="xra-custom" placeholder="Does this reveal my employer or home city?" value="${esc(CONFIG.customQuestion)}"></label>
-      </div>
+    &lt;div class=&quot;xra-head&quot; id=&quot;xra-drag&quot;&gt;
+      &lt;b&gt;🛡️ Reputation audit&lt;/b&gt;
+      &lt;button id=&quot;xra-min&quot; title=&quot;Minimise&quot; aria-label=&quot;Minimise panel&quot;&gt;_&lt;/button&gt;
+      &lt;button id=&quot;xra-close&quot; title=&quot;Close&quot; aria-label=&quot;Close panel&quot;&gt;✕&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;xra-body&quot;&gt;
+      &lt;div class=&quot;xra-section&quot;&gt;
+        &lt;b&gt;Score against&lt;/b&gt;
+        &lt;div class=&quot;xra-chips&quot;&gt;${Object.keys(DIMENSION_META).map(dimensionChip).join('')}&lt;/div&gt;
+        &lt;label&gt;&lt;span class=&quot;xra-label&quot;&gt;Custom risk question (optional)&lt;/span&gt;&lt;input type=&quot;text&quot; id=&quot;xra-custom&quot; placeholder=&quot;Does this reveal my employer or home city?&quot; value=&quot;${esc(CONFIG.customQuestion)}&quot;&gt;&lt;/label&gt;
+      &lt;/div&gt;
 
-      <div class="xra-section">
-        <b>Scan</b>
-        <div class="xra-grid">
-          <label><span class="xra-label">Max posts</span><input type="number" id="xra-max" min="5" max="500" value="${CONFIG.scan.maxPosts}"></label>
-          <label><span class="xra-label">Concurrency</span><input type="number" id="xra-concurrency" min="1" max="6" value="${CONFIG.ai.concurrency}"></label>
-        </div>
-        <label class="xra-toggle"><span>Include reposts</span><input type="checkbox" id="xra-incl-reposts" ${CONFIG.scan.includeReposts ? 'checked' : ''}></label>
-        <div class="xra-hint">Tip: open x.com/${esc(profileUser)}/with_replies first to include replies, the biggest source of reputation risk for most accounts.</div>
-      </div>
+      &lt;div class=&quot;xra-section&quot;&gt;
+        &lt;b&gt;Scan&lt;/b&gt;
+        &lt;div class=&quot;xra-grid&quot;&gt;
+          &lt;label&gt;&lt;span class=&quot;xra-label&quot;&gt;Max posts&lt;/span&gt;&lt;input type=&quot;number&quot; id=&quot;xra-max&quot; min=&quot;5&quot; max=&quot;500&quot; value=&quot;${CONFIG.scan.maxPosts}&quot;&gt;&lt;/label&gt;
+          &lt;label&gt;&lt;span class=&quot;xra-label&quot;&gt;Concurrency&lt;/span&gt;&lt;input type=&quot;number&quot; id=&quot;xra-concurrency&quot; min=&quot;1&quot; max=&quot;6&quot; value=&quot;${CONFIG.ai.concurrency}&quot;&gt;&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;label class=&quot;xra-toggle&quot;&gt;&lt;span&gt;Include reposts&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xra-incl-reposts&quot; ${CONFIG.scan.includeReposts ? 'checked' : ''}&gt;&lt;/label&gt;
+        &lt;div class=&quot;xra-hint&quot;&gt;Tip: open x.com/${esc(profileUser)}/with_replies first to include replies, the biggest source of reputation risk for most accounts.&lt;/div&gt;
+      &lt;/div&gt;
 
-      <div class="xra-section">
-        <b>AI provider</b>
-        <div class="xra-grid">
-          <label><span class="xra-label">Provider</span>
-            <select id="xra-provider">
-              <option value="xai" ${CONFIG.ai.provider === 'xai' ? 'selected' : ''}>xAI (works here)</option>
-              <option value="bridge" ${CONFIG.ai.provider === 'bridge' ? 'selected' : ''}>Extension bridge</option>
-            </select>
-          </label>
-          <label><span class="xra-label">Model</span><input type="text" id="xra-model" value="${esc(CONFIG.ai.model)}"></label>
-        </div>
-        <label><span class="xra-label">API key</span><input type="password" id="xra-key" placeholder="xai-..." value="${esc(CONFIG.ai.apiKey)}"></label>
-        <label class="xra-toggle"><span>Remember key in this browser</span><input type="checkbox" id="xra-remember"></label>
-      </div>
+      &lt;div class=&quot;xra-section&quot;&gt;
+        &lt;b&gt;AI provider&lt;/b&gt;
+        &lt;div class=&quot;xra-grid&quot;&gt;
+          &lt;label&gt;&lt;span class=&quot;xra-label&quot;&gt;Provider&lt;/span&gt;
+            &lt;select id=&quot;xra-provider&quot;&gt;
+              &lt;option value=&quot;xai&quot; ${CONFIG.ai.provider === 'xai' ? 'selected' : ''}&gt;xAI (works here)&lt;/option&gt;
+              &lt;option value=&quot;bridge&quot; ${CONFIG.ai.provider === 'bridge' ? 'selected' : ''}&gt;Extension bridge&lt;/option&gt;
+            &lt;/select&gt;
+          &lt;/label&gt;
+          &lt;label&gt;&lt;span class=&quot;xra-label&quot;&gt;Model&lt;/span&gt;&lt;input type=&quot;text&quot; id=&quot;xra-model&quot; value=&quot;${esc(CONFIG.ai.model)}&quot;&gt;&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;label&gt;&lt;span class=&quot;xra-label&quot;&gt;API key&lt;/span&gt;&lt;input type=&quot;password&quot; id=&quot;xra-key&quot; placeholder=&quot;xai-...&quot; value=&quot;${esc(CONFIG.ai.apiKey)}&quot;&gt;&lt;/label&gt;
+        &lt;label class=&quot;xra-toggle&quot;&gt;&lt;span&gt;Remember key in this browser&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xra-remember&quot;&gt;&lt;/label&gt;
+      &lt;/div&gt;
 
-      <div class="xra-section" id="xra-report-section" style="display:none">
-        <b>Your reputation score</b>
-        <div class="xra-score">
-          <canvas id="xra-gauge" width="96" height="96"></canvas>
-          <div>
-            <div class="xra-score-num" id="xra-score-num">-</div>
-            <div class="xra-score-grade" id="xra-score-grade"></div>
-          </div>
-        </div>
-        <div class="xra-bars" id="xra-bars"></div>
-        <div class="xra-hint" id="xra-verdict-line"></div>
-        <div class="xra-btn-row" style="display:flex;gap:8px">
-          <button class="xra-btn" id="xra-download">Download card</button>
-          <button class="xra-btn" id="xra-copy">Copy image</button>
-        </div>
-      </div>
+      &lt;div class=&quot;xra-section&quot; id=&quot;xra-report-section&quot; style=&quot;display:none&quot;&gt;
+        &lt;b&gt;Your reputation score&lt;/b&gt;
+        &lt;div class=&quot;xra-score&quot;&gt;
+          &lt;canvas id=&quot;xra-gauge&quot; width=&quot;96&quot; height=&quot;96&quot;&gt;&lt;/canvas&gt;
+          &lt;div&gt;
+            &lt;div class=&quot;xra-score-num&quot; id=&quot;xra-score-num&quot;&gt;-&lt;/div&gt;
+            &lt;div class=&quot;xra-score-grade&quot; id=&quot;xra-score-grade&quot;&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;xra-bars&quot; id=&quot;xra-bars&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;xra-hint&quot; id=&quot;xra-verdict-line&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;xra-btn-row&quot; style=&quot;display:flex;gap:8px&quot;&gt;
+          &lt;button class=&quot;xra-btn&quot; id=&quot;xra-download&quot;&gt;Download card&lt;/button&gt;
+          &lt;button class=&quot;xra-btn&quot; id=&quot;xra-copy&quot;&gt;Copy image&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
 
-      <div class="xra-section" id="xra-flagged-section" style="display:none">
-        <b>Worth a second look</b>
-        <div class="xra-flagged" id="xra-flagged-list"></div>
-        <label class="xra-toggle"><span><b>Cleanup dry run</b> (touch nothing)</span><input type="checkbox" id="xra-cleanup-dry" checked></label>
-        <button class="xra-btn danger" id="xra-cleanup">Clean up selected</button>
-      </div>
+      &lt;div class=&quot;xra-section&quot; id=&quot;xra-flagged-section&quot; style=&quot;display:none&quot;&gt;
+        &lt;b&gt;Worth a second look&lt;/b&gt;
+        &lt;div class=&quot;xra-flagged&quot; id=&quot;xra-flagged-list&quot;&gt;&lt;/div&gt;
+        &lt;label class=&quot;xra-toggle&quot;&gt;&lt;span&gt;&lt;b&gt;Cleanup dry run&lt;/b&gt; (touch nothing)&lt;/span&gt;&lt;input type=&quot;checkbox&quot; id=&quot;xra-cleanup-dry&quot; checked&gt;&lt;/label&gt;
+        &lt;button class=&quot;xra-btn danger&quot; id=&quot;xra-cleanup&quot;&gt;Clean up selected&lt;/button&gt;
+      &lt;/div&gt;
 
-      <div class="xra-bar"><i id="xra-bar"></i></div>
-      <div class="xra-status" id="xra-status" role="status" aria-live="polite">Idle</div>
-      <div class="xra-log" id="xra-log" aria-live="polite"></div>
-    </div>
-    <div class="xra-foot">
-      <button class="xra-btn primary" id="xra-scan">Scan</button>
-      <button class="xra-btn" id="xra-export">Export JSON</button>
-    </div>
+      &lt;div class=&quot;xra-bar&quot;&gt;&lt;i id=&quot;xra-bar&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+      &lt;div class=&quot;xra-status&quot; id=&quot;xra-status&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;Idle&lt;/div&gt;
+      &lt;div class=&quot;xra-log&quot; id=&quot;xra-log&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;xra-foot&quot;&gt;
+      &lt;button class=&quot;xra-btn primary&quot; id=&quot;xra-scan&quot;&gt;Scan&lt;/button&gt;
+      &lt;button class=&quot;xra-btn&quot; id=&quot;xra-export&quot;&gt;Export JSON&lt;/button&gt;
+    &lt;/div&gt;
   `;
   document.body.appendChild(panel);
 
-  const el = (id) => document.getElementById(id);
+  const el = (id) =&gt; document.getElementById(id);
 
   function addLog(message, kind = '') {
     const box = el('xra-log');
@@ -974,7 +1186,7 @@
     if (kind) line.className = kind;
     line.textContent = `${time}  ${message}`;
     box.appendChild(line);
-    while (box.childElementCount > 400) box.removeChild(box.firstChild);
+    while (box.childElementCount &gt; 400) box.removeChild(box.firstChild);
     box.scrollTop = box.scrollHeight;
     console[kind === 'warn' ? 'warn' : 'log'](`[reputation audit] ${message}`);
   }
@@ -1010,39 +1222,39 @@
     el('xra-score-grade').textContent = `${report.grade} grade`;
     drawMiniGauge(report.reputationScore, color);
 
-    el('xra-bars').innerHTML = Object.entries(report.dimensionAverages).map(([key, avg]) => {
+    el('xra-bars').innerHTML = Object.entries(report.dimensionAverages).map(([key, avg]) =&gt; {
       const meta = DIMENSION_META[key] || { label: key, emoji: '🔎' };
       const peak = report.dimensionPeaks?.[key] ?? avg;
-      const barColor = peak >= FLAG_THRESHOLD ? '#f4212e' : peak >= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c';
+      const barColor = peak &gt;= FLAG_THRESHOLD ? '#f4212e' : peak &gt;= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c';
       const label = peak === avg ? `${avg}` : `${avg} / ${peak}`;
       const title = peak === avg ? `${meta.label}: ${avg}` : `${meta.label}: ${avg} average, ${peak} on the worst post`;
-      return `<div class="xra-bar-row" title="${esc(title)}"><span class="xra-bar-label">${meta.emoji} ${esc(meta.label)}</span><div class="xra-bar-track"><div class="xra-bar-peak" style="width:${peak}%;background:${barColor}"></div><div class="xra-bar-fill" style="width:${avg}%;background:${barColor}"></div></div><span>${label}</span></div>`;
+      return `&lt;div class=&quot;xra-bar-row&quot; title=&quot;${esc(title)}&quot;&gt;&lt;span class=&quot;xra-bar-label&quot;&gt;${meta.emoji} ${esc(meta.label)}&lt;/span&gt;&lt;div class=&quot;xra-bar-track&quot;&gt;&lt;div class=&quot;xra-bar-peak&quot; style=&quot;width:${peak}%;background:${barColor}&quot;&gt;&lt;/div&gt;&lt;div class=&quot;xra-bar-fill&quot; style=&quot;width:${avg}%;background:${barColor}&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;span&gt;${label}&lt;/span&gt;&lt;/div&gt;`;
     }).join('');
 
     el('xra-verdict-line').textContent = `${report.verdictCounts.clean} clean · ${report.verdictCounts.review} worth a look · ${report.verdictCounts.flagged} flagged` + (report.errors ? ` · ${report.errors} failed to score` : '');
 
-    STATE.selectedForCleanup = new Set(report.worstPosts.filter((p) => p.score.verdict === 'flagged').map((p) => p.info.id));
+    STATE.selectedForCleanup = new Set(report.worstPosts.filter((p) =&gt; p.score.verdict === 'flagged').map((p) =&gt; p.info.id));
     const flaggedSection = el('xra-flagged-section');
     if (report.worstPosts.length === 0) {
       flaggedSection.style.display = '';
-      el('xra-flagged-list').innerHTML = '<div class="xra-empty">Nothing flagged. Your timeline reads clean against this rubric.</div>';
+      el('xra-flagged-list').innerHTML = '&lt;div class=&quot;xra-empty&quot;&gt;Nothing flagged. Your timeline reads clean against this rubric.&lt;/div&gt;';
     } else {
       flaggedSection.style.display = '';
-      el('xra-flagged-list').innerHTML = report.worstPosts.map(({ info, score }) => {
+      el('xra-flagged-list').innerHTML = report.worstPosts.map(({ info, score }) =&gt; {
         const badgeColor = score.verdict === 'flagged' ? '#f4212e' : '#ffd166';
         const worst = score.dimensions[score.worstDimension];
         const meta = DIMENSION_META[score.worstDimension] || { label: score.worstDimension, emoji: '🔎' };
-        return `<div class="xra-flag-item">
-          <input type="checkbox" data-id="${esc(info.id)}" ${score.verdict === 'flagged' ? 'checked' : ''}>
-          <div class="xra-flag-text">
-            <div>${esc(info.text.slice(0, 90))}${info.text.length > 90 ? '…' : ''}</div>
-            <div class="why">${meta.emoji} ${esc(meta.label)}: ${esc(worst.reason)}</div>
-          </div>
-          <span class="xra-flag-badge" style="background:${badgeColor}22;color:${badgeColor}">${score.overall}</span>
-        </div>`;
+        return `&lt;div class=&quot;xra-flag-item&quot;&gt;
+          &lt;input type=&quot;checkbox&quot; data-id=&quot;${esc(info.id)}&quot; ${score.verdict === 'flagged' ? 'checked' : ''}&gt;
+          &lt;div class=&quot;xra-flag-text&quot;&gt;
+            &lt;div&gt;${esc(info.text.slice(0, 90))}${info.text.length &gt; 90 ? '…' : ''}&lt;/div&gt;
+            &lt;div class=&quot;why&quot;&gt;${meta.emoji} ${esc(meta.label)}: ${esc(worst.reason)}&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;span class=&quot;xra-flag-badge&quot; style=&quot;background:${badgeColor}22;color:${badgeColor}&quot;&gt;${score.overall}&lt;/span&gt;
+        &lt;/div&gt;`;
       }).join('');
-      $$('#xra-flagged-list input[type=checkbox]').forEach((box) => {
-        box.addEventListener('change', () => {
+      $$('#xra-flagged-list input[type=checkbox]').forEach((box) =&gt; {
+        box.addEventListener('change', () =&gt; {
           if (box.checked) STATE.selectedForCleanup.add(box.dataset.id);
           else STATE.selectedForCleanup.delete(box.dataset.id);
         });
@@ -1052,7 +1264,7 @@
     STATE.canvas = renderCard(report);
   }
 
-  // ── Panel <-> CONFIG ──────────────────────────────────────
+  // ── Panel &lt;-&gt; CONFIG ──────────────────────────────────────
 
   function readPanel() {
     for (const key of Object.keys(DIMENSION_META)) CONFIG.dimensions[key] = el(`xra-d-${key}`).checked;
@@ -1065,7 +1277,7 @@
     CONFIG.ai.apiKey = el('xra-key').value.trim();
     CONFIG.cleanup.dryRun = el('xra-cleanup-dry').checked;
     try {
-      if (el('xra-remember').checked && CONFIG.ai.apiKey) localStorage.setItem(KEY_STORAGE, CONFIG.ai.apiKey);
+      if (el('xra-remember').checked &amp;&amp; CONFIG.ai.apiKey) localStorage.setItem(KEY_STORAGE, CONFIG.ai.apiKey);
       else if (!el('xra-remember').checked) localStorage.removeItem(KEY_STORAGE);
     } catch { /* private mode, keep the key in memory only */ }
   }
@@ -1080,9 +1292,9 @@
   }
   for (const key of Object.keys(DIMENSION_META)) {
     const chip = el(`xra-chip-${key}`);
-    el(`xra-d-${key}`).addEventListener('change', () => { readPanel(); syncChips(); });
-    chip.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
+    el(`xra-d-${key}`).addEventListener('change', () =&gt; { readPanel(); syncChips(); });
+    chip.addEventListener('keydown', (event) =&gt; {
+      if (event.key !== 'Enter' &amp;&amp; event.key !== ' ') return;
       event.preventDefault();
       const input = el(`xra-d-${key}`);
       input.checked = !input.checked;
@@ -1090,33 +1302,33 @@
     });
   }
 
-  const savedKey = (() => { try { return localStorage.getItem(KEY_STORAGE) || ''; } catch { return ''; } })();
+  const savedKey = (() =&gt; { try { return localStorage.getItem(KEY_STORAGE) || ''; } catch { return ''; } })();
   if (savedKey) { CONFIG.ai.apiKey = savedKey; el('xra-key').value = savedKey; el('xra-remember').checked = true; }
 
   // ── Buttons ───────────────────────────────────────────────
 
-  el('xra-min').addEventListener('click', () => panel.classList.toggle('xra-min'));
-  el('xra-close').addEventListener('click', () => {
+  el('xra-min').addEventListener('click', () =&gt; panel.classList.toggle('xra-min'));
+  el('xra-close').addEventListener('click', () =&gt; {
     panel.remove();
     style.remove();
     delete window.XReputationAudit;
   });
 
-  el('xra-scan').addEventListener('click', () => { readPanel(); runScan(); });
+  el('xra-scan').addEventListener('click', () =&gt; { readPanel(); runScan(); });
 
-  el('xra-download').addEventListener('click', () => {
+  el('xra-download').addEventListener('click', () =&gt; {
     if (!STATE.canvas) { addLog('Scan first.', 'warn'); return; }
     downloadCard(STATE.canvas, STATE.report);
   });
-  el('xra-copy').addEventListener('click', () => {
+  el('xra-copy').addEventListener('click', () =&gt; {
     if (!STATE.canvas) { addLog('Scan first.', 'warn'); return; }
     copyCard(STATE.canvas);
   });
 
-  el('xra-cleanup').addEventListener('click', async () => {
+  el('xra-cleanup').addEventListener('click', async () =&gt; {
     readPanel();
     if (!STATE.report) { addLog('Scan first.', 'warn'); return; }
-    const selected = STATE.report.worstPosts.filter((p) => STATE.selectedForCleanup.has(p.info.id));
+    const selected = STATE.report.worstPosts.filter((p) =&gt; STATE.selectedForCleanup.has(p.info.id));
     if (selected.length === 0) { addLog('Nothing checked in the list above.', 'warn'); return; }
     if (!CONFIG.cleanup.dryRun) {
       const ok = window.confirm(`Permanently delete ${selected.length} post${selected.length === 1 ? '' : 's'}? This cannot be undone.`);
@@ -1130,13 +1342,13 @@
     }
   });
 
-  el('xra-export').addEventListener('click', () => {
+  el('xra-export').addEventListener('click', () =&gt; {
     if (!STATE.report) { addLog('Nothing to export yet. Scan first.', 'warn'); return; }
     const payload = {
       username: profileUser,
       ranAt: new Date().toISOString(),
       report: STATE.report,
-      posts: STATE.entries.map((e, i) => ({ id: e.info.id, url: e.info.url, text: e.info.text, score: STATE.scores[i] })),
+      posts: STATE.entries.map((e, i) =&gt; ({ id: e.info.id, url: e.info.url, text: e.info.text, score: STATE.scores[i] })),
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1145,32 +1357,32 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    setTimeout(() =&gt; URL.revokeObjectURL(a.href), 4000);
     addLog(`📥 Exported ${STATE.entries.length} rows`);
   });
 
   // ── Drag ──────────────────────────────────────────────────
 
-  (() => {
+  (() =&gt; {
     const head = el('xra-drag');
     let drag = null;
-    head.addEventListener('mousedown', (event) => {
+    head.addEventListener('mousedown', (event) =&gt; {
       if (event.target.tagName === 'BUTTON') return;
       const rect = panel.getBoundingClientRect();
       drag = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
       panel.style.right = 'auto'; panel.style.bottom = 'auto';
       event.preventDefault();
     });
-    window.addEventListener('mousemove', (event) => {
+    window.addEventListener('mousemove', (event) =&gt; {
       if (!drag) return;
       panel.style.left = `${Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, event.clientX - drag.dx))}px`;
       panel.style.top = `${Math.max(0, Math.min(window.innerHeight - 40, event.clientY - drag.dy))}px`;
     });
-    window.addEventListener('mouseup', () => { drag = null; });
+    window.addEventListener('mouseup', () =&gt; { drag = null; });
   })();
 
   // Alt+Shift+R scans, mirroring Alt+Shift+S in the other sweep panels.
-  window.addEventListener('keydown', (event) => {
+  window.addEventListener('keydown', (event) =&gt; {
     if (!event.altKey || !event.shiftKey || event.key.toLowerCase() !== 'r') return;
     event.preventDefault();
     if (!STATE.running) el('xra-scan').click();
@@ -1183,14 +1395,14 @@
   window.XReputationAudit = {
     config: CONFIG,
     state: STATE,
-    scan: () => el('xra-scan').click(),
-    downloadCard: () => el('xra-download').click(),
-    copyCard: () => el('xra-copy').click(),
-    cleanup: () => el('xra-cleanup').click(),
-    export: () => el('xra-export').click(),
-    clearCache: () => { cache.clear(); addLog('Cleared the scoring cache. The next scan re-scores every post.'); },
+    scan: () =&gt; el('xra-scan').click(),
+    downloadCard: () =&gt; el('xra-download').click(),
+    copyCard: () =&gt; el('xra-copy').click(),
+    cleanup: () =&gt; el('xra-cleanup').click(),
+    export: () =&gt; el('xra-export').click(),
+    clearCache: () =&gt; { cache.clear(); addLog('Cleared the scoring cache. The next scan re-scores every post.'); },
     /** Every post currently on screen, with the eligibility verdict, before spending on the AI provider. */
-    preview: () => $$(SEL.article).map(readArticle).filter(Boolean).map((info) => ({ ...info, eligible: eligible(info) })),
+    preview: () =&gt; $$(SEL.article).map(readArticle).filter(Boolean).map((info) =&gt; ({ ...info, eligible: eligible(info) })),
     /** Parse a raw model completion the way scoring does, for testing a provider/prompt without a live scan. */
     parseRiskResponse,
     buildRiskSystemPrompt,
@@ -1201,3 +1413,42 @@
   addLog(`Loaded on @${profileUser}. Pick your rubric and hit Scan.`);
   addLog('Scanning only reads and scores. Cleanup is a separate step with its own dry run. Alt+Shift+R scans.', 'dim');
 })();
+</code></pre>
+          </div>
+        </section>
+
+        <div class="cta-box">
+          <h3>⚡ More XActions Scripts</h3>
+          <p>Browse 300+ free browser scripts for X/Twitter automation. No API keys, no fees.</p>
+          <a href="/scripts">Browse All Scripts</a>
+        </div>
+      </article>
+    </main>
+
+    <aside class="sidebar-right">
+      <div class="sidebar-card">
+        <h3>⚡ Other Tools</h3>
+        <a href="/scripts/account-misc">⚡ Account Misc</a>
+<a href="/scripts/ad-campaign-manager">⚡ Ad Campaign Manager</a>
+<a href="/scripts/advanced-creator">⚡ Advanced Creator</a>
+<a href="/scripts/advanced-dm">⚡ Advanced DM</a>
+<a href="/scripts/advanced-grok">⚡ Advanced Grok</a>
+<a href="/scripts/advanced-notifications">⚡ Advanced Notifications</a>
+<a href="/scripts/advanced-premium">⚡ Advanced Premium</a>
+<a href="/scripts/advanced-settings">⚡ Advanced Settings</a>
+<a href="/scripts/audit-console-errors">⚡ Audit Console Errors</a>
+<a href="/scripts/community-manager">⚡ Community Manager</a>
+      </div>
+      <div class="sidebar-card">
+        <h3>🔗 Quick Links</h3>
+        <a href="/scripts">All Scripts</a>
+        <a href="/features">Features</a>
+        <a href="/docs">Documentation</a>
+        <a href="/tutorials">Tutorials</a>
+        <a href="/mcp">MCP Server</a>
+        <a href="https://github.com/nirholas/XActions" rel="noopener">GitHub</a>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

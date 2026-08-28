@@ -1344,6 +1344,14 @@
     "sourceDir": "src"
   },
   {
+    "slug": "reputation-audit",
+    "title": "Reputation Audit",
+    "description": "AI-scores your own posts across professional, hostile, legal, and spam risk, then renders a shareable score card and offers one-click cleanup of what it flags.",
+    "category": "Other Tools",
+    "icon": "⚡",
+    "sourceDir": "scripts"
+  },
+  {
     "slug": "save-search",
     "title": "Save Searches",
     "description": "Save the current search query, list saved searches,",

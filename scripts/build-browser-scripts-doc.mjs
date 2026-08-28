@@ -77,8 +77,30 @@ function parseScript(file) {
   };
 }
 
-const scripts = readdirSync(SCRIPTS_DIR)
-  .filter((f) => f.endsWith('.js'))
+const jsFiles = readdirSync(SCRIPTS_DIR).filter((f) => f.endsWith('.js'));
+
+// A script that carries the "Paste in DevTools" line further down the file was
+// meant for this catalog and is being dropped from it silently: parseScript only
+// reads the first 8 lines, and a doc that consistently omits a file still passes
+// --check. Catch it here instead, where the fix (move the line up, or move a
+// JSDoc header below the // block) is obvious. This is exactly how
+// reputationAudit.js went missing after gaining a JSDoc header.
+const missed = jsFiles.filter((file) => {
+  const source = readFileSync(join(SCRIPTS_DIR, file), 'utf8');
+  if (!/paste in devtools/i.test(source)) return false;
+  return !source.split('\n').slice(0, 8).some((l) => /paste in devtools/i.test(l));
+});
+
+if (missed.length > 0) {
+  console.error(
+    `These scripts say "Paste in DevTools" but not within their first 8 lines, so the catalog silently skips them:\n` +
+    missed.map((f) => `  scripts/${f}`).join('\n') +
+    `\n\nMove that line into the leading // header block. A JSDoc header belongs below it, just above the IIFE.`,
+  );
+  process.exit(1);
+}
+
+const scripts = jsFiles
   .map(parseScript)
   .filter(Boolean)
   .sort((a, b) => a.name.localeCompare(b.name));
