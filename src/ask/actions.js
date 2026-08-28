@@ -129,7 +129,19 @@ export function createActionMatcher(catalog) {
       scored.push({ ...entry.action, score, why: why[0] || 'related to your question' });
     }
 
-    scored.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+    // An explicit surface intent decides which kind leads, rather than nudging
+    // it by KIND_INTENT and hoping the margin holds. "scrape followers from the
+    // terminal" must answer with the terminal even when a browser script scores
+    // higher on word overlap, and a bonus cannot guarantee that: any edit to any
+    // description can flip a half-point gap. Ordering by kind first can't.
+    const soleIntent = intents.length === 1 ? intents[0] : null;
+    scored.sort((a, b) => {
+      if (soleIntent) {
+        const rank = (x) => (x.kind === soleIntent ? 0 : 1);
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+      }
+      return b.score - a.score || a.id.localeCompare(b.id);
+    });
 
     // Spread across surfaces so an answer offers the console script AND the
     // terminal command, rather than four near-identical MCP tools.

@@ -78,6 +78,28 @@ describe('ask actions: matching', () => {
     expect(actions[0].install).toBe('npm install -g xactions');
   });
 
+  it('leads with the asked-for surface even when another surface scores higher', () => {
+    // A browser script can out-score the CLI on word overlap for this question,
+    // and did: scrape-followers beat the CLI by half a point once an unrelated
+    // description was reworded. Intent has to order the kinds, not just add to
+    // their score, or any catalog edit can flip the answer.
+    const ranked = matcher.match('scrape followers from the terminal', searcher.search('scrape followers from the terminal'));
+    const firstCli = ranked.findIndex((a) => a.kind === 'cli');
+    const firstOther = ranked.findIndex((a) => a.kind !== 'cli');
+    expect(firstCli).toBe(0);
+    if (firstOther !== -1) {
+      // The higher-scoring other-surface action is still offered, just not first.
+      expect(firstOther).toBeGreaterThan(firstCli);
+    }
+  });
+
+  it('still ranks purely by score when the question names no surface', () => {
+    const q = 'how do i unfollow all users';
+    const ranked = matcher.match(q, searcher.search(q));
+    const scores = ranked.map((a) => a.score);
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+  });
+
   it('returns nothing runnable for a conceptual question', () => {
     // "xactions" appears in every CLI title, so without the common-term filter
     // this question would offer arbitrary commands.
