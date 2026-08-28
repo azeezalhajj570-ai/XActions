@@ -24,7 +24,7 @@ You should see, on stderr:
 
 ```
 💻 XActions MCP Server: Local mode (free)
-⚡ XActions MCP Server v3.5.0 - 152 tools
+⚡ XActions MCP Server v3.5.0 - 153 tools
 
 📋 Tools available: 151
    Scraping: x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets, x_get_thread, x_download_video
