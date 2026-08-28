@@ -86,6 +86,49 @@ function countMcpTools() {
 const MCP_TOOL_COUNT = countMcpTools();
 
 /**
+ * The other counts docs habitually quote, each derived from the thing it
+ * describes rather than from another document. Every one of these drifted at
+ * some point: the docs claimed 111 CLI commands against 56, 31 skills against
+ * 49, and 29 route modules against 40. A number nobody can recompute is a
+ * number that rots.
+ */
+function countDirs(rel) {
+  const dir = join(ROOT, rel);
+  if (!existsSync(dir)) return null;
+  return readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).length;
+}
+
+function countFiles(rel, suffix) {
+  const dir = join(ROOT, rel);
+  if (!existsSync(dir)) return null;
+  return readdirSync(dir).filter((f) => f.endsWith(suffix)).length;
+}
+
+/**
+ * Top-level commands, meaning the ones `xactions --help` lists.
+ *
+ * src/cli/help-groups.js declares itself the single source of truth for that
+ * screen and reconciles its own list against the registered commands at
+ * runtime, so its GROUPS arrays are the honest count. Parsing `.command(`
+ * calls instead conflates top-level commands with subcommands hanging off
+ * other receivers and produces a number no reader can reproduce.
+ */
+function countTopLevelCommands() {
+  const file = join(ROOT, 'src/cli/help-groups.js');
+  if (!existsSync(file)) return null;
+  const src = readFileSync(file, 'utf8');
+  const names = new Set();
+  for (const block of src.matchAll(/commands:\s*\[([^\]]*)\]/g)) {
+    for (const name of block[1].matchAll(/'([a-z][a-z0-9-]*)'/g)) names.add(name[1]);
+  }
+  return names.size || null;
+}
+
+const SKILL_COUNT = countDirs('skills');
+const ROUTE_MODULE_COUNT = countFiles('api/routes', '.js');
+const CLI_COMMAND_COUNT = countTopLevelCommands();
+
+/**
  * Collect the top-level commands the CLI actually defines.
  *
  * Read statically from the `.command('name ...')` calls in the CLI sources
@@ -255,6 +298,7 @@ const deadAnchors = [];
 const missingScripts = [];
 const staleVersions = [];
 const staleToolCounts = [];
+const staleCounts = [];
 const unknownCommands = [];
 
 const files = roots.length > 0
@@ -362,6 +406,26 @@ for (const file of files) {
         staleToolCounts.push({ file: rel, line: index + 1, claimed });
       }
     });
+
+    // The same idea for the counts that are not about MCP. Each pattern is
+    // anchored on the noun so a number about something else is left alone.
+    const countChecks = [
+      { actual: SKILL_COUNT, label: 'agent skills', re: /(?<![\w.])(\d+)\+?\s+(?:agent\s+)?skills\b/gi, min: 5 },
+      { actual: ROUTE_MODULE_COUNT, label: 'route modules', re: /(?<![\w.])(\d+)\+?\s+route\s+modules\b/gi, min: 5 },
+      { actual: CLI_COMMAND_COUNT, label: 'CLI commands', re: /(?<![\w.])(\d+)\+?\s+(?:CLI\s+)?commands\b/gi, min: 10 },
+    ];
+    lines.forEach((text, index) => {
+      for (const check of countChecks) {
+        if (check.actual === null) continue;
+        for (const match of text.matchAll(check.re)) {
+          const claimed = Number(match[1]);
+          if (claimed < check.min || claimed === check.actual) continue;
+          // "158 commands and subcommands" is a different, also-true number.
+          if (check.label === 'CLI commands' && /subcommand/i.test(text)) continue;
+          staleCounts.push({ file: rel, line: index + 1, claimed, label: check.label, actual: check.actual });
+        }
+      }
+    });
   }
 }
 
@@ -413,6 +477,11 @@ const counts = [
     (f) => `claims ${f.claimed} tools`,
   ),
   report('documented CLI commands exist', unknownCommands, (f) => `xactions ${f.command}`),
+  report(
+    `skill, route and command counts match the tree (${SKILL_COUNT} skills, ${ROUTE_MODULE_COUNT} routes, ${CLI_COMMAND_COUNT} commands)`,
+    staleCounts,
+    (f) => `claims ${f.claimed} ${f.label}, actual ${f.actual}`,
+  ),
 ];
 
 const failedCategories = counts.filter((n) => n > 0).length;
