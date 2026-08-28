@@ -111,7 +111,7 @@ Generate this config automatically:
 xactions mcp-config
 ```
 
-152 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See [MCP Setup](mcp-setup.md).
+153 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See [MCP Setup](mcp-setup.md).
 
 ---
 

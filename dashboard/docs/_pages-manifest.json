@@ -552,6 +552,18 @@
     "minutes": 12
   },
   {
+    "slug": "media-archive",
+    "title": "Media archive",
+    "description": "Download every photo, video and GIF from a profile, tweet, search or community, with filename templates and an archive that makes re-runs incremental.",
+    "section": "Guides & Reference",
+    "icon": "📖",
+    "urlPath": "/docs/guides/media-archive",
+    "outSubdir": "guides",
+    "priority": 0.8,
+    "sourcePath": "docs/media-archive.md",
+    "minutes": 5
+  },
+  {
     "slug": "monitoring",
     "title": "Monitoring Guide",
     "description": "Track followers, unfollowers, and account activity on X (Twitter).",
@@ -1754,7 +1766,7 @@
   {
     "slug": "xactions-mcp-server",
     "title": "XActions MCP Server",
-    "description": "The definitive free Twitter/X MCP server. 152 tools for AI agents.",
+    "description": "The definitive free Twitter/X MCP server. 153 tools for AI agents.",
     "section": "Agent Skills",
     "icon": "🎯",
     "urlPath": "/docs/skills/xactions-mcp-server",

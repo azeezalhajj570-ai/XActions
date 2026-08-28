@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 71 more…</a>
+      <a class="sidebar__link" href="/docs">+ 72 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -224,7 +224,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 </p>
 
 <p>
-  <a href="/docs/guides/mcp-setup"><img src="https://img.shields.io/badge/MCP_Tools-152-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="152 MCP Tools"></a>&nbsp;
+  <a href="/docs/guides/mcp-setup"><img src="https://img.shields.io/badge/MCP_Tools-152-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="153 MCP Tools"></a>&nbsp;
   <a href="https://smithery.ai/server/xactions"><img src="https://smithery.ai/badge/xactions" alt="Smithery"></a>&nbsp;
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP_Registry-deployed-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="MCP Registry"></a>&nbsp;
   <a href="Dockerfile"><img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>&nbsp;
@@ -310,7 +310,7 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 </tr>
 <tr>
 <td><strong>MCP Server (AI agents)</strong></td>
-<td align="center">✅ <strong>152 tools</strong></td>
+<td align="center">✅ <strong>153 tools</strong></td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 <td align="center">✅ (33-tool server)</td>
@@ -524,6 +524,10 @@ npx xactions search &quot;your brand&quot; --limit 50               # what peopl
 <tr>
 <td><strong>Honest failures</strong></td>
 <td>Nothing reports empty results as success anymore. A read that cannot complete says why, and says what to do about it.</td>
+</tr>
+<tr>
+<td><strong>Archive every photo and video</strong></td>
+<td><code>xactions download @nichxbt:all --archive</code> saves a profile&#39;s media, avatar and banner with gallery-dl-style filename templates, then re-runs incrementally. Resumes interrupted files with <code>Range</code>, retries rate limits, and hard-links the same photo reached through a retweet instead of storing it twice. Also <code>xactions/media</code> and the <code>x_download_media</code> MCP tool. <a href="/docs/guides/media-archive">Docs</a>.</td>
 </tr>
 <tr>
 <td><strong>Ask XActions</strong></td>
@@ -2202,7 +2206,7 @@ npm run docs:check    # dead links, stale counts, invented CLI commands
 <p>stdio is the default transport and is what a local client wants. For a remote
 or hosted client, the same server speaks
 <a target="_blank" rel="noopener noreferrer" href="https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http">MCP Streamable HTTP</a>
-on <code>/mcp</code>, with the same 152 tools and the same tool-group filtering:</p>
+on <code>/mcp</code>, with the same 153 tools and the same tool-group filtering:</p>
 <pre><code class="language-bash">npx xactions-mcp --http --port 3000
 # or: MCP_TRANSPORT=http PORT=3000 npx xactions-mcp
 </code></pre>

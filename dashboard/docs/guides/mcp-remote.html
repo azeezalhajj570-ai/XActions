@@ -114,6 +114,7 @@
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
       <a class="sidebar__link" href="/docs/guides/getting-started">Getting Started with XActions</a>
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
+      <a class="sidebar__link" href="/docs/guides/media-archive">Media archive</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
       <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
@@ -469,7 +470,7 @@ xactions.app/mcp            Cloudflare Pages Function, runs at the edge
 <h2 id="limits">Limits</h2>
 <ul>
 <li><strong>Public data only.</strong> Protected accounts, DMs, and anything behind a login are not readable, by design.</li>
-<li><strong>Reads only.</strong> Writing to X needs your own session. That is what the <a href="/docs/guides/mcp-setup">local MCP server</a> is for, with 152 tools including posting, following and scheduling.</li>
+<li><strong>Reads only.</strong> Writing to X needs your own session. That is what the <a href="/docs/guides/mcp-setup">local MCP server</a> is for, with 153 tools including posting, following and scheduling.</li>
 <li><strong><code>x_thread</code> continues downward only as far as the author&#39;s recent timeline reaches.</strong> It always walks up to the root, at any age. When the tail is out of reach it returns <code>truncated: true</code> rather than implying the thread ended.</li>
 <li><strong>Anonymous rate limits are x.com&#39;s, not ours.</strong> When they bite, calls fail with a message saying to wait about a minute. They recover on their own.</li>
 <li><strong>Two tools are priced.</strong> <code>x_profile</code> and <code>x_posts</code> answer an unpaid call with x402 terms rather than data. The other four are free.</li>
@@ -483,7 +484,7 @@ npx wrangler pages dev dashboard
 <p><code>http://127.0.0.1:8788/mcp</code> is now the same server. Deploy it to your own Cloudflare Pages project and it costs nothing to run: the free tier covers 100,000 requests a day.</p>
 <h2 id="related">Related</h2>
 <ul>
-<li><a href="/docs/guides/mcp-setup">Local MCP server</a>: 152 tools, write access, your own session</li>
+<li><a href="/docs/guides/mcp-setup">Local MCP server</a>: 153 tools, write access, your own session</li>
 <li><a href="/docs/guides/video-downloader">Video downloader</a>: the same extraction lanes, as a web page and a REST endpoint</li>
 <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/XActions/tree/main/functions">Cloudflare Pages Functions</a>: every endpoint xactions.app serves at the edge</li>
 </ul>

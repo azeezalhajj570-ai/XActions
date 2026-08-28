@@ -177,6 +177,12 @@ function collectCliCommands() {
     for (const match of source.matchAll(/\.command\(\s*'([\w-]+)/g)) {
       commands.add(match[1]);
     }
+    // An alias is a real invocation. Without this, documenting the shorthand
+    // the CLI itself advertises (`xactions dl`) is reported as inventing a
+    // command that does not exist.
+    for (const match of source.matchAll(/\.alias\(\s*'([\w-]+)'\s*\)/g)) {
+      commands.add(match[1]);
+    }
   }
 
   // Commander provides `help` itself, so no `.command('help')` call exists.

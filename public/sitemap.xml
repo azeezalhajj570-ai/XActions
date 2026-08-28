@@ -847,7 +847,19 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://xactions.app/docs/guides/mcp-remote</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://xactions.app/docs/guides/mcp-setup</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/guides/media-archive</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -884,6 +896,12 @@
   </url>
   <url>
     <loc>https://xactions.app/docs/guides/readme</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/guides/reputation-audit</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -1124,6 +1142,12 @@
   </url>
   <url>
     <loc>https://xactions.app/docs/learn/your-first-scrape</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/learn/your-x-archive</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -1993,6 +2017,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://xactions.app/docs/skills/reputation-audit</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://xactions.app/docs/skills/saved-searches</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
@@ -2761,7 +2791,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://xactions.app/mcp</loc>
+    <loc>https://xactions.app/mcp-docs</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -3782,6 +3812,12 @@
   </url>
   <url>
     <loc>https://xactions.app/scripts/repost-post</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/scripts/reputation-audit</loc>
     <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
