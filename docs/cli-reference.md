@@ -731,18 +731,25 @@ xactions media artist -l 200 -o artist-media.json
 
 ### xactions engage
 
-Like, repost, and reply to every post on a profile, with replies from templates or from an LLM given a brief. Needs a logged-in session (`xactions connect`) for anything but `--dry-run`.
+Like, repost, and reply across a profile, a search, or a list, with replies from templates or from an LLM given a brief. Needs a logged-in session (`xactions connect`) for anything but `--dry-run`.
 
 ```bash
-xactions engage <username> [options]
+xactions engage [username] [options]
+xactions engage --search "<query>" [options]
+xactions engage --list <id> [options]
 ```
 
 | Option | Description |
 |--------|-------------|
+| `--search <query>` / `--list <id>` | Sweep a search or a list instead of a profile |
+| `--mode <Latest\|Top>` | Search ranking (default Latest) |
 | `--like` / `--repost` / `--comment` | Actions to take (at least one) |
 | `-l, --limit <n>` | Posts to engage this run (default 100) |
-| `--replies` / `--reposts` | Include the account's replies / its reposts of others |
+| `--replies` / `--reposts` | Include replies / reposts of other accounts |
 | `--since <date>` | Only posts on or after this date |
+| `--from <handles>` / `--skip-user <handles>` | Author allow and block lists |
+| `--keyword <words>` / `--skip-keyword <words>` | Text must contain / must not contain |
+| `--min-likes <n>` / `--max-likes <n>` | Like floor and ceiling (0 = no ceiling) |
 | `--template <text>` | Reply template, repeatable (`{author}`, `{name}`) |
 | `--templates-file <path>` | One template per line |
 | `--prompt <brief>` | AI replies: how they should sound |
@@ -759,10 +766,11 @@ xactions engage <username> [options]
 ```bash
 xactions engage nasa --like --repost --dry-run
 xactions engage nasa --like --comment --template "Solid work on this, {name}."
-xactions engage nasa --like --repost --comment --prompt "supportive, specific, one honest question, no hype"
+xactions engage --search "open source AI" --like --comment --prompt "curious builder" --max-likes 50
+xactions engage --list 1234567890 --like --keyword solana,rust --limit 25
 ```
 
-Full guide, including the browser-console version: [engage.md](engage.md).
+Progress is saved per feed in `~/.xactions/engage/`, so a second run skips what the first finished. Full guide, including the browser-console and MCP versions: [engage.md](engage.md).
 
 ### xactions info
 

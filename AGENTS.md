@@ -1,6 +1,6 @@
 # XActions for agents
 
-X/Twitter automation with no X API key: a CLI, a Node library, 150 MCP tools,
+X/Twitter automation with no X API key: a CLI, a Node library, 151 MCP tools,
 49 agent skills, browser console scripts, and a web dashboard. Apache-2.0, by
 nichxbt.
 
@@ -23,7 +23,7 @@ difference is what each costs you before you have read a single tweet.
 | Writes | reads, plus `engage` and `bulk` | every write tool, with an approval gate |
 | Usable without client configuration | yes, it is just a process | no, the client must be configured first |
 
-The tool list is not small. The server advertises 150 tools, and the
+The tool list is not small. The server advertises 151 tools, and the
 `tools/list` payload it serves is about 60 KB of JSON before you have done any
 work at all. Measure it yourself:
 
@@ -186,7 +186,7 @@ xactions mcp-config --write             # write it into Claude Desktop's config 
 node src/mcp/server.js                  # run it directly over stdio
 ```
 
-### Do not load all 150 tools
+### Do not load all 151 tools
 
 The tool list is filterable by group, and a filtered tool is neither advertised
 nor callable, so the schema cost drops with it. Groups: `read`, `write`, `dm`,

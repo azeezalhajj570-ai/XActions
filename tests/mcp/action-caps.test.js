@@ -175,7 +175,9 @@ describe('write-tool mapping', () => {
     const groups = await import('../../src/mcp/tool-groups.js');
     const caps = await freshCaps();
     const unmapped = [...groups.WRITE_TOOLS].filter(
-      (n) => !groups.ACTION_CLASS[n] && !groups.UNCAPPED_WRITE_TOOLS.has(n) && n !== 'x_bulk_execute'
+      (n) => !groups.ACTION_CLASS[n]
+        && !groups.UNCAPPED_WRITE_TOOLS.has(n)
+        && !groups.ARGUMENT_RESOLVED_WRITE_TOOLS.has(n)
     );
     expect(unmapped).toEqual([]);
     for (const cls of Object.values(groups.ACTION_CLASS)) {
@@ -195,5 +197,27 @@ describe('write-tool mapping', () => {
       .toEqual({ actionClass: 'block', count: 3 });
     expect(resolveActionCharge('x_bulk_execute', { action: 'block', usernames: ['a'], dryRun: true })).toBeNull();
     expect(resolveActionCharge('x_bulk_execute', { action: 'nonsense', usernames: ['a'] })).toBeNull();
+  });
+
+  it('resolveActionCharge charges a sweep for every action class it was asked to perform', async () => {
+    const { resolveActionCharge } = await import('../../src/mcp/tool-groups.js');
+    // A dry run writes nothing, and dryRun defaults to true on x_engage.
+    expect(resolveActionCharge('x_engage', { limit: 50 })).toBeNull();
+    expect(resolveActionCharge('x_engage', { dryRun: true, limit: 50 })).toBeNull();
+    // like is on by default, so a bare live call is charged for likes only.
+    expect(resolveActionCharge('x_engage', { dryRun: false, limit: 10 }))
+      .toEqual([{ actionClass: 'like', count: 10 }]);
+    // Every enabled action draws on its own budget.
+    expect(resolveActionCharge('x_engage', { dryRun: false, limit: 5, repost: true, comment: true }))
+      .toEqual([
+        { actionClass: 'like', count: 5 },
+        { actionClass: 'repost', count: 5 },
+        { actionClass: 'reply', count: 5 },
+      ]);
+    // Turning everything off costs nothing; the tool itself rejects that call.
+    expect(resolveActionCharge('x_engage', { dryRun: false, like: false })).toBeNull();
+    // The limit is clamped the same way the tool clamps it.
+    expect(resolveActionCharge('x_engage', { dryRun: false, limit: 5000 }))
+      .toEqual([{ actionClass: 'like', count: 200 }]);
   });
 });

@@ -273,7 +273,7 @@ XActions delivers features through **5 delivery modes**:
 | `src/mcp/local-tools.js` | Puppeteer-based local implementations | 527 |
 | `src/mcp/x402-client.js` | x402 payment client for remote API (USDC on Base/Ethereum/Arbitrum) | 558 |
 
-### 6.2 Complete MCP Tool List (150 tools)
+### 6.2 Complete MCP Tool List (151 tools)
 
 | # | Tool Name | Description | Required Args |
 |---|-----------|-------------|---------------|
@@ -302,6 +302,7 @@ XActions delivers features through **5 delivery modes**:
 | 23 | `x_get_bookmarks` | Export bookmarks | — |
 | 24 | `x_clear_bookmarks` | Clear all bookmarks | — |
 | 25 | `x_auto_like` | Auto-like by keywords in feed | — |
+| 25a | `x_engage` | Sweep a profile, search, or list: like, repost, and reply to every post, with template or LLM-written replies. Dry run by default. | `username` \| `search` \| `list` |
 | 26 | `x_get_trends` | Get trending topics | — |
 | 27 | `x_get_explore` | Scrape Explore feed | — |
 | 28 | `x_get_notifications` | Get notifications with type classification | — |

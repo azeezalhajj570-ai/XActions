@@ -380,12 +380,18 @@ fresh `npx xactions-mcp`. A cap that resets when the process does is not a cap.
 
 Nothing needs configuring: the defaults apply the moment the server starts.
 
+`x_engage` sweeps a whole feed in one call, so it is charged once per enabled
+action class for its entire `limit` before the first write, the same way
+`x_bulk_execute` is charged for its whole username list. A `limit: 100` sweep
+with like and reply reserves 100 of each. Keep `limit` to what you mean to
+spend; a dry run (the default) is charged nothing.
+
 | Class | Default per 24h | Tools charged to it |
 |-------|-----------------|---------------------|
 | `post` | 2400 | `x_post_tweet`, `x_post_thread`, `x_create_poll`, `x_schedule_post`, `x_publish_article`, `x_persona_run`, `x_workflow_run` |
-| `reply` | 2400 | `x_reply`, `x_quote_tweet`, `x_auto_comment` |
-| `like` | 500 | `x_like`, `x_auto_like`, `x_bookmark` |
-| `repost` | 500 | `x_retweet`, `x_auto_retweet` |
+| `reply` | 2400 | `x_reply`, `x_quote_tweet`, `x_auto_comment`, `x_engage` |
+| `like` | 500 | `x_like`, `x_auto_like`, `x_bookmark`, `x_engage` |
+| `repost` | 500 | `x_retweet`, `x_auto_retweet`, `x_engage` |
 | `follow` | 400 | `x_follow`, `x_auto_follow`, `x_follow_engagers` |
 | `unfollow` | 400 | `x_unfollow`, `x_unfollow_non_followers`, `x_unfollow_all`, `x_smart_unfollow` |
 | `dm` | 500 | `x_send_dm` |

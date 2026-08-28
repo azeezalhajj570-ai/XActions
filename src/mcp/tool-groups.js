@@ -218,6 +218,16 @@ export const ACTION_CLASS = Object.freeze({
  * pass the cap check untouched. Every WRITE_TOOL is in exactly one of
  * ACTION_CLASS, UNCAPPED_WRITE_TOOLS, or the dynamic resolver below.
  */
+/**
+ * Write tools whose charge cannot be read off the tool name because it
+ * depends on the arguments: which action a bulk call performs, which of
+ * like/repost/reply a sweep was asked for. resolveActionCharge() handles
+ * these explicitly, so they are exempt from the name-to-class table.
+ */
+export const ARGUMENT_RESOLVED_WRITE_TOOLS = Object.freeze(new Set([
+  'x_bulk_execute', 'x_engage',
+]));
+
 export const UNCAPPED_WRITE_TOOLS = Object.freeze(new Set([
   'x_update_profile', 'x_toggle_protected', 'x_migrate_account',
   'x_space_join', 'x_notify_send',

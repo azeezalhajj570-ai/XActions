@@ -28,7 +28,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 </p>
 
 <p>
-  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-150-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="150 MCP Tools"></a>&nbsp;
+  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-151-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="151 MCP Tools"></a>&nbsp;
   <a href="https://smithery.ai/server/xactions"><img src="https://smithery.ai/badge/xactions" alt="Smithery"></a>&nbsp;
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP_Registry-deployed-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="MCP Registry"></a>&nbsp;
   <a href="Dockerfile"><img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>&nbsp;
@@ -104,7 +104,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | Feature | **XActions** | twikit | twscrape | x-use | xmcp (official) | bird | twitter-cli | Agent-Reach |
 |---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **No API Key Required** | ✅ | ✅ Cookies | ✅ Account pool | ✅ Browser | ❌ X API keys | ✅ Cookies | ❌ X API keys | ✅ |
-| **MCP Server (AI agents)** | ✅ **150 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
+| **MCP Server (AI agents)** | ✅ **151 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
 | **Browser Console Scripts** | ✅ 94 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **AI Voice Agent in Spaces** | ✅ Join, listen, speak | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **CLI** | ✅ 50+ commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
@@ -945,7 +945,7 @@ npx xactions mcp-config --client windsurf
 | **Scraping** | `x_get_profile`, `x_get_followers`, `x_get_following`, `x_get_tweets`, `x_search_tweets`, `x_get_thread`, `x_download_video`, `x_get_replies`, `x_get_hashtag`, `x_get_likers`, `x_get_retweeters`, `x_get_media`, `x_get_mentions`, `x_get_quote_tweets`, `x_get_likes`, `x_get_recommendations` |
 | **Analysis** | `x_detect_unfollowers`, `x_analyze_sentiment`, `x_best_time_to_post`, `x_competitor_analysis`, `x_brand_monitor`, `x_audience_insights`, `x_engagement_report`, `x_crypto_analyze` |
 | **Actions** | `x_follow`, `x_unfollow`, `x_like`, `x_post_tweet`, `x_post_thread`, `x_reply`, `x_retweet`, `x_quote_tweet`, `x_bookmark`, `x_send_dm`, `x_create_poll`, `x_delete_tweet` |
-| **Automation** | `x_auto_follow`, `x_follow_engagers`, `x_unfollow_all`, `x_smart_unfollow`, `x_auto_comment`, `x_auto_retweet`, `x_auto_like`, `x_unfollow_non_followers` |
+| **Automation** | `x_auto_follow`, `x_follow_engagers`, `x_unfollow_all`, `x_smart_unfollow`, `x_auto_comment`, `x_auto_retweet`, `x_auto_like`, `x_engage`, `x_unfollow_non_followers` |
 | **AI** | `x_analyze_voice`, `x_generate_tweet`, `x_summarize_thread`, `x_rewrite_tweet`, `x_detect_bots`, `x_find_influencers`, `x_smart_target`, `x_grok_analyze_image` |
 | **Monitoring** | `x_monitor_account`, `x_monitor_keyword`, `x_follower_alerts`, `x_track_engagement`, `x_monitor_reputation`, `x_stream_start` |
 | **Workflows** | `x_workflow_create`, `x_workflow_run`, `x_workflow_list`, `x_workflow_actions` |
@@ -1201,7 +1201,7 @@ xactions/
 │   │   ├── mastodon/     # Mastodon scrapers (REST API)
 │   │   └── threads/      # Threads scrapers (Puppeteer)
 │   ├── cli/              # Command-line interface
-│   ├── mcp/              # MCP server (150 tools for AI agents)
+│   ├── mcp/              # MCP server (151 tools for AI agents)
 │   ├── spaces/           # Autonomous Space agent (xspace-agent integration)
 │   ├── automation/       # Browser console automation scripts
 │   ├── plugins/          # Plugin system (loader, manager, template)

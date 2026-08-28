@@ -41,7 +41,7 @@
         },
         {
           "name": "XACTIONS_MCP_TOOLS",
-          "description": "Comma separated tool or group names to expose, for example `read,analytics`. All 150 tools load when unset, which costs roughly 16k tokens of context; a narrow list keeps a client's context small.",
+          "description": "Comma separated tool or group names to expose, for example `read,analytics`. All 151 tools load when unset, which costs roughly 16k tokens of context; a narrow list keeps a client's context small.",
           "isRequired": false,
           "isSecret": false
         },
