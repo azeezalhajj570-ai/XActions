@@ -52,6 +52,12 @@ export {
 export { createCommentGenerator, sanitizeComment, isGenericComment } from './ai/commentGenerator.js';
 
 // ============================================================================
+// AI: post reputation / risk scorer
+// ============================================================================
+
+export { scorePost, scorePosts, summarizeReport, scoreToGrade, DIMENSIONS } from './ai/reputationScorer.js';
+
+// ============================================================================
 // Cookie Import (painless login)
 // ============================================================================
 // Parse cookie exports (Netscape cookies.txt, Cookie-Editor / EditThisCookie

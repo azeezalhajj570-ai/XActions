@@ -171,7 +171,7 @@ the value.
 
 ## The catalog
 
-_49 skills. Generated from [`skills/index.json`](../skills/index.json)._
+_50 skills. Generated from [`skills/index.json`](../skills/index.json)._
 
 | Skill | What it covers |
 |-------|----------------|
@@ -209,6 +209,7 @@ _49 skills. Generated from [`skills/index.json`](../skills/index.json)._
 | [Post Editing](../skills/post-editing/SKILL.md) | Edit existing posts or undo a recently posted tweet (Premium feature). |
 | [Premium & Subscriptions](../skills/premium-subscriptions/SKILL.md) | Detect Premium plan, verify feature access, and manage subscription features. |
 | [Profile Management](../skills/profile-management/SKILL.md) | Update bio, avatar, header image, display name, location, website, and pinned tweet. |
+| [Reputation Audit](../skills/reputation-audit/SKILL.md) | AI risk-scores your own posts (professional, hostile, legal, spam), produces a 0-100 reputation score with a shareable card, and offers one-click cleanup of what it flags. |
 | [Saved Searches](../skills/saved-searches/SKILL.md) | Create, manage, and run saved searches on X/Twitter. |
 | [Settings & Privacy](../skills/settings-privacy/SKILL.md) | Manage protected tweets, muted words, connected apps, and notification preferences. |
 | [Spaces & Live](../skills/spaces-live/SKILL.md) | Join X Spaces, scrape metadata, discover live rooms, and schedule Spaces. |

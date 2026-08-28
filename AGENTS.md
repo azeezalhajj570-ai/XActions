@@ -1,8 +1,8 @@
 # XActions for agents
 
-X/Twitter automation with no X API key: a CLI, a Node library, 151 MCP tools,
-49 agent skills, browser console scripts, and a web dashboard. Apache-2.0, by
-nichxbt.
+X/Twitter automation with no X API key: a 56-command CLI, a Node library, 152
+MCP tools, 50 agent skills, 95 browser console scripts, and a web dashboard.
+Apache-2.0, by nichxbt.
 
 This file is for the agent, not the human. It answers one question first,
 because getting it wrong costs the whole session: **do you shell out to the
@@ -23,7 +23,7 @@ difference is what each costs you before you have read a single tweet.
 | Writes | reads, plus `engage` and `bulk` | every write tool, with an approval gate |
 | Usable without client configuration | yes, it is just a process | no, the client must be configured first |
 
-The tool list is not small. The server advertises 151 tools, and the
+The tool list is not small. The server advertises 152 tools, and the
 `tools/list` payload it serves is about 60 KB of JSON before you have done any
 work at all. Measure it yourself:
 
@@ -171,6 +171,39 @@ xactions connect   # log in through a real browser and save the session
 xactions login     # or paste an auth_token cookie
 ```
 
+If the machine already has a logged-in browser, do not make the user copy a
+cookie out of DevTools:
+
+```bash
+xactions login --from-browser chrome        # or chromium, brave, edge, arc, firefox
+xactions login --cookies-file cookies.txt   # Netscape cookies.txt
+xactions login --cookies-file cookies.json  # Cookie-Editor / EditThisCookie export
+xactions login --cookies-file state.json    # Playwright / Puppeteer storageState
+```
+
+`--cookies-file` also takes a raw `auth_token=...; ct0=...` string in a file.
+Prefer a full cookie jar over a bare `auth_token`: it carries `ct0`, which
+every write needs.
+
+### Long jobs, and the accounts that survive them
+
+One X session is worth roughly 50 GraphQL calls per operation per 15 minutes,
+so a follower scrape of any real size needs more than one:
+
+- **Account pool.** Sessions live in a SQLite database with their cookies,
+  optional proxy, lock state and a per-operation rate-limit window read from
+  X's own `x-rate-limit-*` response headers. The pooled client looks like a
+  single client and rotates on its own: a 429 or a spent window moves the call
+  to the next account, a 401 or 403 locks the account.
+  `src/scrapers/twitter/http/accountPool.js`.
+- **Resumable scrapes.** A checkpoint JSON file is written after every page. A
+  `--limit 50000` scrape that dies at page 400 restarts from the saved cursor
+  with the collected count already subtracted, so re-running the same command
+  finishes the job. `src/scrapers/twitter/http/checkpoint.js`.
+
+Neither needs configuring for a small read. Reach for them when a job is large
+enough that a rate-limit wall is a matter of when, not if.
+
 `xactions doctor` is the first command to run when something returns nothing:
 it reports the guest tier, the saved session, the query-ID cache and the
 installed skills, with the fix next to each failure.
@@ -184,9 +217,15 @@ xactions mcp-config                     # print the config for Claude Desktop
 xactions mcp-config --client cursor     # or cursor, windsurf, vscode
 xactions mcp-config --write             # write it into Claude Desktop's config file
 node src/mcp/server.js                  # run it directly over stdio
+node src/mcp/server.js --http --port 3000   # Streamable HTTP on /mcp instead
 ```
 
-### Do not load all 151 tools
+stdio is the default and is what a local client wants. `--http` (or
+`MCP_TRANSPORT=http`) serves the Streamable HTTP transport on `/mcp` for a
+remote or hosted client; set `XACTIONS_MCP_TOKEN` and send
+`Authorization: Bearer <token>` to require auth on it.
+
+### Do not load all 152 tools
 
 The tool list is filterable by group, and a filtered tool is neither advertised
 nor callable, so the schema cost drops with it. Groups: `read`, `write`, `dm`,
@@ -220,6 +259,15 @@ xactions drafts approve <id>
 xactions drafts discard <id>
 ```
 
+### Daily action caps
+
+Separate from approval, and always on. Every write tool call is charged
+against a rolling 24 hour per-account budget for its action class, and a call
+that would go over is refused before anything reaches X. The ledger is a JSON
+file under `XACTIONS_HOME` (default `~/.xactions`), so the budget survives a
+restart, a crash, and a fresh `npx xactions-mcp`. Defaults follow X's own
+published limits. `src/mcp/action-caps.js`.
+
 ### Environment
 
 | Variable | Effect |
@@ -229,6 +277,9 @@ xactions drafts discard <id>
 | `XACTIONS_MCP_TOOLS` | Allowlist of tool names or groups |
 | `XACTIONS_MCP_EXCLUDE` | Denylist, applied after the allowlist |
 | `XACTIONS_MCP_REQUIRE_APPROVAL` | Hold every write tool as a draft |
+| `XACTIONS_MCP_TOKEN` | Bearer token required by the `--http` transport |
+| `XACTIONS_HOME` | Where sessions, checkpoints, the action ledger and the query-ID cache live (default `~/.xactions`) |
+| `XACTIONS_WEBHOOK_SECRET` | Signing key for outbound webhook deliveries |
 
 ### Installing without a config file
 
@@ -259,12 +310,16 @@ is not, that is a bug in this table.
 | Read an account without logging in | `xactions profile <user>`, `xactions tweets <user>` |
 | Import an official X archive | `xactions archive <path-to-zip>` |
 | Hold agent writes for human approval | set `XACTIONS_MCP_REQUIRE_APPROVAL=1`, then `xactions drafts` |
+| Log in from a browser already signed in to x.com | `xactions login --from-browser`, or `--cookies-file` for an export |
+| Watch an account in real time | `xactions stream start tweet <user>`, or `src/streaming/livePipeline.js` for x.com's own event pipeline |
+| Send an event to another service | `src/notifications/webhook.js`, signed with `XACTIONS_WEBHOOK_SECRET` |
+| Keep a big scrape alive across rate limits | `src/scrapers/twitter/http/accountPool.js` and `checkpoint.js` |
 
 ---
 
 ## Skills
 
-49 skills live in [`skills/`](skills/), one directory each, following the
+50 skills live in [`skills/`](skills/), one directory each, following the
 [Agent Skills specification](https://agentskills.io/specification): a
 `SKILL.md` with `name` and `description` frontmatter, plus `references/` where
 a skill needs more than one file. Read the one that matches the request before
@@ -299,10 +354,11 @@ src/scrapers/     HTTP and browser scrapers
 src/client/       The low-level HTTP Twitter client
 src/automation/   Browser console scripts (paste core.js first)
 src/a2a/          Agent-to-Agent protocol server
-skills/           49 Agent Skills, one directory each
+skills/           50 Agent Skills, one directory each
 api/              Express backend (routes/, services/, middleware/)
 dashboard/        Static frontend
-scripts/          Build and maintenance scripts
+scripts/          The 95 browser console scripts, plus build and maintenance
+                  scripts (twitter/ holds standalone console variants)
 docs/             Documentation
 extension/        Browser extension
 prisma/           Database schema
@@ -313,10 +369,10 @@ The three runtime contexts, because code that is correct in one is broken in ano
 | Context | Runs in | Entry point | Hard constraint |
 |---|---|---|---|
 | Browser scripts | the DevTools console on x.com | an IIFE you paste | no Node APIs; DOM and `sessionStorage` only |
-| Library, CLI, MCP | your machine | `src/cli/index.js`, `src/mcp/server.js` | Node >= 18, ESM throughout |
+| Library, CLI, MCP | your machine | `src/cli/index.js`, `src/mcp/server.js` | Node >= 20, ESM throughout |
 | API server | an Express process | `api/server.js` | PostgreSQL via Prisma, Redis for the queue |
 
-Stack: Node >= 18 ESM, Express with Helmet and rate limiting, Prisma, Bull on Redis,
+Stack: Node >= 20 ESM (CI runs 20, 22 and 24), Express with Helmet and rate limiting, Prisma, Bull on Redis,
 Puppeteer with the stealth plugin, Vitest, `@modelcontextprotocol/sdk`, Socket.io.
 
 Deeper map: [`docs/`](docs/), starting with
@@ -338,6 +394,14 @@ Deeper map: [`docs/`](docs/), starting with
   an account that genuinely has nothing.
 - **GraphQL query IDs are refreshed from x.com's own bundles**, not pinned. If
   every read breaks at once, `xactions doctor` reports the cache age.
+- **Requests are signed.** Every GraphQL call carries an
+  `x-client-transaction-id` header computed the way x.com's own client computes
+  it (`src/scrapers/twitter/http/transactionId.js`). A hand-rolled request that
+  omits it gets a different, worse answer from X than the client does.
+- **The live pipeline is not a WebSocket.** x.com answers an `Upgrade` request
+  with the same HTTP/2 response it gives a plain GET, never a 101. It is a
+  streaming GET whose body is newline-delimited JSON read line by line. Do not
+  "fix" it into a WebSocket client.
 
 ## House style
 

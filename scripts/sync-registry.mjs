@@ -81,6 +81,22 @@ reconcile('server.json', (j) => {
   }
 });
 
+// skills/index.json describes the MCP-server skill to every agent that browses
+// the catalogue, and its description quoted a tool count nobody was updating
+// (it said 144 while the server shipped 152). It is JSON, so the markdown
+// auditor never saw it.
+reconcile('skills/index.json', (j) => {
+  const walk = (node) => {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (!node || typeof node !== 'object') return;
+    if (typeof node.description === 'string') {
+      node.description = node.description.replace(TOOL_RE, toolPhrase);
+    }
+    for (const value of Object.values(node)) walk(value);
+  };
+  walk(j);
+});
+
 // glama.json holds neither version nor tool count; make sure it stays valid JSON.
 reconcile('glama.json', () => {});
 

@@ -2,7 +2,7 @@
 
 > Ask how to do anything with XActions in plain language and get a sourced answer **plus the exact thing to run**. On the web at [xactions.app/ask](https://xactions.app/ask), in your terminal as `xactions ask`, and to an AI agent as the `x_ask` MCP tool. Free, no account, no API key.
 
-Ask XActions is a conversational assistant for the toolkit. It searches the documentation, the 49 agent skills, the browser scripts, the marketing pages, and the GitHub repository, then streams an answer that cites its sources with clickable `[1]` `[2]` markers.
+Ask XActions is a conversational assistant for the toolkit. It searches the documentation, the 50 agent skills, the browser scripts, the marketing pages, and the GitHub repository, then streams an answer that cites its sources with clickable `[1]` `[2]` markers.
 
 An explanation is only half of what someone asking "how do I unfollow all users" wants. The other half is the thing they run, so every answer ends with the **runnable actions** behind it: the browser script to paste (copied straight from source, with the x.com page to paste it on), the terminal command to type, and the MCP tool an agent should call. Those come from a catalog built out of the repository itself, so it cannot drift from what the code actually offers.
 

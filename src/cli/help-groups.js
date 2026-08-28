@@ -43,7 +43,7 @@ export const GROUPS = [
   {
     title: 'Search and monitor',
     hint: 'Find posts, then keep watching them',
-    commands: ['search', 'hashtag', 'scrape', 'platforms', 'monitor', 'sentiment', 'rss', 'stream'],
+    commands: ['search', 'hashtag', 'scrape', 'platforms', 'monitor', 'sentiment', 'reputation', 'rss', 'stream'],
   },
   {
     title: 'Write and grow',

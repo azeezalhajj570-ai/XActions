@@ -323,6 +323,41 @@ const S = {
     },
   },
 
+  reputationScore: {
+    type: 'object',
+    required: ['posts'],
+    properties: {
+      posts: {
+        type: 'array',
+        maxItems: 200,
+        items: {
+          type: 'object',
+          required: ['text'],
+          properties: {
+            id: { type: 'string' },
+            text: { type: 'string' },
+            author: { type: 'string' },
+            authorName: { type: 'string' },
+            quotedText: { type: 'string' },
+            hasMedia: { type: 'boolean' },
+            isReply: { type: 'boolean' },
+          },
+        },
+      },
+      dimensions: {
+        type: 'array',
+        items: { type: 'string', enum: ['professional', 'hostile', 'legal', 'spam'] },
+        description: 'Subset of built-in dimensions to score. Default: all four.',
+      },
+      customQuestion: { type: 'string', description: 'An extra risk question specific to this scan' },
+      provider: { type: 'string', enum: ['openrouter', 'openai', 'xai', 'ollama', 'anthropic', 'custom'] },
+      model: { type: 'string' },
+      apiKey: { type: 'string' },
+      baseUrl: { type: 'string' },
+      concurrency: { type: 'integer', default: 4, maximum: 8 },
+    },
+  },
+
   // ── Scrape extras ────────────────────────────────────────────────
   scrapeLikes: {
     type: 'object', required: ['tweetId'],
@@ -971,6 +1006,7 @@ Categories:
 - schedule: Post scheduling and RSS auto-posting
 - optimizer: Tweet optimization (hashtags, variations, performance prediction)
 - writer: AI content generation (voice analysis, tweet generator, content calendar)
+- reputation: AI risk-scoring for post cleanup decisions (professional, hostile, legal, spam)
 - utility: Video download, bookmark export, thread unroll, profile/tweet analysis
 - notify: Webhook notifications
 - datasets: Pre-built datasets
@@ -1428,6 +1464,28 @@ Free alternatives: Browser scripts, CLI, and Node.js library at https://xactions
             content: { 'application/json': { schema: S.writerReply } },
           },
           responses: { 200: ok200('Generated reply'), 402: payment402 },
+        },
+      },
+
+      // ─── Reputation ──────────────────────────────────────────────
+      '/api/ai/reputation/score': {
+        post: {
+          tags: ['Reputation'],
+          summary: 'Risk-score a batch of posts and build a reputation report',
+          'x-payment-info': paymentInfo('reputation:score'),
+          'x-bazaar': bazaarExt(S.reputationScore),
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: S.reputationScore } },
+          },
+          responses: { 200: ok200('Reputation report and per-post scores'), 402: payment402 },
+        },
+      },
+      '/api/ai/reputation/dimensions': {
+        get: {
+          tags: ['Reputation'],
+          summary: 'List the built-in risk dimensions and their thresholds',
+          responses: { 200: ok200('Dimension rubric') },
         },
       },
       '/api/ai/writer/voice-profiles': {

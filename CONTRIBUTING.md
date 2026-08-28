@@ -1,6 +1,6 @@
 # Contributing to XActions ⚡
 
-Thank you for your interest in contributing to **XActions** — the complete X/Twitter automation platform!
+Thank you for your interest in contributing to **XActions**, the complete X/Twitter automation platform!
 
 Created by [nich](https://github.com/nirholas) ([@nichxbt](https://x.com/nichxbt))
 
@@ -32,8 +32,12 @@ npx prisma generate
 npx prisma db push
 
 # Start development
-npm run dev
+npm run dev          # the API server on http://localhost:3001
+npm run cli -- profile nasa   # or drive the CLI straight from the source tree
 ```
+
+XActions needs Node.js 20 or newer (`engines.node` is `>=20`). CI runs the test
+suite on 20, 22 and 24, so any of those is a safe local choice.
 
 ## ✅ Before you open a PR
 
@@ -41,19 +45,25 @@ Three commands. All of them run in CI, so running them locally saves a round
 trip:
 
 ```bash
-npm test           # 1156 tests
-npm run docs:check # dead links, stale versions, invented CLI commands
-npm run docs:scripts  # only if you added or renamed a browser script
+npm test              # the whole suite, offline, under a minute
+npm run lint          # ESLint over the whole repo
+npm run docs:check    # dead links, stale versions and counts, invented CLI commands
+npm run docs:scripts  # only if you added or renamed a browser console script
 ```
 
-`docs:check` is dependency-free and takes about a second. It fails on:
+`docs:check` runs four checks in sequence: the browser-script catalog is
+regenerated and compared, the MCP registry manifests are compared, the Ask
+action index is compared, and then the documentation auditor runs. The auditor
+itself is dependency-free and takes about a second. Run it alone with
+`npm run docs:audit`. It fails on:
 
 | Problem | Why it is checked |
 |---------|-------------------|
 | A dead relative link | The first person to notice is a stranger who clicked it and left |
 | A dead heading anchor | Same, but harder to spot in review |
 | A referenced script that does not exist | Docs telling people to run a deleted file |
-| A stale version or MCP tool-count claim | These drifted across 25 files before this existed |
+| A stale version claim | The version drifted across 25 files before this existed |
+| A stale MCP tool, skill, route or CLI command count | Recomputed from `src/mcp/server.js`, `skills/`, `api/routes/` and `src/cli/help-groups.js` on every run, so a number nobody can reproduce cannot survive |
 | A documented CLI command that does not exist | The reader assumes they typed it wrong |
 
 If you touched anything that talks to X, also run:
@@ -62,16 +72,19 @@ If you touched anything that talks to X, also run:
 npm run check:endpoints   # are X's GraphQL query IDs still current?
 ```
 
+Query IDs that need a session are reported as unchecked rather than as
+failures; set `X_AUTH_TOKEN` and `X_CSRF_TOKEN` to cover those too.
+
 ## 📝 Contribution Guidelines
 
 ### Code Standards
 
-- ✅ **Small, focused PRs** — easier to review and merge
-- ✅ **Clear documentation** — comment your code
-- ✅ **No secrets** — never commit credentials or API keys
-- ✅ **Test your changes** — ensure nothing breaks
-- ✅ **Follow existing patterns** — consistency matters
-- ✅ **Never report empty as success** — a scrape that finds nothing must say so
+- ✅ **Small, focused PRs**: easier to review and merge
+- ✅ **Clear documentation**: comment your code
+- ✅ **No secrets**: never commit credentials or API keys
+- ✅ **Test your changes**: ensure nothing breaks
+- ✅ **Follow existing patterns**: consistency matters
+- ✅ **Never report empty as success**: a scrape that finds nothing must say so
   and say what to do about it. Silently returning `0` or `null` is the single
   most confusing thing this tool can do, and it has happened more than once.
 
@@ -93,7 +106,7 @@ npm run check:endpoints   # are X's GraphQL query IDs still current?
 2. Add entries to `docs/` for new functionality
 3. Ensure your code follows existing style
 4. Link related issues in PR description
-5. Wait for review — maintainers aim to respond within 48 hours
+5. Wait for review. Maintainers aim to respond within 48 hours
 
 ## 🏗️ Project Structure
 
@@ -106,8 +119,15 @@ xactions/
 ├── dashboard/        # Frontend UI
 ├── docs/             # Documentation
 ├── prisma/           # Database schema
-└── bin/              # CLI entry point
+├── skills/           # Agent skills, one directory each
+├── extension/        # Chrome and Edge extension (Manifest V3)
+├── scripts/          # Browser console scripts, plus build and docs tooling
+├── tests/            # Vitest suite
+└── bin/              # Legacy command name, forwards to the CLI
 ```
+
+[AGENTS.md](AGENTS.md) has the full map, the three runtime contexts, and the
+mistakes that have cost people time here. Read it before your first PR.
 
 ## 🐛 Reporting Issues
 

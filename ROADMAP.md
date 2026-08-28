@@ -15,6 +15,8 @@ that no longer exists. A roadmap nobody trusts is worse than no roadmap.
 ### Reading X without an API key
 - Public reads over X's internal GraphQL API, no browser and no account: `src/scrapers/twitter/http/`
 - Query IDs auto-discovered from x.com's own bundles, so a rotated ID self-heals instead of 404ing: `src/scrapers/twitter/http/queryIds.js`
+- Requests signed with an `x-client-transaction-id` header computed the way x.com's own client computes it: `src/scrapers/twitter/http/transactionId.js`
+- Cookies read straight from an installed browser, or from any common cookie export: `xactions login --from-browser`, `--cookies-file`
 - Profiles, timelines, search, followers, following, threads, media, hashtags, bookmarks, likes
 - Bluesky, Mastodon and Threads behind one normalised interface: `src/scrapers/`
 - Import the official X data archive (the GDPR zip): `src/portability/twitter-archive.js`
@@ -25,10 +27,14 @@ that no longer exists. A roadmap nobody trusts is worse than no roadmap.
 - Mass block, mass unblock, mass unmute, leave all communities
 - Engage a whole profile or an entire search: `scripts/engageProfile.js`, `scripts/searchSweep.js`
 - Speed presets with jitter, rests and back-off on every bulk action
+- Account pool with per-account, per-operation rate-limit windows read from X's own `x-rate-limit-*` headers, rotating on a 429 and locking on a 401: `src/scrapers/twitter/http/accountPool.js`
+- Resumable scrapes: a cursor checkpoint written after every page, so a killed 50,000-follower job restarts where it stopped: `src/scrapers/twitter/http/checkpoint.js`
+- Per-account daily action caps held on disk, so the budget survives a restart and an over-cap call is refused before it reaches X: `src/mcp/action-caps.js`
 - 95 browser console scripts and an MV3 extension, for people who never open a terminal
 
 ### Agents
-- MCP server, 151 tools: `src/mcp/server.js`
+- MCP server: `src/mcp/server.js`, over stdio or Streamable HTTP on `/mcp` (`--http`, bearer auth via `XACTIONS_MCP_TOKEN`)
+- A `.mcpb` bundle that installs the server into Claude Desktop with no config file: `scripts/build-mcpb.mjs`
 - Approval gate: a write becomes a draft a human releases, via `XACTIONS_MCP_REQUIRE_APPROVAL`: `src/mcp/drafts.js`
 - Tool allowlists so a host loads only what it needs: `src/mcp/tool-groups.js`
 - A2A server, persona engine, workflow engine, plugin system
@@ -39,6 +45,12 @@ that no longer exists. A roadmap nobody trusts is worse than no roadmap.
 - Engagement, growth and reputation reports: `src/analytics/`
 - Best time to post, engagement leaderboard, competitor analysis, audience overlap
 - Sentiment analysis offline by rule, or through an LLM behind the same interface
+
+### Delivery
+- Real-time streams for tweets, followers and mentions, persistent across restarts: `src/streaming/`
+- x.com's own event pipeline, read as a chunked newline-delimited JSON response rather than the WebSocket it is not: `src/streaming/livePipeline.js`
+- Signed outbound webhooks: HMAC-SHA256, timestamp, event type, stable delivery id, three retries and a replayable delivery log: `src/notifications/webhook.js`
+- Email, Slack, Discord and Telegram notification channels: `src/notifications/`
 
 ### Writing
 - Post, thread, reply, quote, poll, scheduled post, DM
@@ -65,10 +77,10 @@ x.com moved something. Query-ID discovery covers one failure mode; these cover t
 ### 2. Make an account last
 An automation tool that gets you suspended has not helped you.
 
-- **Per-account rate ledger** in the HTTP client, reading X's own `x-rate-limit-*` headers,
-  with daily caps that survive a restart. `quotaSupervisor.js` is in-process only today.
-- **Account pool** with lock-and-rotate on exhaustion, so long jobs slow down rather than
-  burn one account. `ProxyManager` and `multiAccount.js` exist but do not cooperate yet.
+- **One rate ledger, not two.** The HTTP account pool tracks X's own `x-rate-limit-*`
+  windows and `src/mcp/action-caps.js` holds the daily budget, but the browser-side
+  `quotaSupervisor.js` still counts in-process and starts from zero on a restart. It
+  should read the same on-disk ledger.
 - **Dry-run by default** on every destructive bulk action.
 
 ### 3. Close the gap between "scrapes X" and "runs your presence"
@@ -82,8 +94,9 @@ An automation tool that gets you suspended has not helped you.
   exports segments, rather than the per-page heuristic in `x_detect_bots`.
 
 ### 4. Meet people where they are
-- **Chrome Web Store and AMO listings.** The extension is load-unpacked only, so "no
-  console needed" is not yet true for the people who need it most.
+- **Chrome Web Store and Edge Add-ons listings.** The extension is Manifest V3 and
+  load-unpacked only, so "no console needed" is not yet true for the people who need it
+  most. There is no Firefox build; a port would come after the two Chromium stores.
 - **Homebrew tap and release binaries**, so installing does not require a Node toolchain.
 - **An optional official-API lane** (OAuth2 PKCE) for users who would rather pay X than
   risk a suspension. Not the default, and never required.

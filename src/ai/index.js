@@ -35,3 +35,20 @@ export {
   PROVIDER_URLS,
   DEFAULT_MODELS,
 } from './commentGenerator.js';
+
+// Reputation scorer: risk-scores posts across configurable dimensions and
+// rolls them into a shareable report (shared by scripts/reputationAudit.js,
+// POST /api/ai/reputation/score, and `xactions reputation`)
+export {
+  DIMENSIONS,
+  FLAG_THRESHOLD,
+  REVIEW_THRESHOLD,
+  resolveDimensions,
+  buildRiskSystemPrompt,
+  buildRiskUserPrompt,
+  parseRiskResponse,
+  scorePost,
+  scorePosts,
+  scoreToGrade,
+  summarizeReport,
+} from './reputationScorer.js';

@@ -1,7 +1,7 @@
 {
   "version": "3.4.4",
-  "generated": "2026-03-30",
-  "count": 49,
+  "generated": "2026-08-28",
+  "count": 50,
   "skills": [
     {
       "id": "a2a-multi-agent",
@@ -272,6 +272,18 @@
       "description": "Update bio, avatar, header image, display name, location, website, and pinned tweet."
     },
     {
+      "id": "reputation-audit",
+      "name": "Reputation Audit",
+      "version": "1.0",
+      "path": "skills/reputation-audit/SKILL.md",
+      "description": "AI risk-scores your own posts (professional, hostile, legal, spam), produces a 0-100 reputation score with a shareable card, and offers one-click cleanup of what it flags.",
+      "tags": [
+        "ai",
+        "cleanup",
+        "analytics"
+      ]
+    },
+    {
       "id": "saved-searches",
       "name": "Saved Searches",
       "version": "1.0",
@@ -387,7 +399,7 @@
       "name": "XActions MCP Server",
       "version": "4.0",
       "path": "skills/xactions-mcp-server/SKILL.md",
-      "description": "144 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze).",
+      "description": "152 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze).",
       "tags": [
         "mcp"
       ]

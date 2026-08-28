@@ -1157,6 +1157,84 @@ export function isGenericComment(text: string): boolean;
 
 
 // ============================================================================
+// AI: post reputation / risk scorer (src/ai/reputationScorer.js)
+// ============================================================================
+
+export type RiskDimensionKey = 'professional' | 'hostile' | 'legal' | 'spam';
+export type RiskVerdict = 'clean' | 'review' | 'flagged';
+
+export interface RiskDimensionMeta {
+  label: string;
+  emoji: string;
+  question: string;
+}
+
+/** The built-in risk dimensions, keyed by the name scorePost/scorePosts expect. */
+export const DIMENSIONS: Record<RiskDimensionKey, RiskDimensionMeta>;
+
+export interface ScorablePost {
+  id?: string;
+  text: string;
+  author?: string;
+  authorName?: string;
+  quotedText?: string;
+  hasMedia?: boolean;
+  isReply?: boolean;
+}
+
+export interface ReputationScoreConfig {
+  provider?: CommentProvider;
+  apiKey?: string;
+  /** Full chat-completions URL; required for provider "custom". */
+  baseUrl?: string;
+  model?: string;
+  /** Subset of RiskDimensionKey to score. Default: all four. */
+  dimensions?: RiskDimensionKey[];
+  /** An extra risk question specific to this scan, scored alongside the built-ins. */
+  customQuestion?: string;
+  /** Retries on 429/5xx before chatCompletion gives up. Default: 2. */
+  retries?: number;
+  fetchImpl?: typeof fetch;
+}
+
+export interface ReputationScorePostsConfig extends ReputationScoreConfig {
+  /** Parallel requests in flight, capped at 8. Default: 4. */
+  concurrency?: number;
+  onProgress?: (done: number, total: number, result: PostRiskResult) => void;
+}
+
+export interface PostRiskResult {
+  postId: string | null;
+  dimensions: Record<string, { score: number; reason: string }>;
+  /** The highest score across every scored dimension. */
+  overall: number;
+  verdict: RiskVerdict;
+  /** The dimension key that produced `overall`. */
+  worstDimension: string;
+  model?: string;
+  /** Present instead of the fields above when this post's scoring call failed. */
+  error?: string;
+}
+
+export interface ReputationReport {
+  scanned: number;
+  scoredOk: number;
+  errors: number;
+  /** 0..100, higher is better. */
+  reputationScore: number;
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+  verdictCounts: { clean: number; review: number; flagged: number };
+  dimensionAverages: Record<string, number>;
+  worstPosts: Array<{ post: ScorablePost; score: PostRiskResult }>;
+}
+
+export function scorePost(post: ScorablePost, config?: ReputationScoreConfig): Promise<PostRiskResult>;
+export function scorePosts(posts: ScorablePost[], config?: ReputationScorePostsConfig): Promise<PostRiskResult[]>;
+export function scoreToGrade(reputationScore: number): 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+export function summarizeReport(posts: ScorablePost[], scores: PostRiskResult[], topN?: number): ReputationReport;
+
+
+// ============================================================================
 // Signed outbound webhooks (src/notifications/webhook.js)
 // ============================================================================
 

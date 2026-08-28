@@ -18,6 +18,7 @@ import actionRoutes from './actions.js';
 import monitorRoutes from './monitor.js';
 import utilityRoutes from './utility.js';
 import writerRoutes from './writer.js';
+import reputationRoutes from './reputation.js';
 import postingRoutes from './posting.js';
 import engagementRoutes from './engagement.js';
 import messagesRoutes from './messages.js';
@@ -261,6 +262,10 @@ router.get('/', (req, res) => {
         'POST /api/ai/optimizer/predict': 'Predict performance',
         'POST /api/ai/optimizer/variations': 'Generate variations',
       },
+      reputation: {
+        'POST /api/ai/reputation/score': 'Risk-score a batch of posts and get a reputation report',
+        'GET /api/ai/reputation/dimensions': 'List the scoring rubric',
+      },
       writer: {
         'POST /api/ai/writer/analyze-voice': 'Analyze writing voice',
         'POST /api/ai/writer/generate': 'Generate tweets in voice',
@@ -501,6 +506,7 @@ router.use('/alert', monitorRoutes);      // backward compat: /alert/new-followe
 // the same handler chain four times per request.
 router.use(['/download', '/export', '/unroll', '/analyze'], utilityRoutes);
 router.use('/writer', writerRoutes);
+router.use('/reputation', reputationRoutes);
 
 // Mount new route modules
 router.use('/posting', postingRoutes);
