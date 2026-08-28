@@ -940,10 +940,16 @@ describe('Multi-Network Support', () => {
     
     it('should have valid USDC addresses for all networks', async () => {
       const { SUPPORTED_NETWORKS } = await import('../api/config/x402-config.js');
-      
+
+      // The address format follows the network's CAIP-2 namespace: EVM chains
+      // use a 20-byte hex contract, Solana a base58 SPL mint.
       for (const [networkId, config] of Object.entries(SUPPORTED_NETWORKS)) {
         expect(config.usdc).toBeDefined();
-        expect(config.usdc).toMatch(/^0x[a-fA-F0-9]{40}$/);
+        if (networkId.startsWith('solana:')) {
+          expect(config.usdc).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+        } else {
+          expect(config.usdc).toMatch(/^0x[a-fA-F0-9]{40}$/);
+        }
       }
     });
   });

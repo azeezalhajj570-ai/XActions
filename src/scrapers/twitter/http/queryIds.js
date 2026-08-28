@@ -35,12 +35,41 @@
  *
  * @module scrapers/twitter/http/queryIds
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
+// The query-ID cache is a Node convenience, not a requirement: the pinned table
+// and an in-memory refresh are enough on their own. Cloudflare Workers and
+// Pages Functions have no filesystem and reject a bundle that imports node:fs
+// at all, so the modules are pulled in at runtime, behind a Node check, through
+// a specifier a bundler cannot resolve statically. On any other runtime the
+// three stay null and every cache operation becomes a no-op.
+const NODE_MODULES = ['node:fs', 'node:path', 'node:os'];
+let fs = null;
+let path = null;
+let os = null;
+
+if (typeof process !== 'undefined' && process.versions?.node) {
+  try {
+    const loaded = await Promise.all(NODE_MODULES.map((name) => import(/* @vite-ignore */ name)));
+    [fs, path, os] = loaded.map((module) => module.default ?? module);
+  } catch {
+    fs = null;
+    path = null;
+    os = null;
+  }
+}
+
+/**
+ * Whether this runtime can persist the cache to disk.
+ * @returns {boolean}
+ */
+export function hasFilesystem() {
+  return Boolean(fs && path && os);
+}
+
+/** Sentinel path used when there is no filesystem, so callers still get a string. */
+const MEMORY_CACHE_PATH = 'memory:query-ids.json';
 import { GRAPHQL } from './endpoints.js';
 import { browserNavigationHeaders } from './guest.js';
 
@@ -149,6 +178,7 @@ function hardcoded() {
 export function resolveCacheDir(override) {
   if (override) return override;
   if (state.config.cacheDir) return state.config.cacheDir;
+  if (!hasFilesystem()) return 'memory:';
   if (process.env.XACTIONS_HOME) return process.env.XACTIONS_HOME;
   if (process.env.VITEST) return path.join(os.tmpdir(), `xactions-vitest-${process.pid}`);
   return path.join(os.homedir(), '.xactions');
@@ -159,6 +189,7 @@ export function resolveCacheDir(override) {
  * @returns {string}
  */
 export function resolveCachePath(cacheDir) {
+  if (!hasFilesystem()) return MEMORY_CACHE_PATH;
   return path.join(resolveCacheDir(cacheDir), CACHE_FILENAME);
 }
 
@@ -169,6 +200,7 @@ export function resolveCachePath(cacheDir) {
  * @returns {{operations: Record<string, {queryId: string, operationType: string}>, fetchedAt: string, source?: object}|null}
  */
 export function loadCache(cacheDir) {
+  if (!hasFilesystem()) return null;
   const file = resolveCachePath(cacheDir);
   try {
     const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -186,9 +218,10 @@ export function loadCache(cacheDir) {
  *
  * @param {object} payload
  * @param {string} [cacheDir]
- * @returns {string} The path written
+ * @returns {string|null} The path written, or null where there is no filesystem
  */
 export function saveCache(payload, cacheDir) {
+  if (!hasFilesystem()) return null;
   const file = resolveCachePath(cacheDir);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;

@@ -140,3 +140,9 @@ pages-out/
 *.bak
 *.orig
 *.rej
+
+# x402 receiving wallet private keys (never commit)
+.x402-wallets.json
+
+# wrangler local env (may hold keys)
+.dev.vars

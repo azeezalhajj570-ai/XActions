@@ -10,13 +10,30 @@
  * @see https://x402.org for protocol documentation
  */
 
-// Determine environment
-const isProduction = process.env.NODE_ENV === 'production';
+// Determine environment.
+//
+// Bracket access is deliberate: bundlers (esbuild, and therefore wrangler)
+// substitute a literal for `process.env.NODE_ENV` at build time, which would
+// freeze this to whatever the build machine had and silently put a deployed
+// edge worker on testnet. `process.env['NODE_ENV']` is left alone and read at
+// runtime, after the Worker env has been copied across.
+const isProduction = process.env['NODE_ENV'] === 'production';
 
 // Payment receiving address. No default: x402 stays disabled until the operator
 // sets X402_PAY_TO_ADDRESS, and in production a missing value is a startup error
 // (see validateConfig) rather than silently routing funds to someone else's wallet.
 export const PAY_TO_ADDRESS = (process.env.X402_PAY_TO_ADDRESS || '').trim();
+
+// Solana receiving address. x402 settles on Solana with the same `exact` scheme
+// as on EVM, but the curve and address format differ, so it needs its own
+// address. Either chain alone is enough to run a paid API: an operator can take
+// payment on Solana only, on Base only, or on both.
+export const PAY_TO_ADDRESS_SOLANA = (process.env.X402_PAY_TO_ADDRESS_SOLANA || '').trim();
+
+// CAIP-2 identifiers for Solana. Mainnet is the genesis hash of the main
+// cluster; devnet is used when NODE_ENV is not production.
+export const SOLANA_MAINNET = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
+export const SOLANA_DEVNET = 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
 
 // Facilitator URL (testnet for development, mainnet for production)
 export const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
@@ -25,6 +42,11 @@ export const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402
 // Development: eip155:84532 (Base Sepolia testnet)
 // Production: eip155:8453 (Base mainnet)
 export const NETWORK = process.env.X402_NETWORK || (isProduction ? 'eip155:8453' : 'eip155:84532');
+
+// Solana cluster used for payment. Mainnet in production, devnet elsewhere, so
+// a local run cannot accidentally ask an agent for real money.
+export const SOLANA_NETWORK =
+  process.env.X402_SOLANA_NETWORK || (isProduction ? SOLANA_MAINNET : SOLANA_DEVNET);
 
 // Track if config has been validated
 let configValidated = false;
@@ -107,11 +129,33 @@ export const SUPPORTED_NETWORKS = {
     gasCost: 'low',
     usdc: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
   },
+  // Solana. Sub-second finality and fees around $0.00025, which is what makes
+  // a $0.001 API call viable without the fee swallowing the payment.
+  [SOLANA_MAINNET]: {
+    name: 'Solana',
+    recommended: true,
+    gasCost: 'lowest',
+    usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  },
+  [SOLANA_DEVNET]: {
+    name: 'Solana Devnet',
+    testnet: true,
+    gasCost: 'lowest',
+    usdc: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+  },
 };
 
 // Token contract addresses per network
 // Each entry maps a token symbol to its contract address on that chain.
 export const SUPPORTED_TOKENS = {
+  // ── Solana ────────────────────────────────────────────────────
+  [SOLANA_MAINNET]: {
+    USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    USDT: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  },
+  [SOLANA_DEVNET]: {
+    USDC: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+  },
   // ── Base ──────────────────────────────────────────────────────
   'eip155:8453': {
     USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
@@ -874,19 +918,29 @@ export function validateConfig(throwOnError = false) {
   const errors = [];
   const warnings = [];
   
-  // Check payment address
-  if (!PAY_TO_ADDRESS) {
+  // Check payment addresses. Either chain is enough: an operator can take
+  // payment on Solana only, on Base only, or on both.
+  if (!PAY_TO_ADDRESS && !PAY_TO_ADDRESS_SOLANA) {
     if (isProduction) {
       errors.push(
-        'X402_PAY_TO_ADDRESS is REQUIRED in production. ' +
-        'Set your wallet address to receive USDC payments.'
+        'X402_PAY_TO_ADDRESS or X402_PAY_TO_ADDRESS_SOLANA is REQUIRED in production. ' +
+        'Set at least one wallet address to receive USDC payments.'
       );
     } else {
       warnings.push(
-        'X402_PAY_TO_ADDRESS not set - x402 payments will be disabled in development. ' +
-        'Set this environment variable to test payments.'
+        'No x402 receiving address set - payments will be disabled in development. ' +
+        'Set X402_PAY_TO_ADDRESS (Base) or X402_PAY_TO_ADDRESS_SOLANA (Solana) to test payments.'
       );
     }
+  } else if (PAY_TO_ADDRESS_SOLANA && !isSolanaPayToConfigured()) {
+    errors.push(
+      `X402_PAY_TO_ADDRESS_SOLANA "${PAY_TO_ADDRESS_SOLANA}" is not a valid Solana address. ` +
+      'Must be a base58 ed25519 public key.'
+    );
+  }
+
+  if (!PAY_TO_ADDRESS) {
+    // Solana-only deployment: nothing more to check on the EVM side.
   } else if (PAY_TO_ADDRESS === '0xYourWalletAddress' || PAY_TO_ADDRESS === '0xYourEthereumAddress') {
     errors.push(
       'X402_PAY_TO_ADDRESS is set to a placeholder value. ' +
@@ -949,20 +1003,97 @@ export function ensureConfigValidated() {
     }
   }
   
-  // Return whether x402 can operate
-  return PAY_TO_ADDRESS && 
-         PAY_TO_ADDRESS !== '0xYourWalletAddress' && 
-         PAY_TO_ADDRESS !== '0xYourEthereumAddress';
+  // Return whether x402 can operate on at least one chain
+  return isX402Configured();
 }
 
 /**
  * Check if x402 is properly configured
  */
 export function isX402Configured() {
-  return PAY_TO_ADDRESS && 
-         PAY_TO_ADDRESS.match(/^0x[a-fA-F0-9]{40}$/) &&
-         PAY_TO_ADDRESS !== '0xYourWalletAddress' &&
-         PAY_TO_ADDRESS !== '0xYourEthereumAddress';
+  return isEvmPayToConfigured() || isSolanaPayToConfigured();
+}
+
+/** Placeholder values that have shipped in .env.example over the years. */
+const PLACEHOLDER_ADDRESSES = new Set([
+  '0xYourWalletAddress',
+  '0xYourEthereumAddress',
+  'YourSolanaAddress',
+]);
+
+/** Whether a usable Base/EVM receiving address is configured. */
+export function isEvmPayToConfigured() {
+  return Boolean(
+    PAY_TO_ADDRESS &&
+      /^0x[a-fA-F0-9]{40}$/.test(PAY_TO_ADDRESS) &&
+      !PLACEHOLDER_ADDRESSES.has(PAY_TO_ADDRESS),
+  );
+}
+
+/**
+ * Whether a usable Solana receiving address is configured.
+ * A Solana address is a base58 ed25519 public key, 32 bytes, which renders as
+ * 32 to 44 base58 characters.
+ */
+export function isSolanaPayToConfigured() {
+  return Boolean(
+    PAY_TO_ADDRESS_SOLANA &&
+      /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(PAY_TO_ADDRESS_SOLANA) &&
+      !PLACEHOLDER_ADDRESSES.has(PAY_TO_ADDRESS_SOLANA),
+  );
+}
+
+/**
+ * The receiving address for a network, or null when that chain is not enabled.
+ * @param {string} network - CAIP-2 network id.
+ * @returns {string|null}
+ */
+export function getPayTo(network) {
+  if (String(network).startsWith('solana:')) {
+    return isSolanaPayToConfigured() ? PAY_TO_ADDRESS_SOLANA : null;
+  }
+  return isEvmPayToConfigured() ? PAY_TO_ADDRESS : null;
+}
+
+/**
+ * Build the `accepts` array for a 402 challenge: one entry per chain that has a
+ * receiving address, Solana first.
+ *
+ * Amounts are integer strings in the token's smallest unit. USDC is 6 decimals
+ * on both Solana and Base, so a `$0.001` price is `1000`.
+ *
+ * @param {object} options
+ * @param {string} options.price - Price as a dollar string, e.g. '$0.001'.
+ * @param {string} options.resource - Absolute URL of the paid resource.
+ * @param {string} options.description - Human-readable description.
+ * @param {number} [options.maxTimeoutSeconds] - Settlement window.
+ * @returns {object[]} Spec-shaped payment requirements.
+ */
+export function buildAccepts({ price, resource, description, maxTimeoutSeconds = 300 }) {
+  const dollars = Number.parseFloat(String(price).replace('$', ''));
+  if (!Number.isFinite(dollars) || dollars <= 0) return [];
+  const amount = String(Math.round(dollars * 1_000_000));
+
+  const accepts = [];
+  for (const network of [SOLANA_NETWORK, NETWORK]) {
+    const payTo = getPayTo(network);
+    if (!payTo) continue;
+    const config = SUPPORTED_NETWORKS[network];
+    if (!config) continue;
+    accepts.push({
+      scheme: 'exact',
+      network,
+      amount,
+      asset: config.usdc,
+      payTo,
+      maxTimeoutSeconds,
+      resource,
+      description,
+      mimeType: 'application/json',
+      extra: { name: 'USD Coin', version: '2' },
+    });
+  }
+  return accepts;
 }
 
 // Get human-readable operation name
