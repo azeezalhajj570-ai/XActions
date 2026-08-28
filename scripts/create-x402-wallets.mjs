@@ -17,15 +17,23 @@
  * they never end up in a terminal scrollback or a CI log.
  *
  * Usage:
- *   node scripts/create-x402-wallets.mjs              # create, refuse to overwrite
- *   node scripts/create-x402-wallets.mjs --force      # replace existing keys
- *   node scripts/create-x402-wallets.mjs --show       # print addresses from the file
- *   node scripts/create-x402-wallets.mjs --out <path> # somewhere other than the default
+ *   node scripts/create-x402-wallets.mjs                    # create, refuse to overwrite
+ *   node scripts/create-x402-wallets.mjs --force            # replace existing keys
+ *   node scripts/create-x402-wallets.mjs --show             # print addresses from the file
+ *   node scripts/create-x402-wallets.mjs --out <path>       # somewhere other than the default
+ *   node scripts/create-x402-wallets.mjs --role buyer ...   # a spending wallet instead
  *
- * The receiving addresses are public information: they go in
- * X402_PAY_TO_ADDRESS (Base) and X402_PAY_TO_ADDRESS_SOLANA on the deployment.
- * The private keys are only needed to move funds out, so they never have to be
- * deployed anywhere at all.
+ * A keypair is a keypair; `--role` only changes what the report tells you to do
+ * with it.
+ *
+ *   receiver (default)  the addresses the paid API is paid to. They are public
+ *                       information and go in X402_PAY_TO_ADDRESS (Base) and
+ *                       X402_PAY_TO_ADDRESS_SOLANA on the deployment. The private
+ *                       keys are needed only to move funds out, so they never
+ *                       have to be deployed anywhere at all.
+ *   buyer               a wallet that pays for calls. Its private key has to be
+ *                       reachable by whatever does the paying, so keep the
+ *                       balance small and treat it as disposable.
  *
  * by nichxbt
  */
@@ -45,7 +53,12 @@ const flag = (name, fallback) => {
   return i === -1 ? fallback : argv[i + 1];
 };
 
-const OUT = path.resolve(ROOT, flag('out', '.x402-wallets.json'));
+const ROLE = flag('role', 'receiver');
+if (ROLE !== 'receiver' && ROLE !== 'buyer') {
+  console.error(`❌ unknown --role ${ROLE}. Use "receiver" or "buyer".`);
+  process.exit(1);
+}
+const OUT = path.resolve(ROOT, flag('out', ROLE === 'buyer' ? '.x402-buyer.json' : '.x402-wallets.json'));
 
 /** USDC mints/contracts the receiving addresses will hold. */
 const ASSETS = {
@@ -96,11 +109,12 @@ function readWallets() {
 }
 
 function report(wallets) {
+  const role = wallets.role || 'receiver';
   const rows = [
     ['Solana', wallets.solana.address, ASSETS.solana],
     ['Base / EVM', wallets.evm.address, ASSETS.base],
   ];
-  console.log('\nx402 receiving addresses\n');
+  console.log(`\nx402 ${role === 'buyer' ? 'buyer (spending)' : 'receiving'} addresses\n`);
   for (const [label, address, asset] of rows) {
     console.log(`  ${label}`);
     console.log(`    address   ${address}`);
@@ -109,12 +123,25 @@ function report(wallets) {
     console.log(`    explorer  ${asset.explorer(address)}`);
     console.log('');
   }
-  console.log('Set these on the deployment (public values, safe to commit to config):\n');
-  console.log(`  X402_PAY_TO_ADDRESS=${wallets.evm.address}`);
-  console.log(`  X402_PAY_TO_ADDRESS_SOLANA=${wallets.solana.address}`);
+
+  if (role === 'buyer') {
+    console.log('Fund with USDC only. The facilitator pays the network fee on both');
+    console.log('chains, so this wallet needs no SOL and no ETH.\n');
+    console.log('The payer reads the keys from the environment:\n');
+    console.log(`  X402_BUYER_SOLANA_SECRET=<base58 secret from ${path.relative(ROOT, OUT)}>`);
+    console.log(`  X402_BUYER_EVM_PRIVATE_KEY=<0x key from ${path.relative(ROOT, OUT)}>`);
+  } else {
+    console.log('Set these on the deployment (public values, safe to commit to config):\n');
+    console.log(`  X402_PAY_TO_ADDRESS=${wallets.evm.address}`);
+    console.log(`  X402_PAY_TO_ADDRESS_SOLANA=${wallets.solana.address}`);
+  }
   console.log('');
   console.log(`Private keys: ${path.relative(ROOT, OUT)} (0600, gitignored).`);
-  console.log('They are only needed to move funds out. Never deploy them.\n');
+  if (role === 'receiver') {
+    console.log('They are only needed to move funds out. Never deploy them.\n');
+  } else {
+    console.log('Keep the balance small: whatever pays with this wallet can spend all of it.\n');
+  }
 }
 
 if (has('show')) {
@@ -137,7 +164,11 @@ if (fs.existsSync(OUT) && !has('force')) {
 
 const wallets = {
   createdAt: new Date().toISOString(),
-  purpose: 'x402 paid API receiving wallets for xactions.app',
+  role: ROLE,
+  purpose:
+    ROLE === 'buyer'
+      ? 'x402 buyer wallet: pays for calls to a paid API'
+      : 'x402 paid API receiving wallets for xactions.app',
   solana: { ...createSolanaWallet(), ...ASSETS.solana, explorer: undefined },
   evm: { ...createEvmWallet(), ...ASSETS.base, explorer: undefined },
 };
