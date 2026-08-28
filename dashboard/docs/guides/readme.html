@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>XActions Documentation — XActions Docs</title>
-<meta name="description" content="Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit">
+<meta name="description" content="Complete documentation for XActions v3.5.0, the X/Twitter automation toolkit.">
 <meta name="keywords" content="xactions, twitter automation, x automation, free, open source, readme, documentation, guides &amp; reference">
 <meta name="author" content="nich (@nichxbt)">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="XActions Documentation — XActions">
-<meta property="og:description" content="Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit">
+<meta property="og:description" content="Complete documentation for XActions v3.5.0, the X/Twitter automation toolkit.">
 <meta property="og:url" content="https://xactions.app/docs/guides/readme">
 <meta property="og:image" content="https://xactions.app/og-docs.png">
 <meta property="og:site_name" content="XActions">
@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@nichxbt">
 <meta name="twitter:title" content="XActions Documentation — XActions">
-<meta name="twitter:description" content="Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit">
+<meta name="twitter:description" content="Complete documentation for XActions v3.5.0, the X/Twitter automation toolkit.">
 <meta name="twitter:image" content="https://xactions.app/og-docs.png">
 
 <link rel="canonical" href="https://xactions.app/docs/guides/readme">
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "XActions Documentation — XActions Docs",
-  "description": "Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit",
+  "description": "Complete documentation for XActions v3.5.0, the X/Twitter automation toolkit.",
   "url": "https://xactions.app/docs/guides/readme",
   "image": "https://xactions.app/og-docs.png",
   "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -261,7 +263,7 @@
     <article class="prose">
 <h1 id="xactions-documentation">XActions Documentation</h1>
 <blockquote>
-<p>Complete documentation for XActions v3.5.0 — The X/Twitter Automation Toolkit</p>
+<p>Complete documentation for XActions v3.5.0, the X/Twitter automation toolkit.</p>
 </blockquote>
 <h2 id="quick-links">Quick Links</h2>
 <table>
@@ -281,23 +283,43 @@
 </tr>
 <tr>
 <td><a href="/docs/guides/cli-reference">CLI Reference</a></td>
-<td>All <code>xactions</code> CLI commands</td>
+<td>All 55 <code>xactions</code> commands and the subcommands under them</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/api-reference">API Reference</a></td>
-<td>REST API endpoints (170+)</td>
+<td>REST API across 40 route modules</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/mcp-setup">MCP Server</a></td>
-<td>Set up MCP for Claude, Cursor, GPT</td>
+<td>Set up MCP for Claude, Cursor, Windsurf, GPT</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/browser-scripts">Browser Scripts</a></td>
-<td>Run scripts in DevTools console</td>
+<td>95 console scripts, generated from the scripts themselves</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/search-sweep">Search Sweep</a></td>
+<td>Delete, like, repost, or reply to every result of an X search</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/engage">Engage a profile</a></td>
+<td>Like, repost and reply across a whole profile, from the console or the CLI</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/automation">Automation Framework</a></td>
 <td>Browser automation system</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/scraping-infrastructure">Scraping Infrastructure</a></td>
+<td>Proxy rotation, stealth browser, pagination, datasets</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/streams">Streams</a></td>
+<td>Tweet, follower and mention streams with persistent polling</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/notifications">Notifications</a></td>
+<td>Email, Slack, Discord, Telegram and webhook delivery</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/dashboard">Dashboard</a></td>
@@ -317,11 +339,11 @@
 </tr>
 <tr>
 <td><a href="/docs/guides/extension">Browser Extension</a></td>
-<td>Chrome/Edge extension</td>
+<td>Chrome and Edge extension (Manifest V3)</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/deployment">Deployment</a></td>
-<td>Deploy to Railway, Fly.io, Docker, etc.</td>
+<td>Deploy to Railway, Fly.io, Docker, and more</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/architecture">Architecture</a></td>
@@ -340,12 +362,28 @@
 <td>49 agent skills for AI assistants</td>
 </tr>
 <tr>
+<td><a href="/docs/guides/plugins">Plugins</a></td>
+<td>Extend scrapers, MCP tools and automation with <code>xactions-plugin-*</code> packages</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/workflows">Workflows</a></td>
+<td>Declarative JSON pipelines with triggers, conditions and chained actions</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/spaces-agent">Spaces Agent</a></td>
+<td>An AI voice agent that joins, listens and speaks in live Spaces</td>
+</tr>
+<tr>
 <td><a href="/docs/guides/dom-selectors">DOM Selectors</a></td>
 <td>X/Twitter DOM selector reference</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/troubleshooting">Troubleshooting</a></td>
 <td>Common issues and fixes</td>
+</tr>
+<tr>
+<td><a href="/docs/guides/x402">x402 payments</a></td>
+<td>Pay per call in USDC on Solana or Base: no API key, no account, and how identity works over x402 and MCP</td>
 </tr>
 <tr>
 <td><a href="/docs/guides/portability">Portability</a></td>
@@ -360,10 +398,13 @@
 <td>Every feature on xactions.app exercised in a real browser, with the root cause of each failure</td>
 </tr>
 </tbody></table>
+<p>Building an agent on top of XActions? Start at <a href="/docs/guides/agents">AGENTS.md</a>: it
+answers whether to shell out to the CLI or load the MCP server before anything
+else, and that choice is the one that costs a session when it is wrong.</p>
 <h2 id="interfaces">Interfaces</h2>
 <p>XActions provides <strong>5 interfaces</strong> to the same underlying toolkit:</p>
 <pre><code>┌─────────────────────────────────────────────────────┐
-│                   XActions v3.5.0                    │
+│                   XActions v3.5.0                   │
 ├──────────┬──────────┬───────┬──────────┬────────────┤
 │  CLI     │  MCP     │  API  │ Dashboard│  Browser   │
 │ xactions │ server   │ REST  │   Web UI │  Scripts   │
@@ -372,11 +413,11 @@
 └──────────┴──────────┴───────┴──────────┴────────────┘
 </code></pre>
 <ol>
-<li><strong>CLI</strong> — <code>xactions &lt;command&gt;</code> from your terminal</li>
-<li><strong>MCP Server</strong> — 150 tools for Claude, Cursor, Windsurf, GPT</li>
-<li><strong>REST API</strong> — 170+ endpoints at <code>localhost:3001/api</code></li>
-<li><strong>Web Dashboard</strong> — Full-featured UI at <code>localhost:3001</code></li>
-<li><strong>Browser Scripts</strong> — Paste into DevTools on x.com</li>
+<li><strong>CLI</strong>: <code>xactions &lt;command&gt;</code> from your terminal. 55 commands, grouped by task, with 85 subcommands under them.</li>
+<li><strong>MCP Server</strong>: 152 tools for Claude, Cursor, Windsurf, GPT. stdio or Streamable HTTP, filterable by tool group.</li>
+<li><strong>REST API</strong>: 40 route modules served at <code>localhost:3001/api</code>.</li>
+<li><strong>Web Dashboard</strong>: full-featured UI at <code>localhost:3001</code>.</li>
+<li><strong>Browser Scripts</strong>: 95 scripts you paste into DevTools on x.com, no install at all.</li>
 </ol>
 <h2 id="supported-platforms">Supported Platforms</h2>
 <table>
@@ -413,20 +454,22 @@
 <tr>
 <td>Threads</td>
 <td>✅</td>
-<td>—</td>
-<td>—</td>
+<td>no</td>
+<td>no</td>
 <td>✅</td>
 </tr>
 </tbody></table>
+<h2 id="requirements">Requirements</h2>
+<p>Node.js 20 or newer. CI runs the suite (1574 tests) on Node 20, 22 and 24.</p>
 <h2 id="version">Version</h2>
 <p>Current version: <strong>v3.5.0</strong> (August 2026)</p>
 <hr>
-<p><em>by nichxbt — <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/xactions">github.com/nirholas/xactions</a></em></p>
+<p><em>by nichxbt, <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/xactions">github.com/nirholas/xactions</a></em></p>
 
     </article>
 
     <div class="page-meta">
-      <span>2 min read</span>
+      <span>3 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/README.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20Documentation" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -24,9 +24,16 @@ You should see, on stderr:
 
 ```
 💻 XActions MCP Server: Local mode (free)
-⚡ XActions MCP Server v3.4.4 — 151 tools
-📋 Tools available: 144
+⚡ XActions MCP Server v3.5.0 - 152 tools
+
+📋 Tools available: 151
+   Scraping: x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets, x_get_thread, x_download_video
+   Analysis: x_detect_unfollowers, x_analyze_sentiment, x_best_time_to_post, x_competitor_analysis, x_brand_monitor
+   Actions: x_follow, x_unfollow, x_like, x_post_tweet, x_post_thread, x_reply
+   AI: x_analyze_voice, x_generate_tweet, x_summarize_thread
+
 ✅ Server running on stdio
+   Ready for connections from Claude, Cursor, Windsurf, and any MCP client.
 ```
 
 It then sits waiting for JSON-RPC on stdin, which is correct. Press

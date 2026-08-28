@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -264,6 +266,12 @@
 <p>Use AI agents (Claude, Cursor, Windsurf, GPT) to automate X/Twitter — for free.</p>
 </blockquote>
 <hr>
+<h2 id="x_ask-let-the-agent-read-the-manual">x_ask: let the agent read the manual</h2>
+<p><code>x_ask</code> answers questions about XActions itself, grounded in the documentation, the skills, the browser scripts and the repository. Use it before guessing at a workflow, inventing a script name, or telling a user something is unsupported.</p>
+<pre><code class="language-json">{ &quot;name&quot;: &quot;x_ask&quot;, &quot;arguments&quot;: { &quot;question&quot;: &quot;how do I unfollow everyone?&quot; } }
+</code></pre>
+<p>It returns the written answer, the sources behind it, and the exact runnable action (browser script, CLI command, or another MCP tool). Pass <code>actionsOnly: true</code> to skip the model entirely and get just the matching actions in milliseconds.</p>
+<p>It is a read tool: no X session, no account access, no API key. Full guide: <a href="/docs/guides/ask">Ask XActions</a>.</p>
 <h2 id="30-second-quickstart">30-Second Quickstart</h2>
 <pre><code class="language-bash"># Add to your AI client config, then restart the client
 npx xactions-mcp
@@ -670,6 +678,11 @@ class, and a call that would go over is refused before anything reaches X.</p>
 so a budget spent this morning is still spent after a restart, a crash, or a
 fresh <code>npx xactions-mcp</code>. A cap that resets when the process does is not a cap.</p>
 <p>Nothing needs configuring: the defaults apply the moment the server starts.</p>
+<p><code>x_engage</code> sweeps a whole feed in one call, so it is charged once per enabled
+action class for its entire <code>limit</code> before the first write, the same way
+<code>x_bulk_execute</code> is charged for its whole username list. A <code>limit: 100</code> sweep
+with like and reply reserves 100 of each. Keep <code>limit</code> to what you mean to
+spend; a dry run (the default) is charged nothing.</p>
 <table>
 <thead>
 <tr>
@@ -686,17 +699,17 @@ fresh <code>npx xactions-mcp</code>. A cap that resets when the process does is 
 <tr>
 <td><code>reply</code></td>
 <td>2400</td>
-<td><code>x_reply</code>, <code>x_quote_tweet</code>, <code>x_auto_comment</code></td>
+<td><code>x_reply</code>, <code>x_quote_tweet</code>, <code>x_auto_comment</code>, <code>x_engage</code></td>
 </tr>
 <tr>
 <td><code>like</code></td>
 <td>500</td>
-<td><code>x_like</code>, <code>x_auto_like</code>, <code>x_bookmark</code></td>
+<td><code>x_like</code>, <code>x_auto_like</code>, <code>x_bookmark</code>, <code>x_engage</code></td>
 </tr>
 <tr>
 <td><code>repost</code></td>
 <td>500</td>
-<td><code>x_retweet</code>, <code>x_auto_retweet</code></td>
+<td><code>x_retweet</code>, <code>x_auto_retweet</code>, <code>x_engage</code></td>
 </tr>
 <tr>
 <td><code>follow</code></td>
@@ -964,6 +977,70 @@ xactions-mcp
 npx puppeteer browsers install chrome
 </code></pre>
 <hr>
+<h2 id="two-ways-in-and-when-not-to-use-this-server">Two ways in, and when not to use this server</h2>
+<p>A 150-tool server is a lot to hand a client that only needs to read one
+profile. Every tool ships its JSON schema on connect, so the <code>tools/list</code>
+payload is about 60 KB before any work happens. That is a fair price for a
+long session or for writes, and a poor one for a single lookup.</p>
+<p>XActions offers both lanes from the same install, which is unusual: the CLI
+runs the same code as the MCP tools, so nothing is lost by choosing it.</p>
+<pre><code class="language-bash">xactions profile NASA --compact
+xactions tweets NASA --limit 50 --fields id,date,likes,text --compact
+xactions analyze NASA SpaceX --compact
+</code></pre>
+<p><code>--compact</code> prints one record per line as tab-separated <code>key=value</code> pairs, and
+<code>--fields</code> narrows the columns. One Bash call, no schemas loaded, and <code>jq</code> or
+<code>wc</code> can finish the job before the answer ever reaches the model.</p>
+<p>Use this MCP server when you are writing (posting, following, muting) and want
+the <a href="#approval-mode-draft-before-you-post">approval mode</a> gate, or when a
+session will make enough calls that the schema cost amortises. Use the CLI when
+you need a few facts and you are done. If you do load the server for a
+read-only session, narrow it first with
+<a href="#tool-filtering">tool filtering</a>: <code>XACTIONS_MCP_TOOLS=read</code>.</p>
+<p>The full decision table, with the recipes and the exact flags, is in
+<a href="/docs/guides/agents">AGENTS.md</a>, which coding agents read automatically.</p>
+<h3 id="one-click-install-the-mcpb-bundle">One-click install: the .mcpb bundle</h3>
+<p>Instead of editing a JSON config by hand, download <code>xactions-&lt;version&gt;.mcpb</code>
+from the <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/XActions/releases">releases page</a> and
+drag it onto <strong>Claude Desktop &gt; Settings &gt; Extensions</strong>.</p>
+<p>The bundle carries the server and its production dependencies, so there is no
+npm install and no absolute path to type. Its manifest declares the settings it
+needs, and Claude Desktop collects them at install time:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>What it sets</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>X session cookie (auth_token)</td>
+<td><code>XACTIONS_SESSION_COOKIE</code>, stored by the host as a secret. Leave it empty to run the guest tier</td>
+</tr>
+<tr>
+<td>Tool groups to expose</td>
+<td><code>XACTIONS_MCP_TOOLS</code>, for example <code>read,analytics</code></td>
+</tr>
+<tr>
+<td>Tool groups to hide</td>
+<td><code>XACTIONS_MCP_EXCLUDE</code>, for example <code>write,dm</code></td>
+</tr>
+<tr>
+<td>Hold writes for approval</td>
+<td><code>XACTIONS_MCP_REQUIRE_APPROVAL</code></td>
+</tr>
+</tbody></table>
+<p>Browser-driven tools download Chromium into your own puppeteer cache the first
+time they run; every HTTP tool works without it.</p>
+<p>To build the bundle from a clone:</p>
+<pre><code class="language-bash">node scripts/build-mcpb.mjs                 # dist/xactions-&lt;version&gt;.mcpb
+node scripts/build-mcpb.mjs --manifest-only # write and validate the manifest only
+</code></pre>
+<p>The build stages the payload, installs production dependencies inside the
+bundle, validates the manifest against the MCPB schema, packs it, then unpacks
+the result and starts the server from it, so a bundle that cannot launch fails
+at build time rather than on someone&#39;s desktop.</p>
+<hr>
 <h2 id="links">Links</h2>
 <ul>
 <li><strong>GitHub</strong>: <a target="_blank" rel="noopener noreferrer" href="https://github.com/nirholas/XActions">github.com/nirholas/XActions</a></li>
@@ -977,7 +1054,7 @@ npx puppeteer browsers install chrome
     </article>
 
     <div class="page-meta">
-      <span>10 min read</span>
+      <span>12 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/mcp-setup.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20MCP%20Server%20Setup%20Guide" target="_blank" rel="noopener">Report a problem</a>
     </div>

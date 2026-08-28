@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -270,6 +272,8 @@ them to use, in what order, for this task.&quot;</p>
 <li>Location: <a href="../skills/"><code>skills/</code></a></li>
 <li>Machine-readable index: <a href="../skills/index.json"><code>skills/index.json</code></a></li>
 <li>Template for new ones: <a href="https://github.com/nirholas/XActions/blob/main/skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a></li>
+<li>Format: the <a target="_blank" rel="noopener noreferrer" href="https://agentskills.io/specification">Agent Skills specification</a>,
+so any installer that follows it resolves this tree</li>
 </ul>
 <hr>
 <h2 id="using-them">Using them</h2>
@@ -332,6 +336,21 @@ agent needs to know where those resolve. <code>--json</code> on any sub-command 
 the same report as JSON.</p>
 <p><code>xactions doctor</code> reports how many skills are installed per target, and
 <code>xactions skills list</code> marks each skill with where it was found.</p>
+<h3 id="install-with-any-spec-compliant-installer">Install with any spec-compliant installer</h3>
+<p>Every skill here follows the <a target="_blank" rel="noopener noreferrer" href="https://agentskills.io/specification">Agent Skills
+specification</a>: a <code>skills/&lt;name&gt;/</code>
+directory holding a <code>SKILL.md</code> whose frontmatter carries <code>name</code> and
+<code>description</code>. That is the layout third-party installers look for, so the
+cross-agent installer from vercel-labs resolves the catalogue straight from
+GitHub:</p>
+<pre><code class="language-bash">npx skills add nirholas/XActions            # pick from the list interactively
+npx skills add nirholas/XActions --list     # see what is there, install nothing
+npx skills add nirholas/XActions --all      # every skill, every detected agent
+</code></pre>
+<p>It walks <code>skills/</code>, reads each <code>SKILL.md</code> frontmatter, and links or copies the
+whole skill directory (<code>references/</code> included) into whichever agent directories
+it finds on the machine. <code>xactions skills install</code> above is unaffected and
+still the right tool when XActions is already installed.</p>
 <h3 id="with-claude-code">With Claude Code</h3>
 <p>Point Claude at the directory. It reads the frontmatter <code>description</code> of each
 skill to decide which one applies to your request:</p>
@@ -382,6 +401,47 @@ first** -- it provides shared config, selectors, utilities, and rate limiting.
 reads when deciding whether a skill is relevant, so it has to state both what
 the skill does <em>and</em> when to reach for it. A description that only says what it
 does will never get selected.</p>
+<h3 id="frontmatter-rules">Frontmatter rules</h3>
+<p><code>name</code> and <code>description</code> are required. The <a target="_blank" rel="noopener noreferrer" href="https://agentskills.io/specification">spec</a>
+allows four more keys and nothing else: <code>license</code>, <code>compatibility</code>, <code>metadata</code>,
+and the experimental <code>allowed-tools</code>. An installer that finds an unknown key or
+a missing required one skips the skill entirely, which is worse than a bad
+description because nothing tells the user it happened.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>Required. 1 to 64 characters, lowercase letters, digits and single hyphens. No leading, trailing or doubled hyphen. <strong>Must match the directory name</strong></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Required. 1 to 1024 characters. What it does and when to use it</td>
+</tr>
+<tr>
+<td><code>license</code></td>
+<td>Optional. <code>Apache-2.0</code> here</td>
+</tr>
+<tr>
+<td><code>compatibility</code></td>
+<td>Optional, up to 500 characters. Only when the skill needs something specific from the environment</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>Optional. String keys to string values. We use <code>author</code> and <code>version</code>, and <code>version</code> must be quoted so YAML keeps <code>&quot;4.0&quot;</code> a string</td>
+</tr>
+<tr>
+<td><code>allowed-tools</code></td>
+<td>Optional, experimental. A space-separated list of pre-approved tools</td>
+</tr>
+</tbody></table>
+<p>One YAML trap worth naming, because it costs a skill its whole entry: an
+unquoted scalar cannot contain a colon followed by a space. <code>description: Runs the server: fast</code> is a parse error, not a long description. Rephrase, or quote
+the value.</p>
 <hr>
 <h2 id="the-catalog">The catalog</h2>
 <p><em>49 skills. Generated from <a href="../skills/index.json"><code>skills/index.json</code></a>.</em></p>
@@ -586,22 +646,35 @@ does will never get selected.</p>
 </tr>
 <tr>
 <td><a href="/docs/skills/xactions-mcp-server">XActions MCP Server</a></td>
-<td>150 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze).</td>
+<td>152 MCP tools for AI agents to automate X/Twitter (scrape, post, engage, analyze).</td>
 </tr>
 </tbody></table>
 <hr>
 <h2 id="writing-one">Writing one</h2>
 <ol>
-<li>Copy <a href="https://github.com/nirholas/XActions/blob/main/skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a> to <code>skills/your-skill/SKILL.md</code>.</li>
-<li>Write the frontmatter. Spend the effort on <code>description</code>: name the job and
+<li><p>Copy <a href="https://github.com/nirholas/XActions/blob/main/skills/TEMPLATE.md"><code>skills/TEMPLATE.md</code></a> to <code>skills/your-skill/SKILL.md</code>.</p>
+</li>
+<li><p>Write the frontmatter. Spend the effort on <code>description</code>: name the job and
 the trigger. Compare &quot;Manages bookmarks&quot; with &quot;Organize, export, and
 bulk-clear bookmarks with auto-tagging. Use when someone asks to clean up,
-export, or categorize their saved posts.&quot;</li>
-<li>Write the body for a model, not a person. Concrete file paths, exact page
-URLs, real argument values. Skip the motivation and the history.</li>
-<li>Lead with a selection table mapping goals to files, so the assistant picks
-correctly before it reads any detail.</li>
-<li>Add the entry to <a href="../skills/index.json"><code>skills/index.json</code></a>.</li>
+export, or categorize their saved posts.&quot;</p>
+</li>
+<li><p>Write the body for a model, not a person. Concrete file paths, exact page
+URLs, real argument values. Skip the motivation and the history.</p>
+</li>
+<li><p>Lead with a selection table mapping goals to files, so the assistant picks
+correctly before it reads any detail.</p>
+</li>
+<li><p>Add the entry to <a href="../skills/index.json"><code>skills/index.json</code></a>.</p>
+</li>
+<li><p>Check that an outside installer can still read the whole catalogue:</p>
+<pre><code class="language-bash">npx skills add . --list        # from the repo root: should list every skill
+xactions skills list           # our own installer, same count
+</code></pre>
+<p>A skill with broken frontmatter is not reported as broken by either tool. It
+is silently absent from the list, so compare the count against the number of
+directories under <code>skills/</code>.</p>
+</li>
 </ol>
 <p>Rules that keep a skill useful:</p>
 <ul>
@@ -616,16 +689,16 @@ belong in the skill, because the agent will not infer them.</li>
 <hr>
 <h2 id="related">Related</h2>
 <ul>
-<li><a href="/docs/guides/mcp-setup">MCP Setup</a> — the 150 tools skills drive</li>
+<li><a href="/docs/guides/mcp-setup">MCP Setup</a> — the 152 tools skills drive</li>
 <li><a href="/docs/guides/browser-scripts">Browser Scripts</a> — what most skills reference</li>
 <li><a href="/docs/guides/agents">Agents</a> — the autonomous agent that consumes skills</li>
-<li><a href="/docs/guides/agents">AGENTS.md</a> — integration notes for AI coding assistants</li>
+<li><a href="/docs/guides/agents">AGENTS.md</a> — integration notes for AI coding assistants, and when to shell out to the CLI instead of loading the MCP server</li>
 </ul>
 
     </article>
 
     <div class="page-meta">
-      <span>7 min read</span>
+      <span>8 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/skills.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Skills%20Reference" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -22,10 +22,12 @@ npx xactions profile nasa
   Location:  Pale Blue Dot
   Website:   http://www.nasa.gov/
   Joined:    2007-12-19
-  Following: 119  Followers: 92.2M
-  Tweets:    74.3K  Listed:    97.0K
+  Following: 117  Followers: 92.4M
+  Tweets:    74.2K  Listed:    0
   ✓ Verified
 ```
+
+(Your numbers will differ. NASA gains followers while you read this.)
 
 No API key. No account. No browser. That took about a second, because it went
 straight to X's internal GraphQL API over HTTP rather than launching Chromium
@@ -76,11 +78,15 @@ npx xactions search "mars rover"
 That fails, and the error tells you why:
 
 ```
-HTTP 404 on /i/api/graphql/.../SearchTimeline while unauthenticated.
-X restricts this endpoint to logged-in sessions. Authenticate first with
-scraper.login(...), scraper.setCookies(...), or scraper.loadCookies(...)
-using your auth_token cookie ...
+✖ Search failed
+HTTP 404 on /i/api/graphql/hyPfJYJ_XAtDYoslQc-Rgg/SearchTimeline while
+unauthenticated. X restricts this endpoint to logged-in sessions. Authenticate
+first with scraper.login(...), scraper.setCookies(...), or
+scraper.loadCookies(...) using your auth_token cookie (DevTools > Application >
+Cookies > x.com > auth_token), then retry.
 ```
+
+It also exits non-zero, so `set -e` and `&&` do the right thing in a script.
 
 **This is the distinction worth internalising.** X splits its internal API in
 two:
@@ -98,12 +104,33 @@ is broken. You just need a session.
 
 ## Step 4 — Log in
 
+There are three ways in, easiest first. All three end at the same file,
+`~/.xactions/cookies.json`, and every other command reads it from there.
+
+**Through a real browser.** XActions opens one, you log in normally, it captures
+the session and closes:
+
+```bash
+npx xactions connect
+```
+
+**From a browser you are already logged in to.** No window opens; it reads the
+cookies out of the browser's own store:
+
+```bash
+npx xactions login --from-browser chrome
+```
+
+Takes `chrome`, `chromium`, `brave`, `edge`, `arc`, or `firefox`, and defaults
+to firefox.
+
+**By hand**, if you would rather see exactly what is being copied:
+
 ```bash
 npx xactions login
 ```
 
-It asks for two cookie values. Get them from a browser where you are already
-logged into X:
+It asks for two cookie values:
 
 1. Open [x.com](https://x.com).
 2. DevTools (<kbd>F12</kbd>) → **Application** → **Cookies** → `https://x.com`
@@ -114,6 +141,10 @@ logged into X:
 header before it treats the request as logged in. Supply only the first and
 session-tier endpoints keep returning 404, which is the single most common
 setup mistake with this tool.
+
+Already have cookies in a file? `npx xactions login --cookies-file <path>` reads
+Netscape `cookies.txt`, Cookie-Editor or EditThisCookie JSON, a Playwright or
+Puppeteer `storageState`, or a raw `auth_token=...; ct0=...` string.
 
 > Treat `auth_token` like a password. It is a full session. Never paste it into
 > an issue or a screenshot, and consider using a secondary account for
@@ -220,9 +251,49 @@ raises the ceiling substantially, quite apart from unlocking the session tier.
 
 ---
 
+---
+
+## Step 7 — Check your footing
+
+`doctor` is the command to run when anything is confusing. It tests the guest
+tier for real, reports whether a session is saved and still valid, and tells you
+what each problem's fix is:
+
+```bash
+npx xactions doctor
+```
+
+```
+⚡ XActions doctor  v3.5.0
+
+  Environment
+  ✓ Node                 Node 24.14.0
+  ✓ Browser              Chromium installed for browser-driven commands
+  ✓ MCP server           MCP server exposes 152 tools
+  ! Skills               No skills installed (claude 0, cursor 0, codex 0, windsurf 0)
+    → Run `xactions skills install --all --global` so your agent knows which script to reach for.
+  ✓ GraphQL query IDs    148 query IDs cached, 13h old (/home/you/.xactions/query-ids.json)
+
+  Guest tier (works with no account)
+  ✓ Profile read         Read @NASA without a login (92,356,564 followers)
+  ✓ Timeline read        Pulled 3 posts from @nasa without a login
+
+  Session tier (search, followers, DMs)
+  ! Session saved        No session saved, so only the guest tier is available
+    → Run `xactions connect` to unlock search, followers, following, likes, bookmarks and DMs.
+```
+
+It exits non-zero when something is actually broken, so a cron job can check
+itself before doing work. `npx xactions quickstart` is the friendlier version of
+the same idea, and `npx xactions quickstart --json` gives you `{"tier":"guest"}`
+or `{"tier":"session"}` for a script.
+
+---
+
 ## What you learned
 
 - Guest tier vs session tier, and why session-tier failures look like 404s
+- `xactions connect` and `login --from-browser` beat copying cookies by hand
 - `auth_token` **and** `ct0`, not just the first
 - The CLI and the library are the same thing with different skins
 - Timelines are async generators: stream them, do not collect them

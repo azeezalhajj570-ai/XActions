@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 67 more…</a>
+      <a class="sidebar__link" href="/docs">+ 69 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -207,7 +207,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -248,6 +248,16 @@
 </tr>
 </thead>
 <tbody><tr>
+<td>Search Sweep</td>
+<td><code>scripts/searchSweep.js</code></td>
+<td>Delete (or like/repost/reply to) every post an X search returns</td>
+</tr>
+<tr>
+<td>Bulk Delete Tweets</td>
+<td><code>src/bulkDeleteTweets.js</code></td>
+<td>Delete your own posts from your profile timeline by age, keyword, or engagement</td>
+</tr>
+<tr>
 <td>Unlike All Posts</td>
 <td><code>src/unlikeAllPosts.js</code></td>
 <td>Remove all likes from your likes page</td>
@@ -268,10 +278,64 @@
 <td>Soft-block to remove specific followers</td>
 </tr>
 </tbody></table>
+<h2 id="search-sweep-delete-everything-matching-a-search">Search Sweep: delete everything matching a search</h2>
+<p><strong>File:</strong> <code>scripts/searchSweep.js</code> (full guide: <code>docs/search-sweep.md</code>)</p>
+<p>The one to reach for when the user wants &quot;delete every reply I sent @someone&quot;,
+&quot;remove all my posts mentioning X&quot;, or &quot;delete everything I posted before 2024&quot;.
+X has no bulk tool for that, but its search finds the posts:</p>
+<pre><code>https://x.com/search?q=from%3AYOUR_HANDLE%20%40someone&amp;src=typed_query&amp;f=live
+</code></pre>
+<h3 id="how-to-use">How to use</h3>
+<ol>
+<li>Open that search on x.com (use the Latest tab, <code>f=live</code>; Top ranking hides most results)</li>
+<li>Open DevTools (F12) then Console</li>
+<li>Paste <code>scripts/searchSweep.js</code>. A panel appears bottom-right, pre-filled with the query already in the address bar</li>
+<li>Pick the action: Delete, Like, Repost, or Reply. Leave Dry run ON and click Start</li>
+<li>Read the log, untick Dry run, start again</li>
+</ol>
+<h3 id="what-to-tell-the-user">What to tell the user</h3>
+<ul>
+<li><strong>Delete only ever touches their own posts.</strong> Anything by another account is refused.</li>
+<li><strong>It needs more than one run.</strong> X search returns a slice at a time and its index lags
+deletions by minutes. The script re-runs the query for several passes and remembers
+every id it acted on, so running it again a day later only picks up stragglers.</li>
+<li><strong>Filters protect posts worth keeping</strong>: minimum age, likes/reposts ceiling, keyword
+exclusions, and the pinned post is always skipped.</li>
+<li><strong>Deletion is permanent.</strong> Back up first with <code>scripts/backupAccount.js</code>.</li>
+</ul>
+<h3 id="query-building">Query building</h3>
+<table>
+<thead>
+<tr>
+<th>Want</th>
+<th>Query</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Every reply you sent someone</td>
+<td><code>from:you @someone</code></td>
+</tr>
+<tr>
+<td>Only direct replies to them</td>
+<td><code>from:you to:someone</code></td>
+</tr>
+<tr>
+<td>Everything you posted before a date</td>
+<td><code>from:you until:2024-01-01</code></td>
+</tr>
+<tr>
+<td>Your posts on a topic</td>
+<td><code>from:you keyword</code></td>
+</tr>
+<tr>
+<td>Only replies, no links</td>
+<td><code>from:you @someone filter:replies -filter:links</code></td>
+</tr>
+</tbody></table>
 <h2 id="unlike-all-posts">Unlike All Posts</h2>
 <p><strong>File:</strong> <code>src/unlikeAllPosts.js</code></p>
 <p>Mass-unlike all posts from your likes page.</p>
-<h3 id="how-to-use">How to use</h3>
+<h3 id="how-to-use-1">How to use</h3>
 <ol>
 <li>Navigate to <code>x.com/YOUR_USERNAME/likes</code></li>
 <li>Open DevTools (F12) → Console</li>
@@ -300,7 +364,7 @@
 <h2 id="clear-all-reposts">Clear All Reposts</h2>
 <p><strong>File:</strong> <code>src/clearAllReposts.js</code></p>
 <p>Remove all retweets/reposts from your profile.</p>
-<h3 id="how-to-use-1">How to use</h3>
+<h3 id="how-to-use-2">How to use</h3>
 <ol>
 <li>Navigate to <code>x.com/YOUR_USERNAME</code></li>
 <li>Open DevTools (F12) → Console</li>
@@ -326,7 +390,7 @@
 <h2 id="clear-all-bookmarks">Clear All Bookmarks</h2>
 <p><strong>File:</strong> <code>src/clearAllBookmarks.js</code></p>
 <p>Remove all saved bookmarks. Tries the built-in &quot;Clear All&quot; button first, falls back to individual removal.</p>
-<h3 id="how-to-use-2">How to use</h3>
+<h3 id="how-to-use-3">How to use</h3>
 <ol>
 <li>Navigate to <code>x.com/i/bookmarks</code></li>
 <li>Open DevTools (F12) → Console</li>
@@ -343,7 +407,7 @@
   dryRun: true,         // Set to false to actually remove
 };
 </code></pre>
-<h3 id="how-to-use-3">How to use</h3>
+<h3 id="how-to-use-4">How to use</h3>
 <ol>
 <li>Navigate to <code>x.com/YOUR_USERNAME/followers</code></li>
 <li>Edit the usernames to remove (or set <code>removeAll: true</code>)</li>
@@ -353,6 +417,7 @@
 </ol>
 <h2 id="notes">Notes</h2>
 <ul>
+<li>Deleting a post cannot be undone, and X search keeps listing deleted posts for a few minutes</li>
 <li>Unlike/unretweet operations cannot be undone — the original post remains, but your interaction is removed</li>
 <li>Clearing bookmarks is permanent</li>
 <li>Remove followers uses the &quot;Remove this follower&quot; option from the three-dot menu on the followers page</li>
@@ -363,7 +428,7 @@
     </article>
 
     <div class="page-meta">
-      <span>1 min read</span>
+      <span>3 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/skills/content-cleanup/SKILL.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Content%20Cleanup%20with%20XActions" target="_blank" rel="noopener">Report a problem</a>
     </div>

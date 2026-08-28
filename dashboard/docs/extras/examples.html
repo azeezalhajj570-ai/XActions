@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 67 more…</a>
+      <a class="sidebar__link" href="/docs">+ 69 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -164,7 +164,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -229,7 +229,13 @@ lot of confusion:</p>
 <p>Session-tier endpoints answer a logged-out request with a bare <code>404</code>, which is
 why the examples that need one check up front and tell you how to fix it rather
 than failing halfway through.</p>
-<p>To authenticate:</p>
+<p>The painless way, either of which writes the cookie file the examples read:</p>
+<pre><code class="language-bash">npx xactions connect              # opens a real browser, you log in, it captures the session
+npx xactions login --from-browser # reads x.com cookies from a browser you are already logged in to
+</code></pre>
+<p><code>--from-browser</code> takes <code>chrome</code>, <code>chromium</code>, <code>brave</code>, <code>edge</code>, <code>arc</code>, or
+<code>firefox</code>, and defaults to firefox.</p>
+<p>By hand, if you would rather see exactly what is being copied:</p>
 <ol>
 <li><p>Open <a target="_blank" rel="noopener noreferrer" href="https://x.com">x.com</a> and log in.</p>
 </li>
@@ -241,11 +247,10 @@ than failing halfway through.</p>
 <pre><code class="language-bash">export X_AUTH_TOKEN=...
 export X_CSRF_TOKEN=...
 </code></pre>
-<p>or save them once with the CLI:</p>
-<pre><code class="language-bash">npx xactions login
-</code></pre>
+<p>or paste them into <code>npx xactions login</code>.</p>
 </li>
 </ol>
+<p>Check where you stand at any time with <code>npx xactions doctor</code>.</p>
 <p>Both cookies matter. <code>auth_token</code> proves who you are; <code>ct0</code> is the CSRF token X
 requires as a header before it treats the request as logged in. With only
 <code>auth_token</code>, session-tier endpoints stay closed.</p>
@@ -308,6 +313,12 @@ requires as a header before it treats the request as logged in. With only
 <td>Drive the MCP server over stdio the way Claude does.</td>
 <td align="center">no</td>
 </tr>
+<tr>
+<td>09</td>
+<td><a href="09-draft-approval.js">09-draft-approval.js</a></td>
+<td>Hold an agent&#39;s write call as a draft, review it, discard it.</td>
+<td align="center">no</td>
+</tr>
 </tbody></table>
 <p><a href="auth.js">auth.js</a> is the shared helper the others import. It resolves a
 session from the environment or the CLI&#39;s cookie file and prints setup
@@ -339,15 +350,29 @@ ALERT_WEBHOOK=https://hooks.example.com/x node examples/07-keyword-monitor.js &q
 # 08 — verify an MCP setup without an AI client in the loop
 node examples/08-mcp-tool-call.js
 node examples/08-mcp-tool-call.js x_get_tweets github
+
+# 09 — see the approval gate hold a write call. Nothing is ever posted.
+node examples/09-draft-approval.js
+node examples/09-draft-approval.js &quot;text for the held draft&quot;
 </code></pre>
 <h3 id="sample-output">Sample output</h3>
 <p><code>node examples/04-cross-platform.js</code>:</p>
 <pre><code>Profiles
 --------
 Network   Handle                    Followers   Following   Posts
-X         @NASA                     92.2M       119         74.3K
-Bluesky   @bsky.app                 34.3M       11          802
-Mastodon  @Gargron                  381.7K      731         82.0K
+X         @NASA                     92.4M       117         74.2K
+Bluesky   @bsky.app                 34.7M       13          822
+Mastodon  @Gargron                  382.4K      735         82.1K
+</code></pre>
+<p><code>node examples/09-draft-approval.js</code>:</p>
+<pre><code>An agent asks to post
+---------------------
+  held      true
+  draft id  88aae55b
+  tool      x_post_tweet
+  text      A post an agent proposed. Never sent.
+
+  Approval mode is on. &quot;x_post_tweet&quot; was saved as draft 88aae55b and has NOT been executed.
 </code></pre>
 <hr>
 <h2 id="using-xactions-in-your-own-project">Using XActions in your own project</h2>
@@ -363,7 +388,7 @@ const profile = await scraper.getProfile(&#39;nasa&#39;);
 console.log(profile.name, profile.followersCount);
 
 for await (const tweet of scraper.getTweets(&#39;nasa&#39;, 20)) {
-  console.log(tweet.id, tweet.text);
+  console.log(`https://x.com/i/web/status/${tweet.id}`, tweet.text);
 }
 
 // Session tier — attach cookies first
@@ -389,7 +414,7 @@ the failure kind instead of matching on message text:</p>
 </code></pre>
 <hr>
 <h2 id="browser-console-scripts">Browser console scripts</h2>
-<p>The examples above are Node.js programs. XActions also ships 100+ scripts you
+<p>The examples above are Node.js programs. XActions also ships 95 scripts you
 paste straight into DevTools on x.com with nothing installed at all. The
 best-known one unfollows everybody who does not follow you back:</p>
 <ol>
@@ -404,9 +429,10 @@ want a downloadable log of who was unfollowed. The full catalog is in
 <h2 id="other-surfaces">Other surfaces</h2>
 <p>These examples cover the Node.js library. XActions has four more entry points:</p>
 <ul>
-<li><strong>CLI</strong> — <code>npx xactions profile nasa</code>. See <a href="/docs/guides/cli-reference">docs/cli-reference.md</a>.</li>
-<li><strong>MCP server</strong> — 150 tools for Claude, Cursor, and Windsurf. See <a href="/docs/guides/mcp-setup">docs/mcp-setup.md</a>.</li>
-<li><strong>Browser scripts</strong> — paste into DevTools, no install. See <a href="/docs/guides/browser-scripts">docs/browser-scripts.md</a>.</li>
+<li><strong>CLI</strong> — 55 top-level commands, 157 counting sub-commands. <code>npx xactions profile nasa</code>. See <a href="/docs/guides/cli-reference">docs/cli-reference.md</a>.</li>
+<li><strong>MCP server</strong> — 152 tools for Claude, Cursor, and Windsurf. See <a href="/docs/guides/mcp-setup">docs/mcp-setup.md</a>.</li>
+<li><strong>Agent skills</strong> — 49 of them, installable with <code>npx xactions skills install --all</code>. See <a href="/docs/guides/skills">docs/skills.md</a>.</li>
+<li><strong>Browser scripts</strong> — 95 of them, pasted into DevTools with no install. See <a href="/docs/guides/browser-scripts">docs/browser-scripts.md</a>.</li>
 <li><strong>REST API</strong> — self-hosted. See <a href="/docs/guides/rest-api">docs/rest-api.md</a>.</li>
 </ul>
 <p>Guided, end-to-end walkthroughs live in <a href="../tutorials/">tutorials/</a>.</p>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Real-Time Streaming — XActions Docs</title>
-<meta name="description" content="Subscribe to live tweet, follower, and mention events via polling + Socket.IO. No API keys needed.">
+<meta name="description" content="Subscribe to live tweet, follower, and mention events via polling + Socket.IO, or push events straight off x.com&#39;s own event pipeline. No API keys needed.">
 <meta name="keywords" content="xactions, twitter automation, x automation, free, open source, streaming, real-time, guides &amp; reference">
 <meta name="author" content="nich (@nichxbt)">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="Real-Time Streaming — XActions">
-<meta property="og:description" content="Subscribe to live tweet, follower, and mention events via polling + Socket.IO. No API keys needed.">
+<meta property="og:description" content="Subscribe to live tweet, follower, and mention events via polling + Socket.IO, or push events straight off x.com&#39;s own event pipeline. No API keys needed.">
 <meta property="og:url" content="https://xactions.app/docs/guides/streaming">
 <meta property="og:image" content="https://xactions.app/og-docs.png">
 <meta property="og:site_name" content="XActions">
@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@nichxbt">
 <meta name="twitter:title" content="Real-Time Streaming — XActions">
-<meta name="twitter:description" content="Subscribe to live tweet, follower, and mention events via polling + Socket.IO. No API keys needed.">
+<meta name="twitter:description" content="Subscribe to live tweet, follower, and mention events via polling + Socket.IO, or push events straight off x.com&#39;s own event pipeline. No API keys needed.">
 <meta name="twitter:image" content="https://xactions.app/og-docs.png">
 
 <link rel="canonical" href="https://xactions.app/docs/guides/streaming">
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Real-Time Streaming — XActions Docs",
-  "description": "Subscribe to live tweet, follower, and mention events via polling + Socket.IO. No API keys needed.",
+  "description": "Subscribe to live tweet, follower, and mention events via polling + Socket.IO, or push events straight off x.com's own event pipeline. No API keys needed.",
   "url": "https://xactions.app/docs/guides/streaming",
   "image": "https://xactions.app/og-docs.png",
   "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming" aria-current="page">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -261,7 +263,7 @@
     <article class="prose">
 <h1 id="real-time-streaming">Real-Time Streaming</h1>
 <blockquote>
-<p>Subscribe to live tweet, follower, and mention events via polling + Socket.IO. No API keys needed.</p>
+<p>Subscribe to live tweet, follower, and mention events via polling + Socket.IO, or push events straight off x.com&#39;s own event pipeline. No API keys needed.</p>
 </blockquote>
 <h2 id="overview">Overview</h2>
 <p>The streaming system provides near-real-time monitoring of Twitter/X activity by polling at configurable intervals and emitting events through Socket.IO. It uses:</p>
@@ -347,6 +349,268 @@ curl -X POST http://localhost:3001/api/streams/stop \
 <td><code>stream:mention:new</code></td>
 </tr>
 </tbody></table>
+<p>A stream can also run on the live transport instead of polling, which adds the
+<code>stream:engagement</code>, <code>stream:dm</code> and <code>stream:typing</code> events. See
+<a href="#live-event-stream">Live event stream</a>.</p>
+<hr>
+<h2 id="live-event-stream">Live event stream</h2>
+<p>Polling asks x.com &quot;anything new?&quot; every 15 seconds or more. The live pipeline
+is the other direction: x.com&#39;s own web client keeps one long-lived connection
+open to <code>https://api.x.com/live_pipeline/events</code> and receives frames as things
+happen. XActions speaks the same protocol, so engagement counters, DM updates
+and typing indicators arrive in under a second with no polling interval at all.</p>
+<p>Two things to know before you build on it:</p>
+<ul>
+<li><strong>It needs a logged-in session.</strong> Guest tokens are rejected. The connection
+carries the <code>auth_token</code> and <code>ct0</code> cookies, exactly like every other authed
+call in the toolkit. Without them <code>open()</code> fails with <code>LivePipelineAuthError</code>
+before a request is made.</li>
+<li><strong>It is not a WebSocket, whatever its reputation says.</strong> The endpoint answers
+an <code>Upgrade: websocket</code> request the same way it answers a plain GET, and the
+web client reads it as a chunked HTTP response of newline-delimited JSON.
+<code>createLivePipeline()</code> speaks that transport. Everything a WebSocket would
+give you (push delivery, live subscription changes, automatic reconnect) is
+here; the wire format underneath is just HTTP.</li>
+</ul>
+<h3 id="quick-start-1">Quick start</h3>
+<pre><code class="language-javascript">import { TwitterHttpClient } from &#39;xactions/scrapers/twitter/http&#39;;
+import { createLivePipeline, Topic } from &#39;xactions/streaming&#39;;
+
+// auth_token and ct0 from a logged-in session
+const client = new TwitterHttpClient({ cookies: process.env.X_COOKIES });
+
+const pipeline = createLivePipeline({
+  client,
+  topics: [Topic.tweetEngagement(&#39;1749528513&#39;)],
+  onEvent: (event) =&gt; {
+    if (event.type === &#39;engagement&#39;) {
+      console.log(`likes ${event.payload.likeCount}, views ${event.payload.viewCount}`);
+    }
+  },
+  onError: (err, info) =&gt; {
+    console.error(err.message, info); // { fatal, willRetry, attempt, delayMs }
+  },
+});
+
+const { sessionId } = await pipeline.open();
+console.log(&#39;live pipeline session&#39;, sessionId);
+
+// Change what you are watching without dropping the connection
+await pipeline.subscribe(Topic.tweetEngagement(&#39;1765829534&#39;));
+await pipeline.unsubscribe(Topic.tweetEngagement(&#39;1749528513&#39;));
+
+// Resolves once the connection is shut and every timer is cleared
+await pipeline.close();
+</code></pre>
+<h3 id="topics">Topics</h3>
+<p>A topic names one thing to watch. Build them with the <code>Topic</code> helpers rather
+than by hand, so a missing id fails at the call site instead of silently
+subscribing to nothing.</p>
+<table>
+<thead>
+<tr>
+<th>Helper</th>
+<th>Topic string</th>
+<th>What arrives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Topic.tweetEngagement(tweetId)</code></td>
+<td><code>/tweet_engagement/&lt;tweetId&gt;</code></td>
+<td>Like, retweet, quote, reply and view counters as they change</td>
+</tr>
+<tr>
+<td><code>Topic.dmUpdate(conversationId)</code></td>
+<td><code>/dm_update/&lt;conversationId&gt;</code></td>
+<td>A new message landed in that conversation</td>
+</tr>
+<tr>
+<td><code>Topic.dmTyping(conversationId)</code></td>
+<td><code>/dm_typing/&lt;conversationId&gt;</code></td>
+<td>The other side is typing</td>
+</tr>
+</tbody></table>
+<p>A conversation id is either a group id (<code>1234567890</code>) or <code>partnerId-yourId</code>
+(<code>1234567890-9876543210</code>).</p>
+<p><strong>DM topics only attach on the opening connection.</strong> x.com answers a
+mid-session <code>subscribe()</code> for a <code>dm_update</code> or <code>dm_typing</code> topic with an entry
+in the subscription error list, so pass them to <code>createLivePipeline({ topics })</code>
+rather than adding them later. Engagement topics can be added and removed at
+any time.</p>
+<h3 id="event-shape">Event shape</h3>
+<p>Every frame is normalised into the same object, and the untouched frame is kept
+on <code>raw</code> so nothing x.com sends is lost:</p>
+<pre><code class="language-javascript">{
+  type: &#39;engagement&#39;,                       // engagement | dm | typing | config | unknown
+  topic: &#39;/tweet_engagement/1749528513&#39;,
+  payload: { tweetId: &#39;1749528513&#39;, likeCount: 12, retweetCount: 3,
+             quoteCount: 1, replyCount: 0, viewCount: 4096,
+             viewCountState: &#39;EnabledWithCount&#39; },
+  receivedAt: &#39;2026-08-27T20:11:04.512Z&#39;,
+  raw: { topic: &#39;...&#39;, payload: { tweet_engagement: { like_count: &#39;12&#39;, ... } } }
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th><code>type</code></th>
+<th><code>payload</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>engagement</code></td>
+<td><code>{ tweetId, likeCount, retweetCount, quoteCount, replyCount, viewCount, viewCountState }</code>, counters as numbers, <code>null</code> when the frame omits one</td>
+</tr>
+<tr>
+<td><code>dm</code></td>
+<td><code>{ conversationId, userId }</code></td>
+</tr>
+<tr>
+<td><code>typing</code></td>
+<td><code>{ conversationId, userId }</code></td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td><code>{ kind: &#39;session&#39;, sessionId, subscriptionTtlMillis, heartbeatMillis }</code> on connect, or <code>{ kind: &#39;subscriptions&#39;, errors }</code> after a subscription change</td>
+</tr>
+<tr>
+<td><code>unknown</code></td>
+<td><code>{ name, data }</code> for a frame key this version does not model yet</td>
+</tr>
+</tbody></table>
+<p>One frame can carry several payload keys, and each one becomes its own event.</p>
+<h3 id="resilience">Resilience</h3>
+<table>
+<thead>
+<tr>
+<th>Behaviour</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Keepalive</td>
+<td>Blank keepalive lines re-arm a silence watchdog set to three times the heartbeat interval the server advertises. Silence past that aborts the connection and reconnects, rather than leaving a dead socket open</td>
+</tr>
+<tr>
+<td>Subscription TTL</td>
+<td>The server expires subscriptions after <code>subscriptionTtlMillis</code>; the pipeline re-asserts the current topic set at 80% of that window</td>
+</tr>
+<tr>
+<td>Reconnect</td>
+<td>Exponential backoff with jitter (<code>minDelayMs * factor^(attempt-1)</code>, capped at <code>maxDelayMs</code>, spread by <code>jitter</code>). Tune with <code>reconnect: { minDelayMs, maxDelayMs, factor, jitter, maxAttempts, random }</code>, or pass <code>reconnect: false</code></td>
+</tr>
+<tr>
+<td>Resubscribe</td>
+<td>The reconnect carries the live topic set, including topics added by <code>subscribe()</code> after the first connect</td>
+</tr>
+<tr>
+<td>Auth failure</td>
+<td>Never retried. <code>LivePipelineAuthError</code> is fatal: refresh the cookies and open again</td>
+</tr>
+<tr>
+<td>Give up</td>
+<td>Once <code>maxAttempts</code> reconnects are spent, <code>onError</code> fires with <code>{ fatal: true }</code> and a <code>reconnect_exhausted</code> error, and the pipeline is closed</td>
+</tr>
+<tr>
+<td><code>close()</code></td>
+<td>Resolves after the read loop and the reconnect supervisor have both finished, so nothing is left running behind it</td>
+</tr>
+</tbody></table>
+<h3 id="using-it-from-the-stream-manager">Using it from the stream manager</h3>
+<p><code>createStream()</code> takes a <code>transport</code> option. It defaults to <code>poll</code>, so existing
+streams behave exactly as before.</p>
+<pre><code class="language-javascript">import { createStream } from &#39;xactions/streaming&#39;;
+
+const stream = await createStream({
+  type: &#39;tweet&#39;,
+  username: &#39;elonmusk&#39;,
+  transport: &#39;live&#39;,
+  topics: [&#39;/tweet_engagement/1749528513&#39;],
+  cookies: process.env.X_COOKIES,   // auth_token AND ct0
+});
+</code></pre>
+<p>Events reach Socket.IO clients and the stream history under
+<code>stream:engagement</code>, <code>stream:dm</code> and <code>stream:typing</code>, alongside the polling
+events, each tagged <code>transport: &#39;live&#39;</code>:</p>
+<pre><code class="language-javascript">socket.on(&#39;stream:engagement&#39;, (data) =&gt; {
+  // { streamId, username, transport: &#39;live&#39;, topic, data: { likeCount, ... }, timestamp }
+});
+</code></pre>
+<p><strong>Polling is always the fallback.</strong> If the pipeline cannot open (no topics, no
+logged-in session, x.com unreachable) or gives up reconnecting later, the
+manager logs the reason once, sets <code>transportFallbackReason</code> on the stream, and
+schedules the normal poll job. A live stream never leaves you with no data.</p>
+<p><code>updateStream(streamId, { topics })</code> diffs the topic set and applies it to the
+running session, so a watch list can change without a reconnect.</p>
+<h3 id="api-reference">API reference</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>createLivePipeline(options)</code></td>
+<td><code>({ client, topics?, onEvent?, onError?, reconnect?, fetch?, eventsUrl?, subscriptionsUrl?, openTimeoutMs?, heartbeatTimeoutMs? }) → LivePipeline</code></td>
+<td>Build a pipeline. Nothing connects until <code>open()</code></td>
+</tr>
+<tr>
+<td><code>pipeline.open()</code></td>
+<td><code>() → Promise&lt;{ sessionId, topics }&gt;</code></td>
+<td>Connect and resolve on the session config frame. Rejects without retrying, so a caller can fall back</td>
+</tr>
+<tr>
+<td><code>pipeline.subscribe(topics)</code></td>
+<td><code>(string|string[]) → Promise&lt;{ topics, errors, raw }|null&gt;</code></td>
+<td>Add topics to the running session</td>
+</tr>
+<tr>
+<td><code>pipeline.unsubscribe(topics)</code></td>
+<td><code>(string|string[]) → Promise&lt;{ topics, errors, raw }|null&gt;</code></td>
+<td>Drop topics from the running session</td>
+</tr>
+<tr>
+<td><code>pipeline.close()</code></td>
+<td><code>() → Promise&lt;void&gt;</code></td>
+<td>Shut the connection down and settle</td>
+</tr>
+<tr>
+<td><code>pipeline.sessionId</code> / <code>.topics</code> / <code>.isOpen</code> / <code>.state</code> / <code>.stats</code></td>
+<td>getters</td>
+<td>Session id, live topic set, and counters (<code>connects</code>, <code>reconnects</code>, <code>frames</code>, <code>events</code>, <code>malformedFrames</code>, <code>lastFrameAt</code>, <code>lastError</code>)</td>
+</tr>
+<tr>
+<td><code>Topic</code></td>
+<td>object</td>
+<td><code>tweetEngagement</code>, <code>dmUpdate</code>, <code>dmTyping</code></td>
+</tr>
+<tr>
+<td><code>normalizeFrame(frame)</code></td>
+<td><code>(object) → Event[]</code></td>
+<td>Frame to typed events, exported for anyone parsing captured traffic</td>
+</tr>
+<tr>
+<td><code>computeBackoffDelay(attempt, opts)</code></td>
+<td><code>(number, object) → number</code></td>
+<td>The reconnect schedule, exported so it can be reasoned about and tested</td>
+</tr>
+<tr>
+<td><code>LivePipelineError</code> / <code>LivePipelineAuthError</code></td>
+<td>classes</td>
+<td>Typed failures. <code>LivePipelineError.code</code> is one of <code>not_open</code>, <code>no_config</code>, <code>open_timeout</code>, <code>http_error</code>, <code>no_body</code>, <code>parse_error</code>, <code>handler_error</code>, <code>heartbeat_timeout</code>, <code>stream_closed</code>, <code>reconnect_exhausted</code></td>
+</tr>
+</tbody></table>
+<h3 id="what-xcom-may-change">What x.com may change</h3>
+<p>This is x.com&#39;s internal pipeline, not a documented API. The endpoint paths,
+the frame keys, and the topic shapes here were read from the live service and
+can change without notice. Two design choices keep that from being a cliff: an
+unrecognised payload key arrives as an <code>unknown</code> event with the raw frame
+attached rather than being dropped, and the stream manager falls back to
+polling whenever the pipeline stops working. If frames stop arriving, check
+<code>pipeline.stats.malformedFrames</code> and the <code>raw</code> payload of an <code>unknown</code> event
+before assuming the session is at fault.</p>
 <hr>
 <h2 id="configuration">Configuration</h2>
 <h3 id="environment-variables">Environment Variables</h3>
@@ -436,7 +700,7 @@ socket.on(&#39;stream:error&#39;, (data) =&gt; {
 });
 </code></pre>
 <hr>
-<h2 id="api-reference">API Reference</h2>
+<h2 id="api-reference-1">API Reference</h2>
 <h3 id="stream-management">Stream Management</h3>
 <table>
 <thead>
@@ -618,7 +882,7 @@ xactions:stream:{streamId}:lock     → Distributed lock for poll coordination
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>8 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/streaming.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Real-Time%20Streaming" target="_blank" rel="noopener">Report a problem</a>
     </div>

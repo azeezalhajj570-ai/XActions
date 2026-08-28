@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -774,6 +776,199 @@ for (const e of Object.values(GRAPHQL)) {
 <p>On 2026-08-27 this found 148 operations and 22 of the 26 hardcoded IDs had
 rotated, including <code>UserByScreenName</code>, <code>TweetDetail</code> and <code>SearchTimeline</code>.</p>
 <hr>
+<h2 id="keeping-the-endpoint-table-fresh">Keeping the Endpoint Table Fresh</h2>
+<p>Runtime discovery (above) is what saves a running scrape. It does not help a
+fresh install with no cache and no network, which falls back to the table in
+<code>src/scrapers/twitter/http/endpoints.js</code>. That table used to be typed in by
+hand, so it was only ever as current as the last person who remembered to
+refresh it.</p>
+<p>It is generated now. <a target="_blank" rel="noopener noreferrer" href="https://github.com/fa0311/TwitterInternalAPIDocument">fa0311/TwitterInternalAPIDocument</a>
+(MIT) runs a bot that statically analyses x.com&#39;s JavaScript bundles once a day
+and commits the result as JSON. <code>npm run sync:endpoints</code> reads it and rewrites
+<code>src/scrapers/twitter/http/x-endpoints.generated.js</code>:</p>
+<pre><code class="language-bash">npm run sync:endpoints          # fetch and rewrite
+npm run sync:endpoints:check    # exit 1 if the committed table has fallen behind
+node scripts/sync-x-endpoints.mjs --json
+</code></pre>
+<p>The report names exactly what moved: query IDs that rotated, operations x.com
+added or retired, and feature switches whose value flipped. It also cross-checks
+the curated table and exits non-zero if an operation XActions tracks has
+disappeared from x.com&#39;s bundles, which is the failure that otherwise shows up
+weeks later as a <code>404 Query not found</code> in someone&#39;s issue.</p>
+<h3 id="why-the-generated-data-lives-in-its-own-module">Why the generated data lives in its own module</h3>
+<p><code>endpoints.js</code> is mostly hand-written behaviour: the request-variable shapes per
+operation, the rate-limit budgets, <code>validateEndpoints</code>. A generator that rewrote
+a marked region inside it would be one bad parse away from eating that code, and
+every regeneration would produce a diff mixing data with logic. So the generator
+only ever writes <code>x-endpoints.generated.js</code>, which contains nothing but data,
+and <code>endpoints.js</code> imports it and keeps the parts a human decides:</p>
+<table>
+<thead>
+<tr>
+<th>In <code>endpoints.js</code> (hand-written)</th>
+<th>In <code>x-endpoints.generated.js</code> (overwritten every sync)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TRACKED_OPERATIONS</code>: which operations XActions uses, under which key</td>
+<td><code>OPERATIONS</code>: every operation x.com ships, with its query ID and type</td>
+</tr>
+<tr>
+<td><code>QUERY_ID_PINS</code>: hold an operation at a known-good ID</td>
+<td><code>FEATURE_VALUES</code>: every feature switch, with the value x.com&#39;s client sends</td>
+</tr>
+<tr>
+<td><code>FEATURE_PINS</code>, <code>FIELD_TOGGLE_VALUES</code></td>
+<td><code>FEATURE_NAMES</code>, <code>FIELD_TOGGLE_NAMES</code>, and per-operation index lists</td>
+</tr>
+<tr>
+<td><code>buildGraphQLVariables</code>, <code>RATE_LIMITS</code>, <code>REST</code></td>
+<td><code>REST_V11</code>: x.com&#39;s v1.1 dispatch table, path plus method</td>
+</tr>
+</tbody></table>
+<p>Hand-pinning an operation is therefore still one edit, and it survives the next
+sync:</p>
+<pre><code class="language-javascript">// src/scrapers/twitter/http/endpoints.js
+export const QUERY_ID_PINS = Object.freeze({
+  SearchTimeline: &#39;hyPfJYJ_XAtDYoslQc-Rgg&#39;, // held while #123 is investigated
+});
+</code></pre>
+<h3 id="resolution-order-unchanged">Resolution order, unchanged</h3>
+<p>Paths below are relative to the repository root. The package&#39;s <code>exports</code> map
+publishes <code>xactions/scrapers/twitter/http</code> (the index) but not the individual
+modules inside it, so a consumer reaches <code>resolveGraphQL</code> and the rest through
+that index or through a direct path.</p>
+<p>The discovery cache still wins over the table, and the table is still the
+offline fallback:</p>
+<pre><code class="language-javascript">import { resolveGraphQL } from &#39;./src/scrapers/twitter/http/endpoints.js&#39;;
+
+resolveGraphQL(&#39;SearchTimeline&#39;);
+// { queryId, operationName: &#39;SearchTimeline&#39;, source: &#39;cache&#39; | &#39;hardcoded&#39; }
+</code></pre>
+<p>What is new is that a key the curated table does not name still resolves, from
+the generated table, so reaching one of the operations XActions has no wrapper
+for does not mean editing a file first:</p>
+<pre><code class="language-javascript">resolveGraphQL(&#39;BirdwatchFetchNotes&#39;);   // Community Notes on a post
+resolveGraphQL(&#39;AudioSpaceSearch&#39;);
+</code></pre>
+<h3 id="per-operation-feature-switches">Per-operation feature switches</h3>
+<p>X rejects a request that omits a switch the operation requires
+(<code>The following features cannot be null: ...</code>). <code>DEFAULT_FEATURES</code> is the union
+across every tracked operation, which is the safe default and what the HTTP
+client sends. Upstream also records which switches each operation declares
+individually, which is narrower and closer to what the web client actually
+sends:</p>
+<pre><code class="language-javascript">import { operationFeatures, operationFieldToggles, buildGraphQLUrl, resolveGraphQL } from &#39;./src/scrapers/twitter/http/endpoints.js&#39;;
+
+const { queryId, operationName } = resolveGraphQL(&#39;BirdwatchFetchNotes&#39;);
+const url = buildGraphQLUrl(
+  queryId,
+  operationName,
+  { tweet_id: &#39;1234567890&#39; },
+  operationFeatures(operationName),
+  operationFieldToggles(operationName),
+);
+</code></pre>
+<p>A few operations carry a feature family nobody else sends (the six
+<code>responsive_web_birdwatch_*</code> switches, for instance). Those are listed in
+<code>SPECIALISED_OPERATIONS</code> and deliberately kept out of <code>DEFAULT_FEATURES</code>, so a
+plain <code>UserTweets</code> call does not advertise flags the web client would never send
+with it. Call them through <code>operationFeatures()</code> instead.</p>
+<h3 id="where-quotlast-verifiedquot-comes-from">Where &quot;last verified&quot; comes from</h3>
+<p>Both generated modules record the upstream commit they were built from, when
+that commit was published, and when we fetched it, so a freshness claim has a
+source rather than a date somebody typed into a comment:</p>
+<pre><code class="language-javascript">import { ENDPOINT_TABLE_SOURCE } from &#39;./src/scrapers/twitter/http/endpoints.js&#39;;
+
+ENDPOINT_TABLE_SOURCE;
+// { repo: &#39;fa0311/TwitterInternalAPIDocument&#39;, ref: &#39;develop&#39;, commit, committedAt,
+//   fetchedAt, files: [&#39;docs/json/GraphQL.json&#39;, &#39;docs/json/v1.1.json&#39;],
+//   operations, queries, mutations, featureSwitches, fieldToggles, restPaths }
+</code></pre>
+<h3 id="what-upstream-does-not-cover">What upstream does not cover</h3>
+<ul>
+<li><strong><code>docs/json/FreezeObject.json</code>.</strong> Described upstream as frozen constants, and
+it is: Redux action-type triples, keyboard-shortcut maps, entity-name maps. A
+sweep of all 1921 objects in it found no feature-flag defaults, so the sync
+does not read it. The flag values come from the per-operation <code>featureSwitch</code>
+metadata inside <code>GraphQL.json</code>.</li>
+<li><strong>Field-toggle values.</strong> Upstream records which toggles an operation accepts,
+but not what value the client passes, because a toggle is a request parameter
+rather than something baked into the bundle. <code>FIELD_TOGGLE_VALUES</code> in
+<code>endpoints.js</code> holds the values; a toggle named by an operation and absent
+there is sent as <code>false</code>.</li>
+<li><strong>X Jobs.</strong> No operation in x.com&#39;s bundles carries <code>Job</code> in its name, so
+there is nothing to pin. If the hiring surface is served by GraphQL at all, it
+is under a name that does not say so.</li>
+<li><strong>Two thirds of our v1.1 REST paths.</strong> Upstream&#39;s <code>v1.1.json</code> covers the
+dispatch table the web client builds at boot, which confirms
+<code>friendships/create</code>, <code>friendships/destroy</code>, <code>blocks/*</code>, <code>mutes/users/*</code>,
+<code>dm/inbox_initial_state</code>, <code>dm/conversation</code> and <code>trends/available</code>. The rest
+of <code>REST</code> (<code>guest/activate</code>, <code>account/pin_tweet</code>, <code>dm/new2</code>,
+<code>/2/notifications/*</code>, <code>/2/guide.json</code>, <code>trends/place</code>) is dispatched
+elsewhere and stays hand-maintained.</li>
+</ul>
+<hr>
+<h2 id="browser-identity">Browser Identity</h2>
+<p>Every request the HTTP-only client makes carries a browser User-Agent, because a
+bare <code>fetch()</code> from Node gets <code>POST /1.1/guest/activate.json</code> answered with a
+misleading <code>404 Sorry, that page does not exist</code>. <code>src/client/auth/userAgent.js</code>
+provides it, and two things about how it does that are deliberate.</p>
+<p><strong>The strings are generated.</strong> They come from
+<a target="_blank" rel="noopener noreferrer" href="https://github.com/fa0311/latest-user-agent">fa0311/latest-user-agent</a> (MIT),
+which runs the real browsers in CI and commits both the User-Agent and the full
+header set each one sends. <code>npm run sync:user-agents</code> rewrites
+<code>src/client/auth/userAgents.generated.js</code> from it. A hand-maintained pool goes
+stale the week it is written, and a User-Agent two major versions behind is
+itself a signal: no real Chrome install stays that far back.</p>
+<pre><code class="language-bash">npm run sync:user-agents          # fetch and rewrite
+npm run sync:user-agents:check    # exit 1 if a browser has shipped a new version since
+</code></pre>
+<p>Upstream&#39;s CI runs on Linux, so every string it publishes carries the
+<code>X11; Linux x86_64</code> platform token. The generator keeps upstream&#39;s version and
+browser identity exactly as published and substitutes the platform token to
+cover Windows and macOS. That token carries no version and has been frozen for
+years in both engines, which is why substituting it is safe and inventing a
+version number would not be.</p>
+<p><strong>One profile per session, not one per request.</strong> The pool used to pick a random
+string on every call, so a single session would claim to be Chrome on Windows,
+then Firefox on macOS, then Chrome on Linux, from one IP address, inside one
+cookie jar. That is a stronger tell than any single stale string: real browsers
+do not change identity mid-session. The default is now one profile, chosen once
+and held for the life of the process, carrying its own matching client hints.</p>
+<pre><code class="language-javascript">import {
+  sessionUserAgent,
+  sessionProfile,
+  profileHeaders,
+  clientHintHeaders,
+} from &#39;./src/client/auth/userAgent.js&#39;;
+
+sessionUserAgent();      // the same string every call, for this process
+sessionProfile().id;     // &#39;chrome-windows&#39;
+profileHeaders();        // user-agent + accept-language + Sec-CH-UA, all agreeing
+clientHintHeaders();     // just the Sec-CH-UA trio; empty for a Firefox profile
+</code></pre>
+<p>Rotation is still there, because it is the right answer when each request really
+is a different identity: a pool of accounts, each behind its own proxy, each
+with its own cookie jar. It is an explicit choice rather than the default.</p>
+<pre><code class="language-javascript">import { configureUserAgent, rotateUserAgent, randomUserAgent, resetUserAgentSession } from &#39;./src/client/auth/userAgent.js&#39;;
+
+randomUserAgent({ rotate: true });        // rotate this one call
+configureUserAgent({ rotate: true });     // rotate for the whole process
+configureUserAgent({ profileId: &#39;firefox-macos&#39; });  // or pin one deliberately
+resetUserAgentSession();                  // new identity: new proxy, new account
+</code></pre>
+<p><code>XACTIONS_ROTATE_USER_AGENT=1</code> turns rotation on without a code change. Every
+previous export still works: <code>USER_AGENTS</code> is still the list of strings,
+<code>DEFAULT_USER_AGENT</code> is still a member of it, and <code>randomUserAgent()</code> still
+returns something from the pool. It just no longer returns a different one every
+time unless you ask it to.</p>
+<p>The profiles cover Chrome and Firefox on Windows, macOS and Linux, plus Edge on
+Windows. A Firefox profile carries no <code>Sec-CH-UA</code> headers at all, because Gecko
+sends none; a User-Agent from one row with client hints from another is exactly
+the inconsistency a fingerprinter looks for, which is why they travel together
+in one profile rather than being picked separately.</p>
+<hr>
 <h2 id="account-pool-and-resumable-scrapes-http-scraper">Account Pool and Resumable Scrapes (HTTP scraper)</h2>
 <p>One X session gets roughly 50 GraphQL calls per operation per 15-minute window, which caps a single-account follower scrape at about 1,000 users before it stalls. The HTTP scraper solves this the way <a target="_blank" rel="noopener noreferrer" href="https://github.com/vladkens/twscrape">twscrape</a> does: a pool of accounts in SQLite, per-account per-operation rate-limit tracking from the <code>x-rate-limit-*</code> headers, and automatic rotation. Interrupted scrapes resume from a saved cursor, the idea behind <a target="_blank" rel="noopener noreferrer" href="https://github.com/Altimis/Scweet">Scweet</a>&#39;s resume mode.</p>
 <p>Both live in <code>src/scrapers/twitter/http/</code> and are exported from <code>xactions/src/scrapers/twitter/http/index.js</code>.</p>
@@ -850,6 +1045,10 @@ checkpoint.clear();               // start over
 <td>Default X/Twitter auth token</td>
 </tr>
 <tr>
+<td><code>XACTIONS_ROTATE_USER_AGENT</code></td>
+<td><code>1</code> to pick a fresh browser profile per request instead of holding one per session</td>
+</tr>
+<tr>
 <td><code>PUPPETEER_EXECUTABLE_PATH</code></td>
 <td>Custom Chrome path</td>
 </tr>
@@ -864,11 +1063,129 @@ checkpoint.clear();               // start over
 <li><strong>Rotate user data dirs</strong> for multi-account scraping to maintain separate cookies</li>
 <li><strong>Use the stealth browser</strong> even without proxies — the anti-detection patches alone reduce block rates significantly</li>
 </ul>
+<hr>
+<h2 id="request-signing-x-client-transaction-id">Request Signing (<code>x-client-transaction-id</code>)</h2>
+<p>x.com&#39;s web client attaches an <code>x-client-transaction-id</code> header to every GraphQL
+and internal REST call it makes. A client that omits it is trivially separable
+from a browser, and projects that added it report that sessions carrying a valid
+one survive longer before being soft-blocked. XActions now generates it
+(<code>src/scrapers/twitter/http/transactionId.js</code>) and the HTTP scraper signs every
+request with it.</p>
+<h3 id="what-the-value-is">What the value is</h3>
+<p>The header is derived per request from four things: the HTTP method, the request
+pathname, the current second, and a <code>{verification key, animation key}</code> pair the
+page itself carries.</p>
+<ul>
+<li>The <strong>verification key</strong> is the base64 blob in the
+<code>&lt;meta name=&quot;twitter-site-verification&quot;&gt;</code> tag on <code>x.com/home</code>.</li>
+<li>The <strong>animation key</strong> is computed by walking one of the four
+<code>loading-x-anim-*</code> SVG paths on that same page along a cubic-bezier curve.
+Which of the four paths, which row of it, and where along the curve are all
+decided by byte indices that live inside the <code>ondemand.s</code> webpack chunk.</li>
+</ul>
+<p>Those two are hashed with the method, path and timestamp (SHA-256), packed with
+the key bytes behind a random XOR mask, and base64-encoded. The value is
+different on every request, which is why signing happens per request rather than
+per session.</p>
+<h3 id="where-the-keys-come-from">Where the keys come from</h3>
+<p>Extraction runs once and the result is cached under
+<code>$XACTIONS_HOME/transaction-keys.json</code> (default <code>~/.xactions/</code>) with a
+<code>fetchedAt</code> timestamp. Cached keys are reused for 24 hours; signing after that
+first call is one SHA-256 over a short string.</p>
+<p>With a cold cache, two lanes are tried in order:</p>
+<ol>
+<li><strong>Pair dictionary (fast path).</strong> A published list of known-good
+<code>{animationKey, verification}</code> pairs
+(<a target="_blank" rel="noopener noreferrer" href="https://github.com/fa0311/x-client-transaction-id-pair-dict">fa0311/x-client-transaction-id-pair-dict</a>,
+MIT). One 5 KB fetch, no bundle parsing. The header only has to be internally
+consistent, so a harvested pair signs exactly as well as the page&#39;s own: on a
+live check, x.com served two different verification keys on two page loads
+half an hour apart, so the page&#39;s key is not a fixed per-deploy value that
+anything could be matched against.</li>
+<li><strong>Live parse (fallback).</strong> Load <code>x.com/home</code>, read the verification key and
+the animation paths out of the HTML, resolve the <code>ondemand.s</code> chunk through
+the same webpack manifest parser that GraphQL query-ID discovery uses, and
+extract the key-byte indices from it. About 300 KB of traffic.</li>
+</ol>
+<p>Measured on a cold cache: the dictionary lane takes ~200 ms, the live lane
+~350 ms. Set <code>XACTIONS_TXID_SOURCE=live</code> to try the bundles first.</p>
+<h3 id="failure-is-never-fatal">Failure is never fatal</h3>
+<p>Every failure path returns <code>null</code> and the request goes out unsigned, exactly as
+it did before this module existed. A discovery failure is remembered for ten
+minutes so a machine with no route to x.com does not pay for a failed fetch on
+every call, and keys that are past their 24-hour freshness window keep signing
+while a refresh is failing. Nothing in this module throws into a request.</p>
+<h3 id="turning-it-off">Turning it off</h3>
+<p>Signing is on by default outside vitest.</p>
+<pre><code class="language-bash">XACTIONS_TRANSACTION_ID=0 node src/cli/index.js profile nasa   # off (also: off, false, no)
+XACTIONS_TXID_SOURCE=live node your-script.js                  # prefer the live parse
+</code></pre>
+<pre><code class="language-javascript">import { TwitterHttpClient } from &#39;./src/scrapers/twitter/http/client.js&#39;;
+
+const client = new TwitterHttpClient({ transactionId: false });  // off for this client
+</code></pre>
+<p>A caller that sets its own <code>x-client-transaction-id</code> header keeps it.</p>
+<h3 id="api-2">API</h3>
+<pre><code class="language-javascript">import {
+  getTransactionId,
+  initializeTransactionId,
+  transactionIdStatus,
+  configureTransactionId,
+} from &#39;./src/scrapers/twitter/http/transactionId.js&#39;;
+
+// Sign one request. Returns null when signing is off or unavailable.
+const id = await getTransactionId(&#39;GET&#39;, &#39;https://x.com/i/api/graphql/abc/UserByScreenName?variables=%7B%7D&#39;);
+if (id) headers[&#39;x-client-transaction-id&#39;] = id;
+
+// Warm the cache up front (concurrent callers share one initialisation)
+await initializeTransactionId();
+
+// For diagnostics
+transactionIdStatus();
+// { enabled, cached, source: &#39;pairs&#39;|&#39;live&#39;, fetchedAt, stale, cachePath, preferredSource }
+
+// Process-wide defaults: proxied fetch, custom cache directory, forced lane
+configureTransactionId({ fetch: myProxiedFetch, source: &#39;live&#39; });
+</code></pre>
+<p>Only the pathname is signed, so a full URL and a bare path produce the same
+value; the query string is ignored.</p>
+<h3 id="both-request-lanes-carry-it">Both request lanes carry it</h3>
+<p><code>TwitterHttpClient</code> signs inside its retry loop, so every attempt gets a fresh
+value rather than replaying one. <code>GuestTokenManager.getHeaders()</code> signs when it
+is told which request the headers are for:</p>
+<pre><code class="language-javascript">import { GuestTokenManager } from &#39;./src/scrapers/twitter/http/guest.js&#39;;
+
+const guest = new GuestTokenManager();
+const url = &#39;https://x.com/i/api/graphql/abc/UserByScreenName?variables=%7B%7D&#39;;
+const headers = await guest.getHeaders({ method: &#39;GET&#39;, path: url });
+const res = await fetch(url, { headers });
+</code></pre>
+<p>Calling <code>getHeaders()</code> with no argument returns the same headers it always did.</p>
+<h3 id="what-the-header-does-measured">What the header does, measured</h3>
+<p>On the guest tier the effect is not observable. Against
+<code>UserByScreenName</code> on one guest token, alternating signed and unsigned requests:
+every call answered <code>200</code>, the rate-limit budget was the same <code>150</code> per window
+and decremented by one either way, and a deliberately bogus header value was
+accepted too. X does not appear to validate the header for guest-token reads.</p>
+<p>The reported benefit is a session-lifetime effect, so confirming it needs an
+authenticated run: sign in with a real <code>auth_token</code>, drive a normal workload for
+days with <code>XACTIONS_TRANSACTION_ID=1</code> and again with <code>=0</code>, and compare how long
+the cookie survives before it is invalidated or starts returning empty
+timelines. Nothing shorter than that will show a difference.</p>
+<h3 id="verifying-the-generator-against-live-xcom">Verifying the generator against live x.com</h3>
+<pre><code class="language-bash">node --input-type=module -e &#39;
+import { discoverFromLiveBundles, generateTransactionId } from &quot;./src/scrapers/twitter/http/transactionId.js&quot;;
+const keys = await discoverFromLiveBundles({});
+console.log(&quot;key        &quot;, keys.key);
+console.log(&quot;animation  &quot;, keys.animationKey);
+console.log(&quot;chunk      &quot;, keys.chunkUrl);
+console.log(&quot;signed GET &quot;, await generateTransactionId({ ...keys, method: &quot;GET&quot;, path: &quot;/i/api/graphql/abc/UserByScreenName&quot; }));&#39;
+</code></pre>
 
     </article>
 
     <div class="page-meta">
-      <span>7 min read</span>
+      <span>15 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scraping-infrastructure.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scraping%20Infrastructure" target="_blank" rel="noopener">Report a problem</a>
     </div>

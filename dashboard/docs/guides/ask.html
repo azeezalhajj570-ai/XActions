@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ask XActions — XActions Docs</title>
-<meta name="description" content="Ask how to do anything with XActions in plain language and get a sourced answer. Live at xactions.app/ask. Free, no account, no API key.">
+<meta name="description" content="Ask how to do anything with XActions in plain language and get a sourced answer plus the exact thing to run.">
 <meta name="keywords" content="xactions, twitter automation, x automation, free, open source, ask, guides &amp; reference">
 <meta name="author" content="nich (@nichxbt)">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="Ask XActions — XActions">
-<meta property="og:description" content="Ask how to do anything with XActions in plain language and get a sourced answer. Live at xactions.app/ask. Free, no account, no API key.">
+<meta property="og:description" content="Ask how to do anything with XActions in plain language and get a sourced answer plus the exact thing to run.">
 <meta property="og:url" content="https://xactions.app/docs/guides/ask">
 <meta property="og:image" content="https://xactions.app/og-docs.png">
 <meta property="og:site_name" content="XActions">
@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@nichxbt">
 <meta name="twitter:title" content="Ask XActions — XActions">
-<meta name="twitter:description" content="Ask how to do anything with XActions in plain language and get a sourced answer. Live at xactions.app/ask. Free, no account, no API key.">
+<meta name="twitter:description" content="Ask how to do anything with XActions in plain language and get a sourced answer plus the exact thing to run.">
 <meta name="twitter:image" content="https://xactions.app/og-docs.png">
 
 <link rel="canonical" href="https://xactions.app/docs/guides/ask">
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Ask XActions — XActions Docs",
-  "description": "Ask how to do anything with XActions in plain language and get a sourced answer. Live at xactions.app/ask. Free, no account, no API key.",
+  "description": "Ask how to do anything with XActions in plain language and get a sourced answer plus the exact thing to run.",
   "url": "https://xactions.app/docs/guides/ask",
   "image": "https://xactions.app/og-docs.png",
   "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -261,9 +263,31 @@
     <article class="prose">
 <h1 id="ask-xactions">Ask XActions</h1>
 <blockquote>
-<p>Ask how to do anything with XActions in plain language and get a sourced answer. Live at <a href="https://xactions.app/ask">xactions.app/ask</a>. Free, no account, no API key.</p>
+<p>Ask how to do anything with XActions in plain language and get a sourced answer <strong>plus the exact thing to run</strong>. On the web at <a href="https://xactions.app/ask">xactions.app/ask</a>, in your terminal as <code>xactions ask</code>, and to an AI agent as the <code>x_ask</code> MCP tool. Free, no account, no API key.</p>
 </blockquote>
-<p>Ask XActions is a conversational assistant for the toolkit. It searches the documentation, the 49 agent skills, the browser scripts, the marketing pages, and the GitHub repository, then streams an answer that cites its sources with clickable <code>[1]</code> <code>[2]</code> markers. Ask &quot;how do I unfollow all users&quot; and it tells you the exact script, where to paste it, and what safety features it has, with links to the pages it read.</p>
+<p>Ask XActions is a conversational assistant for the toolkit. It searches the documentation, the 49 agent skills, the browser scripts, the marketing pages, and the GitHub repository, then streams an answer that cites its sources with clickable <code>[1]</code> <code>[2]</code> markers.</p>
+<p>An explanation is only half of what someone asking &quot;how do I unfollow all users&quot; wants. The other half is the thing they run, so every answer ends with the <strong>runnable actions</strong> behind it: the browser script to paste (copied straight from source, with the x.com page to paste it on), the terminal command to type, and the MCP tool an agent should call. Those come from a catalog built out of the repository itself, so it cannot drift from what the code actually offers.</p>
+<h2 id="three-ways-to-ask">Three ways to ask</h2>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Use it when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://xactions.app/ask">xactions.app/ask</a></td>
+<td>You are reading the docs and want an answer with buttons</td>
+</tr>
+<tr>
+<td><code>xactions ask &quot;...&quot;</code></td>
+<td>You are in a terminal and want the command without leaving it</td>
+</tr>
+<tr>
+<td><code>x_ask</code> MCP tool</td>
+<td>An AI agent needs to know how the toolkit works before acting</td>
+</tr>
+</tbody></table>
 <h2 id="using-it">Using it</h2>
 <p>Open <a href="https://xactions.app/ask">xactions.app/ask</a>, type a question, press Enter. Or deep-link a question:</p>
 <pre><code>https://xactions.app/ask?q=how+do+i+unfollow+everyone
@@ -274,6 +298,30 @@
 <li>Every answer has <strong>Copy</strong> and <strong>Retry</strong>, code blocks have a copy button, and source chips open the doc, script page, or GitHub file that backed the answer.</li>
 <li>Keyboard: <code>Enter</code> sends, <code>Shift+Enter</code> adds a line, <code>/</code> focuses the box, <code>Esc</code> stops a streaming answer, <code>Ctrl/Cmd+Shift+O</code> starts a new conversation.</li>
 </ul>
+<h2 id="in-the-terminal">In the terminal</h2>
+<pre><code class="language-bash">xactions ask &quot;how do I unfollow everyone?&quot;
+xactions ask &quot;scrape followers&quot; --json          # machine-readable: answer, sources, actions
+echo &quot;how do I download a video&quot; | xactions ask # reads a piped question
+xactions ask &quot;post a thread&quot; --provider groq --key gsk_...  # answer with your own key
+</code></pre>
+<p>The answer streams as it is written, wrapped to your terminal, and ends with a <strong>Run it</strong> block and the sources. Retrieval is local to the installed package, so it still answers with no network once the lanes are unreachable. Flags: <code>--json</code>, <code>--quiet</code>, <code>--no-sources</code>, <code>--provider</code>, <code>--key</code>, <code>--model</code>.</p>
+<h2 id="as-an-mcp-tool">As an MCP tool</h2>
+<p><code>x_ask</code> lets an agent read the manual instead of guessing at it. Point Claude Desktop, Cursor, or any MCP client at the XActions server (<a href="/docs/guides/mcp-setup">MCP setup</a>) and the agent can ask before it acts:</p>
+<pre><code class="language-json">{ &quot;name&quot;: &quot;x_ask&quot;, &quot;arguments&quot;: { &quot;question&quot;: &quot;how do I unfollow everyone?&quot; } }
+</code></pre>
+<pre><code class="language-json">{
+  &quot;question&quot;: &quot;how do I unfollow everyone?&quot;,
+  &quot;answer&quot;: &quot;Paste the Unfollow Everyone script into the DevTools console on ...&quot;,
+  &quot;lane&quot;: &quot;llm7&quot;,
+  &quot;actions&quot;: [
+    { &quot;kind&quot;: &quot;script&quot;, &quot;id&quot;: &quot;unfollow-everyone&quot;, &quot;run&quot;: &quot;Open x.com/YOUR_USERNAME/following, press F12, paste into the Console tab&quot;, &quot;raw&quot;: &quot;https://raw.githubusercontent.com/...&quot; },
+    { &quot;kind&quot;: &quot;mcp&quot;, &quot;id&quot;: &quot;x_unfollow_all&quot;, &quot;run&quot;: &quot;Call x_unfollow_all with confirm&quot; }
+  ],
+  &quot;sources&quot;: [{ &quot;n&quot;: 1, &quot;title&quot;: &quot;Unfollow Everyone&quot;, &quot;url&quot;: &quot;https://...&quot; }]
+}
+</code></pre>
+<p>Pass <code>actionsOnly: true</code> to skip the written answer and get just the matching scripts, commands and tools. That path never calls a model, so it returns in milliseconds: use it when the agent only needs to know <em>which</em> tool does the job.</p>
+<p><code>x_ask</code> is a read tool. It touches no X account, needs no session, and works with no API key.</p>
 <h2 id="how-it-works">How it works</h2>
 <pre><code>question ──► BM25 search over dashboard/data/ask-index.json  ─┐
          └─► GitHub search (issues, PRs; code with a token) ──┴─► numbered sources
@@ -283,8 +331,36 @@
 <ol>
 <li><strong>Index.</strong> <code>npm run ask:index</code> (<code>scripts/build-ask-index.mjs</code>) strips YAML frontmatter and SEO keyword lists (both matched queries while teaching the reader nothing), then chunks <code>docs/**/*.md</code>, <code>skills/*/SKILL.md</code>, <code>tutorials/**/*.md</code>, the top-level README/CHANGELOG, the header comments of every browser script in <code>src/</code> and <code>scripts/</code>, and the text of the dashboard pages (FAQ, pricing, features, ...). Each chunk carries the live URL it came from: the rendered docs page when one exists (via <code>dashboard/docs/_pages-manifest.json</code>), the <code>/scripts/&lt;slug&gt;</code> page for a script, or the GitHub blob URL. The result is <code>dashboard/data/ask-index.json</code>, served at <code>/data/ask-index.json</code>. <code>npm run docs:check</code> fails when the committed index is stale.</li>
 <li><strong>Retrieval.</strong> <code>src/ask/engine.js</code> builds a BM25 searcher over the chunks at startup (about 20 ms per query), with a small synonym map bridging how people ask (&quot;all&quot;, &quot;twitter&quot;, &quot;retweet&quot;) to how the docs are written (&quot;everyone&quot;, &quot;X&quot;, &quot;repost&quot;). Titles are boosted, results are capped per document, and a live GitHub issues/PR search is merged in so recent bug reports show up too.</li>
-<li><strong>Answer.</strong> The sources and the question go to the first lane that accepts the request in <code>src/ask/lanes.js</code>; the reply streams back as Server-Sent Events.</li>
+<li><strong>Actions.</strong> <code>src/ask/actions.js</code> ranks the catalog in <code>dashboard/data/ask-actions.json</code> against the question <em>and</em> the passages retrieval just found. A passage from <code>docs/examples/unfollow-everyone.md</code> is direct evidence that <code>src/unfollowEveryone.js</code> is the answer, which survives phrasing (&quot;clean out my following&quot;, &quot;start fresh&quot;) that no keyword match would. Terms carried by a large share of the catalog are ignored, so the product&#39;s own name cannot make &quot;is XActions safe?&quot; look like a request to run something, and a conceptual question correctly returns nothing runnable.</li>
+<li><strong>Answer.</strong> The sources, the question, and the matched actions go to the first lane that accepts the request in <code>src/ask/lanes.js</code>; the reply streams back as Server-Sent Events. The model is given the actions so its prose agrees with the buttons beside it instead of inventing a script name.</li>
 </ol>
+<h3 id="the-action-catalog">The action catalog</h3>
+<p><code>scripts/build-ask-actions.mjs</code> reads all three executable surfaces from source, so nothing is hand-maintained:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Read from</th>
+<th>Carries</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Browser scripts</td>
+<td><code>src/*.js</code>, <code>scripts/*.js</code> headers</td>
+<td>title, description, the x.com page to paste it on, raw source URL, <code>/scripts/&lt;slug&gt;</code> page, whether <code>core.js</code> must be pasted first</td>
+</tr>
+<tr>
+<td>CLI commands</td>
+<td>the <code>.command()</code>/<code>.description()</code> calls in <code>src/cli/**</code></td>
+<td>full invocation including subcommand prefixes</td>
+</tr>
+<tr>
+<td>MCP tools</td>
+<td>the tool definitions in <code>src/mcp/server.js</code></td>
+<td>name, description, required arguments</td>
+</tr>
+</tbody></table>
+<p>61 scripts exist in both <code>src/</code> and <code>scripts/</code>; the catalog keeps whichever copy the generated page was built from, so the source quoted beside a link always matches the page it links to.</p>
 <h2 id="free-llm-lanes">Free LLM lanes</h2>
 <p>Every lane is an OpenAI-compatible chat endpoint reached with <code>fetch</code>, so the same file runs in Node, in the Cloudflare Worker, and in the browser. Lanes are tried in order; a <code>402</code>, <code>429</code>, <code>5xx</code>, or network error moves on to the next one.</p>
 <table>
@@ -382,6 +458,7 @@
 <p><code>history</code> (optional) is the prior turns of the conversation, last six are used. <code>byok</code> (optional) makes that provider lead the chain; providers: <code>groq</code>, <code>openrouter</code>, <code>xai</code>, <code>openai</code>, <code>gemini</code>, <code>mistral</code>, <code>cerebras</code>.</p>
 <p>The response is <code>text/event-stream</code>. Each <code>data:</code> line is one JSON event:</p>
 <pre><code>data: {&quot;type&quot;:&quot;sources&quot;,&quot;sources&quot;:[{&quot;n&quot;:1,&quot;title&quot;:&quot;Unfollow Everyone&quot;,&quot;url&quot;:&quot;https://...&quot;,&quot;kind&quot;:&quot;doc&quot;,&quot;path&quot;:&quot;docs/examples/unfollow-everyone.md&quot;}]}
+data: {&quot;type&quot;:&quot;actions&quot;,&quot;actions&quot;:[{&quot;kind&quot;:&quot;script&quot;,&quot;id&quot;:&quot;unfollow-everyone&quot;,&quot;title&quot;:&quot;Unfollow Everyone&quot;,&quot;run&quot;:&quot;Open x.com/YOUR_USERNAME/following, press F12, paste into the Console tab&quot;,&quot;raw&quot;:&quot;https://raw.githubusercontent.com/...&quot;,&quot;page&quot;:&quot;/scripts/unfollow-everyone&quot;,&quot;why&quot;:&quot;named by a cited source&quot;}]}
 data: {&quot;type&quot;:&quot;lane&quot;,&quot;lane&quot;:&quot;llm7&quot;}
 data: {&quot;type&quot;:&quot;delta&quot;,&quot;text&quot;:&quot;To unfollow everyone&quot;}
 data: {&quot;type&quot;:&quot;delta&quot;,&quot;text&quot;:&quot; on X, paste&quot;}
@@ -393,8 +470,9 @@ data: {&quot;type&quot;:&quot;done&quot;,&quot;lane&quot;:&quot;llm7&quot;,&quot
   -H &#39;content-type: application/json&#39; \
   -d &#39;{&quot;question&quot;:&quot;how do I unfollow everyone?&quot;}&#39;
 </code></pre>
+<p>The <code>actions</code> event arrives before the first token, so a client can show what to run while the prose is still streaming.</p>
 <h3 id="get-apiaskhealth"><code>GET /api/ask/health</code></h3>
-<p>Index size and digest, the lanes configured on this deployment, and the suggested questions.</p>
+<p>Index size and digest, action-catalog size, the lanes configured on this deployment, and the suggested questions.</p>
 <h2 id="where-it-runs">Where it runs</h2>
 <ul>
 <li><strong>Cloudflare Worker</strong> (<code>worker/index.js</code>): <code>/api/ask</code> is answered at the edge. The index is read from the static assets bundle and the lanes are called with <code>fetch</code>, so no origin server is needed.</li>
@@ -402,16 +480,17 @@ data: {&quot;type&quot;:&quot;done&quot;,&quot;lane&quot;:&quot;llm7&quot;,&quot
 <li><strong>Browser fallback</strong> (<code>dashboard/js/ask.js</code>): if <code>POST /api/ask</code> does not answer with an event stream (for example a static-only deploy, which is what xactions.app serves until the Worker is deployed), the page downloads <code>/data/ask-index.json</code> (about 650 KB gzipped, fetched only on this path and then cached), runs the same engine from <code>/js/ask/engine.js</code>, and calls the keyless lanes directly. A toast says so and the answer is labelled &quot;in-browser&quot;.</li>
 </ul>
 <h2 id="development">Development</h2>
-<pre><code class="language-bash">npm run ask:index          # rebuild dashboard/data/ask-index.json and mirror src/ask/ into dashboard/js/ask/
-npm run ask:index:check    # exit 1 if the committed index or the browser mirror is stale (part of npm run docs:check)
-npx vitest run tests/ask   # retrieval on the real index, chain construction, one live keyless completion
+<pre><code class="language-bash">npm run ask:index          # rebuild the index AND the action catalog, and mirror src/ask/ into dashboard/js/ask/
+npm run ask:index:check    # exit 1 if either is stale (part of npm run docs:check)
+npx vitest run tests/ask   # retrieval, action matching, lane failover, and the CLI and MCP surfaces end to end
 </code></pre>
-<p>Rebuild the index whenever you change docs, skills, tutorials, a script header, or a dashboard page. Related: <a href="/docs/guides/mcp-setup">MCP setup</a>, <a href="/docs/guides/browser-scripts">Browser scripts</a>, <a href="/docs/guides/rest-api">REST API</a>.</p>
+<p>Rebuild whenever you change docs, skills, tutorials, a script header, a dashboard page, a CLI command, or an MCP tool. The action catalog is derived from source, so adding a script or a command is enough to make it answerable: no list to update by hand.</p>
+<p>Related: <a href="/docs/guides/mcp-setup">MCP setup</a>, <a href="/docs/guides/cli-reference">CLI reference</a>, <a href="/docs/guides/browser-scripts">Browser scripts</a>, <a href="/docs/guides/rest-api">REST API</a>.</p>
 
     </article>
 
     <div class="page-meta">
-      <span>5 min read</span>
+      <span>8 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/ask.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Ask%20XActions" target="_blank" rel="noopener">Report a problem</a>
     </div>

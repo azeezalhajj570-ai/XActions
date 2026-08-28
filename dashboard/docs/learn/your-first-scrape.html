@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 67 more…</a>
+      <a class="sidebar__link" href="/docs">+ 69 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -164,7 +164,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -209,10 +209,11 @@ most XActions questions: which reads need a login and which do not.</p>
   Location:  Pale Blue Dot
   Website:   http://www.nasa.gov/
   Joined:    2007-12-19
-  Following: 119  Followers: 92.2M
-  Tweets:    74.3K  Listed:    97.0K
+  Following: 117  Followers: 92.4M
+  Tweets:    74.2K  Listed:    0
   ✓ Verified
 </code></pre>
+<p>(Your numbers will differ. NASA gains followers while you read this.)</p>
 <p>No API key. No account. No browser. That took about a second, because it went
 straight to X&#39;s internal GraphQL API over HTTP rather than launching Chromium
 and reading a rendered page.</p>
@@ -240,11 +241,14 @@ when you are handing results to someone who lives in a spreadsheet.</p>
 <pre><code class="language-bash">npx xactions search &quot;mars rover&quot;
 </code></pre>
 <p>That fails, and the error tells you why:</p>
-<pre><code>HTTP 404 on /i/api/graphql/.../SearchTimeline while unauthenticated.
-X restricts this endpoint to logged-in sessions. Authenticate first with
-scraper.login(...), scraper.setCookies(...), or scraper.loadCookies(...)
-using your auth_token cookie ...
+<pre><code>✖ Search failed
+HTTP 404 on /i/api/graphql/hyPfJYJ_XAtDYoslQc-Rgg/SearchTimeline while
+unauthenticated. X restricts this endpoint to logged-in sessions. Authenticate
+first with scraper.login(...), scraper.setCookies(...), or
+scraper.loadCookies(...) using your auth_token cookie (DevTools &gt; Application &gt;
+Cookies &gt; x.com &gt; auth_token), then retry.
 </code></pre>
+<p>It also exits non-zero, so <code>set -e</code> and <code>&amp;&amp;</code> do the right thing in a script.</p>
 <p><strong>This is the distinction worth internalising.</strong> X splits its internal API in
 two:</p>
 <table>
@@ -271,10 +275,22 @@ which is why the message mentions 404 for a resource that plainly exists. Nothin
 is broken. You just need a session.</p>
 <hr>
 <h2 id="step-4--log-in">Step 4 — Log in</h2>
+<p>There are three ways in, easiest first. All three end at the same file,
+<code>~/.xactions/cookies.json</code>, and every other command reads it from there.</p>
+<p><strong>Through a real browser.</strong> XActions opens one, you log in normally, it captures
+the session and closes:</p>
+<pre><code class="language-bash">npx xactions connect
+</code></pre>
+<p><strong>From a browser you are already logged in to.</strong> No window opens; it reads the
+cookies out of the browser&#39;s own store:</p>
+<pre><code class="language-bash">npx xactions login --from-browser chrome
+</code></pre>
+<p>Takes <code>chrome</code>, <code>chromium</code>, <code>brave</code>, <code>edge</code>, <code>arc</code>, or <code>firefox</code>, and defaults
+to firefox.</p>
+<p><strong>By hand</strong>, if you would rather see exactly what is being copied:</p>
 <pre><code class="language-bash">npx xactions login
 </code></pre>
-<p>It asks for two cookie values. Get them from a browser where you are already
-logged into X:</p>
+<p>It asks for two cookie values:</p>
 <ol>
 <li>Open <a target="_blank" rel="noopener noreferrer" href="https://x.com">x.com</a>.</li>
 <li>DevTools (<kbd>F12</kbd>) → <strong>Application</strong> → <strong>Cookies</strong> → <code>https://x.com</code></li>
@@ -285,6 +301,9 @@ logged into X:</p>
 header before it treats the request as logged in. Supply only the first and
 session-tier endpoints keep returning 404, which is the single most common
 setup mistake with this tool.</p>
+<p>Already have cookies in a file? <code>npx xactions login --cookies-file &lt;path&gt;</code> reads
+Netscape <code>cookies.txt</code>, Cookie-Editor or EditThisCookie JSON, a Playwright or
+Puppeteer <code>storageState</code>, or a raw <code>auth_token=...; ct0=...</code> string.</p>
 <blockquote>
 <p>Treat <code>auth_token</code> like a password. It is a full session. Never paste it into
 an issue or a screenshot, and consider using a secondary account for
@@ -364,9 +383,40 @@ instead of matching on message text:</p>
 <p>Guest tokens are throttled hard. If you are doing read-heavy work, logging in
 raises the ceiling substantially, quite apart from unlocking the session tier.</p>
 <hr>
+<hr>
+<h2 id="step-7--check-your-footing">Step 7 — Check your footing</h2>
+<p><code>doctor</code> is the command to run when anything is confusing. It tests the guest
+tier for real, reports whether a session is saved and still valid, and tells you
+what each problem&#39;s fix is:</p>
+<pre><code class="language-bash">npx xactions doctor
+</code></pre>
+<pre><code>⚡ XActions doctor  v3.5.0
+
+  Environment
+  ✓ Node                 Node 24.14.0
+  ✓ Browser              Chromium installed for browser-driven commands
+  ✓ MCP server           MCP server exposes 152 tools
+  ! Skills               No skills installed (claude 0, cursor 0, codex 0, windsurf 0)
+    → Run `xactions skills install --all --global` so your agent knows which script to reach for.
+  ✓ GraphQL query IDs    148 query IDs cached, 13h old (/home/you/.xactions/query-ids.json)
+
+  Guest tier (works with no account)
+  ✓ Profile read         Read @NASA without a login (92,356,564 followers)
+  ✓ Timeline read        Pulled 3 posts from @nasa without a login
+
+  Session tier (search, followers, DMs)
+  ! Session saved        No session saved, so only the guest tier is available
+    → Run `xactions connect` to unlock search, followers, following, likes, bookmarks and DMs.
+</code></pre>
+<p>It exits non-zero when something is actually broken, so a cron job can check
+itself before doing work. <code>npx xactions quickstart</code> is the friendlier version of
+the same idea, and <code>npx xactions quickstart --json</code> gives you <code>{&quot;tier&quot;:&quot;guest&quot;}</code>
+or <code>{&quot;tier&quot;:&quot;session&quot;}</code> for a script.</p>
+<hr>
 <h2 id="what-you-learned">What you learned</h2>
 <ul>
 <li>Guest tier vs session tier, and why session-tier failures look like 404s</li>
+<li><code>xactions connect</code> and <code>login --from-browser</code> beat copying cookies by hand</li>
 <li><code>auth_token</code> <strong>and</strong> <code>ct0</code>, not just the first</li>
 <li>The CLI and the library are the same thing with different skins</li>
 <li>Timelines are async generators: stream them, do not collect them</li>
@@ -384,7 +434,7 @@ this to an AI assistant</li>
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>4 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/tutorials/01-your-first-scrape.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Tutorial%2001%20%E2%80%94%20Your%20first%20scrape" target="_blank" rel="noopener">Report a problem</a>
     </div>

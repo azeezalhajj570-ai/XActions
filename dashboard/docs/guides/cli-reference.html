@@ -107,8 +107,8 @@
       <a class="sidebar__link" href="/docs/guides/dashboard">Dashboard</a>
       <a class="sidebar__link" href="/docs/guides/database">Database Schema</a>
       <a class="sidebar__link" href="/docs/guides/deployment">Deployment Guide</a>
-      <a class="sidebar__link" href="/docs/guides/engage">Engage a whole profile: like, repost, and reply to every post</a>
       <a class="sidebar__link" href="/docs/guides/engagement-booster">Engagement Booster — Smart Tweet Engagement</a>
+      <a class="sidebar__link" href="/docs/guides/engage">Engagement sweeps: like, repost, and reply across a whole feed</a>
       <a class="sidebar__link" href="/docs/guides/evergreen-recycler">Evergreen Content Recycler</a>
       <a class="sidebar__link" href="/docs/guides/examples">Examples</a>
       <a class="sidebar__link" href="/docs/guides/follower-crm">Follower CRM</a>
@@ -116,6 +116,7 @@
       <a class="sidebar__link" href="/docs/guides/history-store">History Store &amp; Auto-Snapshots</a>
       <a class="sidebar__link" href="/docs/guides/monitoring">Monitoring Guide</a>
       <a class="sidebar__link" href="/docs/guides/notifications">Notifications</a>
+      <a class="sidebar__link" href="/docs/guides/x402">Paying for XActions: x402 and MCP</a>
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
@@ -129,6 +130,7 @@
       <a class="sidebar__link" href="/docs/guides/graph">Social Graph — Network Analysis &amp; Visualization</a>
       <a class="sidebar__link" href="/docs/guides/graph-system">Social Graph System</a>
       <a class="sidebar__link" href="/docs/guides/stealth-scraping">Stealth Scraping &amp; Proxy Rotation</a>
+      <a class="sidebar__link" href="/docs/guides/search-sweep">Sweep an X search: delete, like, repost, or reply to every result</a>
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
@@ -230,7 +232,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -266,6 +268,45 @@
 <p>The XActions CLI provides command-line tools for X/Twitter automation, scraping, and data extraction. No Twitter API required, which saves $100-$5,000+/month in API costs.</p>
 <p><strong>Most read commands need no account at all.</strong> Profiles, timelines, threads, and media all work on the guest tier the moment you install. Logging in unlocks search, followers, following, likes, bookmarks, and DMs. <code>xactions doctor</code> tells you which tier you are on right now.</p>
 <hr>
+<h2 id="ask">ask</h2>
+<p>Ask how to do something with XActions and get a sourced answer plus what to run. No API key needed.</p>
+<pre><code class="language-bash">xactions ask &quot;how do I unfollow everyone?&quot;
+xactions ask &quot;scrape followers&quot; --json
+echo &quot;how do I download a video&quot; | xactions ask
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--json</code></td>
+<td>Print the answer, sources and actions as JSON</td>
+</tr>
+<tr>
+<td><code>-q, --quiet</code></td>
+<td>Answer only, no progress or lane line</td>
+</tr>
+<tr>
+<td><code>--no-sources</code></td>
+<td>Skip the source list</td>
+</tr>
+<tr>
+<td><code>-p, --provider &lt;name&gt;</code></td>
+<td>Answer with your own key (<code>groq</code>, <code>openrouter</code>, <code>xai</code>, <code>openai</code>, <code>gemini</code>, <code>mistral</code>, <code>cerebras</code>)</td>
+</tr>
+<tr>
+<td><code>-k, --key &lt;key&gt;</code></td>
+<td>API key for <code>--provider</code> (defaults to <code>&lt;PROVIDER&gt;_API_KEY</code>)</td>
+</tr>
+<tr>
+<td><code>-m, --model &lt;model&gt;</code></td>
+<td>Model override for <code>--provider</code></td>
+</tr>
+</tbody></table>
+<p>The answer streams as it is written and ends with a <strong>Run it</strong> block naming the browser script, CLI command or MCP tool that does the job. Retrieval is local to the install, so it answers with no network once the free lanes are unreachable. Full guide: <a href="/docs/guides/ask">Ask XActions</a>.</p>
 <h2 id="table-of-contents">Table of Contents</h2>
 <ul>
 <li><a href="#installation">Installation</a></li>
@@ -1130,8 +1171,10 @@ xactions media artist -l 200 -o artist-media.json
 </code></pre>
 <hr>
 <h3 id="xactions-engage">xactions engage</h3>
-<p>Like, repost, and reply to every post on a profile, with replies from templates or from an LLM given a brief. Needs a logged-in session (<code>xactions connect</code>) for anything but <code>--dry-run</code>.</p>
-<pre><code class="language-bash">xactions engage &lt;username&gt; [options]
+<p>Like, repost, and reply across a profile, a search, or a list, with replies from templates or from an LLM given a brief. Needs a logged-in session (<code>xactions connect</code>) for anything but <code>--dry-run</code>.</p>
+<pre><code class="language-bash">xactions engage [username] [options]
+xactions engage --search &quot;&lt;query&gt;&quot; [options]
+xactions engage --list &lt;id&gt; [options]
 </code></pre>
 <table>
 <thead>
@@ -1141,6 +1184,14 @@ xactions media artist -l 200 -o artist-media.json
 </tr>
 </thead>
 <tbody><tr>
+<td><code>--search &lt;query&gt;</code> / <code>--list &lt;id&gt;</code></td>
+<td>Sweep a search or a list instead of a profile</td>
+</tr>
+<tr>
+<td><code>--mode &lt;Latest|Top&gt;</code></td>
+<td>Search ranking (default Latest)</td>
+</tr>
+<tr>
 <td><code>--like</code> / <code>--repost</code> / <code>--comment</code></td>
 <td>Actions to take (at least one)</td>
 </tr>
@@ -1150,11 +1201,23 @@ xactions media artist -l 200 -o artist-media.json
 </tr>
 <tr>
 <td><code>--replies</code> / <code>--reposts</code></td>
-<td>Include the account&#39;s replies / its reposts of others</td>
+<td>Include replies / reposts of other accounts</td>
 </tr>
 <tr>
 <td><code>--since &lt;date&gt;</code></td>
 <td>Only posts on or after this date</td>
+</tr>
+<tr>
+<td><code>--from &lt;handles&gt;</code> / <code>--skip-user &lt;handles&gt;</code></td>
+<td>Author allow and block lists</td>
+</tr>
+<tr>
+<td><code>--keyword &lt;words&gt;</code> / <code>--skip-keyword &lt;words&gt;</code></td>
+<td>Text must contain / must not contain</td>
+</tr>
+<tr>
+<td><code>--min-likes &lt;n&gt;</code> / <code>--max-likes &lt;n&gt;</code></td>
+<td>Like floor and ceiling (0 = no ceiling)</td>
 </tr>
 <tr>
 <td><code>--template &lt;text&gt;</code></td>
@@ -1207,9 +1270,10 @@ xactions media artist -l 200 -o artist-media.json
 </tbody></table>
 <pre><code class="language-bash">xactions engage nasa --like --repost --dry-run
 xactions engage nasa --like --comment --template &quot;Solid work on this, {name}.&quot;
-xactions engage nasa --like --repost --comment --prompt &quot;supportive, specific, one honest question, no hype&quot;
+xactions engage --search &quot;open source AI&quot; --like --comment --prompt &quot;curious builder&quot; --max-likes 50
+xactions engage --list 1234567890 --like --keyword solana,rust --limit 25
 </code></pre>
-<p>Full guide, including the browser-console version: <a href="/docs/guides/engage">engage.md</a>.</p>
+<p>Progress is saved per feed in <code>~/.xactions/engage/</code>, so a second run skips what the first finished. Full guide, including the browser-console and MCP versions: <a href="/docs/guides/engage">engage.md</a>.</p>
 <h3 id="xactions-info">xactions info</h3>
 <p>Display XActions information, version, and links.</p>
 <p><strong>Syntax:</strong></p>
@@ -3725,7 +3789,7 @@ xactions archive migrate twitter-2026-01-01-abc123.zip --to mastodon --execute -
     </article>
 
     <div class="page-meta">
-      <span>32 min read</span>
+      <span>33 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/cli-reference.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20CLI%20Reference" target="_blank" rel="noopener">Report a problem</a>
     </div>

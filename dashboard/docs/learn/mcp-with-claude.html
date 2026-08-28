@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 67 more…</a>
+      <a class="sidebar__link" href="/docs">+ 69 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -164,7 +164,7 @@
       <div class="sidebar__heading">Project Info</div>
       <a class="sidebar__link" href="/docs/project/contributing">Contributing to XActions</a>
       <a class="sidebar__link" href="/docs/project/changelog">Changelog</a>
-      <a class="sidebar__link" href="/docs/project/roadmap">XActions Roadmap</a>
+      <a class="sidebar__link" href="/docs/project/roadmap">Roadmap</a>
       <a class="sidebar__link" href="/docs/project/security">Security Policy</a>
       <a class="sidebar__link" href="/docs/project/code_of_conduct">Contributor Covenant Code of Conduct</a>
       <a class="sidebar__link" href="/docs/project/readme">Quick start</a>
@@ -208,9 +208,16 @@ saves most of the debugging people do later:</p>
 </code></pre>
 <p>You should see, on stderr:</p>
 <pre><code>💻 XActions MCP Server: Local mode (free)
-⚡ XActions MCP Server v3.4.4 — 150 tools
-📋 Tools available: 144
+⚡ XActions MCP Server v3.5.0 - 152 tools
+
+📋 Tools available: 151
+   Scraping: x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets, x_get_thread, x_download_video
+   Analysis: x_detect_unfollowers, x_analyze_sentiment, x_best_time_to_post, x_competitor_analysis, x_brand_monitor
+   Actions: x_follow, x_unfollow, x_like, x_post_tweet, x_post_thread, x_reply
+   AI: x_analyze_voice, x_generate_tweet, x_summarize_thread
+
 ✅ Server running on stdio
+   Ready for connections from Claude, Cursor, Windsurf, and any MCP client.
 </code></pre>
 <p>It then sits waiting for JSON-RPC on stdin, which is correct. Press
 <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
