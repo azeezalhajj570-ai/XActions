@@ -17,12 +17,13 @@ cp site/index.html pages-out/index.html
 cp llms.txt llms-full.txt pages-out/
 cp deploy/cloudflare/_redirects pages-out/_redirects
 
-# /mcp is the MCP endpoint, served by functions/mcp.js. Pages serves a matching
-# static asset before it invokes a function, so leaving mcp.html at that path
-# would shadow the endpoint and answer POST /mcp with a bare 405 from the asset
-# server. The page moves aside; the function serves it back to any client that
-# asks for HTML, so the URL still renders in a browser.
-mv pages-out/mcp.html pages-out/mcp-docs.html
+# There is deliberately no mcp.html here. /mcp is the MCP endpoint, served by
+# functions/mcp.js, and Pages serves a matching static asset before it invokes a
+# function, so a file at that path would shadow the endpoint and answer POST
+# /mcp with a bare 405 from the asset server. The page is named mcp-docs.html at
+# source (dashboard/mcp-docs.html) and the function serves it back to any client
+# that asks for HTML, so the URL still renders in a browser.
+test ! -f pages-out/mcp.html || { echo "error: dashboard/mcp.html would shadow the /mcp function; name it mcp-docs.html" >&2; exit 1; }
 
 # Which paths reach functions/. Without this file Pages infers the list, and a
 # static asset that shares a path with a function wins: dashboard/mcp.html was
