@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- **The Cloudflare Worker treated any `X-PAYMENT` header as proof of payment.** `worker/index.js` passed a request carrying one straight through to the origin without decoding it or asking a facilitator, which would have made every priced endpoint free to anyone sending `X-PAYMENT: x`. It was not the live deployment (xactions.app runs the Pages Functions path, which verifies correctly), but `wrangler.toml` names that file as `main`, so one deploy would have published it. The gate now decodes the payload, matches the chain against the terms it published, verifies with the facilitator, and refuses when the facilitator rejects the payment or cannot be reached.
+- **The x402 client signed whatever a server asked for.** `createX402Client` read the amount and recipient out of the 402 response and signed, with no ceiling, budget, or allowlist: one hostile endpoint could drain the wallet. It now enforces a per-call limit (`X402_MAX_PRICE_USD`, default $1), a session budget (`X402_MAX_TOTAL_USD`, default $10), and an optional payee allowlist (`X402_ALLOWED_PAYEES`), and refuses a 402 whose amount it cannot parse.
+- **A Solana-only deployment advertised Base terms payable to an empty address.** The Express middleware registers the EVM scheme only, but an operator who set `X402_PAY_TO_ADDRESS_SOLANA` alone passed validation and published `{ network: "eip155:8453", payTo: "" }` on every route. It now refuses to initialize rather than serve unpayable terms, and names the two ways to fix it.
+- **`/api/ai/health` and `/api/ai/pricing` advertised eleven chains the server rejects.** Every route offers only the configured network; the documents now say so.
+- Registration of the EVM `exact` scheme against Solana network ids is gone, the development bypass announces itself with an `X-Payment-Bypassed` header instead of failing open silently, a failed middleware initialization is retried after a minute instead of answering 503 until restart, and `api/serverless.js` no longer tells agents "Payment accepted" for a payment it never verified.
+
+### Added
+
+- **[docs/audits/2026-08-28-x402-audit.md](docs/audits/2026-08-28-x402-audit.md)** — the full audit: all four payment paths, what each one verifies, the nine findings with reproductions, and what is worth keeping.
+- **`tests/x402-gate.test.js`** — 14 tests against the real gate and the real client, with the facilitator stubbed at the fetch boundary. The existing x402 suite tests a mock middleware defined inside its own test file, and its "valid payment" case asserts that `0xMockSignature` returns 200, so it encoded the bypass as correct behaviour.
+- `writer:comment` is priced like every other writer operation.
+
+
 ### Added
 
 - **Sweeps run over any feed, not just a profile.** `scripts/engageProfile.js` now recognises a profile, its replies tab, search results, a list, a hashtag, and your home timeline, and keeps separate progress for each. It takes the permalink from the post's timestamp rather than the first `/status/` link in the row, so a post that quotes another post is no longer at risk of having the quoted post engaged instead. Author allow and block lists, keyword and skip-keyword matching, like floors and ceilings, and a skip-verified toggle keep a mixed-feed sweep aimed; your own posts are never engaged.

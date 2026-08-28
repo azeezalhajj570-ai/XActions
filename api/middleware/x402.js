@@ -18,8 +18,11 @@
 
 import {
   PAY_TO_ADDRESS,
+  PAY_TO_ADDRESS_SOLANA,
   FACILITATOR_URL,
   NETWORK,
+  SOLANA_NETWORK,
+  isEvmPayToConfigured,
   AI_OPERATION_PRICES,
   SCRIPT_PRICES,
   SCRIPT_RUN_PRICE,
@@ -40,6 +43,10 @@ import {
 let _middleware = null;
 let _initPromise = null;
 let _initFailed = false;
+let _initFailedAt = 0;
+
+/** How long a failed initialization is remembered before it is retried. */
+const INIT_RETRY_MS = 60_000;
 
 /**
  * Build a single route entry in the shape @x402/core v2 expects.
@@ -71,6 +78,24 @@ function paidRoute(price, description) {
     },
     description,
   };
+}
+
+/**
+ * Can this process actually take a payment on the chain it advertises?
+ *
+ * The EVM scheme is the only one registered here, so the answer is "only with
+ * an EVM receiving address". An operator who set X402_PAY_TO_ADDRESS_SOLANA and
+ * nothing else passes `isX402Configured()` (Solana alone is a valid setup for
+ * the edge deployment, which does offer Solana) and used to reach `paidRoute()`
+ * with an empty string for `payTo`. That publishes Base terms payable to
+ * nobody: every caller signs a transfer to "" and the payment fails, or worse
+ * is aimed at an address the operator does not own. Refusing to start is the
+ * only honest answer.
+ *
+ * @returns {boolean}
+ */
+function canServeConfiguredNetwork() {
+  return isEvmPayToConfigured();
 }
 
 /**
@@ -109,6 +134,17 @@ function buildRouteConfig() {
  * XActions analytics, webhooks, and audit logging.
  */
 async function initializeMiddleware() {
+  if (!canServeConfiguredNetwork()) {
+    throw new Error(
+      `x402 cannot serve ${NETWORK}: X402_PAY_TO_ADDRESS is not a valid EVM address` +
+      (PAY_TO_ADDRESS_SOLANA
+        ? `. X402_PAY_TO_ADDRESS_SOLANA is set, but this Express middleware only registers the EVM "exact" scheme, ` +
+          `so it cannot take payment on ${SOLANA_NETWORK}. Set an EVM address too, or serve the paid endpoints from ` +
+          'the edge deployment (functions/, src/edge/x402.js), which does offer Solana.'
+        : '. Set X402_PAY_TO_ADDRESS to the wallet that should receive USDC.')
+    );
+  }
+
   const { paymentMiddleware } = await import('@x402/express');
   const { x402ResourceServer, HTTPFacilitatorClient } = await import('@x402/core/server');
   const { ExactEvmScheme } = await import('@x402/evm/exact/server');
@@ -125,10 +161,17 @@ async function initializeMiddleware() {
   ]);
 
   for (const networkId of networksToRegister) {
+    // ExactEvmScheme speaks EIP-712 and signs an EVM transferWithAuthorization.
+    // Registering it against a Solana CAIP-2 id inside a try/catch does not add
+    // Solana support; it either throws and is swallowed, or succeeds and leaves
+    // a scheme that would mis-verify a Solana payload. Solana is served by the
+    // edge deployment instead (src/edge/x402.js).
+    if (!networkId.startsWith('eip155:')) continue;
     try {
       server.register(networkId, new ExactEvmScheme());
     } catch {
-      // Ignore already-registered or unsupported network errors.
+      // Already registered, or the SDK does not know this chain: neither is
+      // fatal, because only NETWORK is ever advertised in a route.
     }
   }
 
@@ -261,20 +304,31 @@ export async function x402Middleware(req, res, next) {
 
   // Check if x402 is configured
   if (!ensureConfigValidated()) {
-    // x402 not configured — pass through in development
+    // Not configured. Outside production this serves the paid surface free,
+    // which is what a developer wants locally and a disaster in a container
+    // that simply forgot to set NODE_ENV, so say so on every request rather
+    // than only in the log nobody reads at boot.
     if (process.env.NODE_ENV !== 'production') {
+      res.setHeader('X-Payment-Bypassed', 'x402-not-configured; NODE_ENV is not production');
       return next();
     }
     return res.status(500).json({ error: 'Payment system not configured', hint: 'Set X402_PAY_TO_ADDRESS to a 0x wallet address on the server' });
   }
 
-  // Lazy-initialize middleware
+  // Lazy-initialize middleware. A failure is remembered only for
+  // INIT_RETRY_MS: the usual cause is the facilitator being briefly
+  // unreachable, and a paid API that stays 503 until someone restarts the
+  // process turns a thirty-second blip into an outage.
+  if (!_middleware && _initFailed && Date.now() - _initFailedAt > INIT_RETRY_MS) {
+    _initFailed = false;
+  }
   if (!_middleware && !_initFailed) {
     if (!_initPromise) {
       _initPromise = initializeMiddleware()
         .then(mw => { _middleware = mw; })
         .catch(err => {
           _initFailed = true;
+          _initFailedAt = Date.now();
           console.error('❌ x402 initialization failed:', err.message);
           console.log('   Install packages: npm install @x402/core @x402/evm @x402/express');
         })
@@ -303,7 +357,12 @@ export async function x402Middleware(req, res, next) {
 export function x402HealthCheck(req, res) {
   const configured = isX402Configured();
   const includeTestnet = process.env.NODE_ENV !== 'production';
-  const networks = getAcceptedNetworks(includeTestnet);
+  // Only the chain a payment can actually be made on. The full
+  // getAcceptedNetworks() table is the set of chains the protocol knows about,
+  // not the set this process will accept: every route advertises NETWORK alone,
+  // so listing eleven chains here sends an agent to sign on one of the ten that
+  // will be rejected.
+  const networks = getAcceptedNetworks(includeTestnet).filter(n => n.network === NETWORK);
   const recommendedNetwork = networks.find(n => n.recommended) || networks[0];
 
   res.json({
@@ -348,7 +407,8 @@ export function x402HealthCheck(req, res) {
  */
 export function x402Pricing(req, res) {
   const includeTestnet = process.env.NODE_ENV !== 'production';
-  const networks = getAcceptedNetworks(includeTestnet);
+  // Same rule as the health endpoint: advertise only what this process accepts.
+  const networks = getAcceptedNetworks(includeTestnet).filter(n => n.network === NETWORK);
   const recommendedNetwork = networks.find(n => n.recommended) || networks[0];
 
   res.json({

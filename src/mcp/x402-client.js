@@ -153,6 +153,12 @@ async function getChainForNetwork(networkName) {
  * @param {string} config.sessionCookie - X/Twitter session cookie (optional)
  * @param {string} config.network - Preferred network ('base-sepolia', 'base', 'ethereum', 'arbitrum')
  * @param {boolean} config.autoSelectNetwork - Auto-select cheapest network from options (default: true)
+ * @param {number} config.maxPriceUsd - Refuse to sign a single payment above this many USD.
+ *   Defaults to X402_MAX_PRICE_USD, or $1.00. The amount in a 402 is chosen by the
+ *   server being called, so without a ceiling an agent signs whatever it is asked for.
+ * @param {number} config.maxTotalUsd - Refuse once this much has been paid in this
+ *   session. Defaults to X402_MAX_TOTAL_USD, or $10.00.
+ * @param {string[]} config.allowedPayees - If set, only pay these addresses.
  */
 export async function createX402Client(config) {
   const { 
@@ -161,7 +167,15 @@ export async function createX402Client(config) {
     sessionCookie,
     network = 'base-sepolia', // Default to testnet
     autoSelectNetwork = true, // Auto-select best network from 402 response
+    maxPriceUsd = Number(process.env.X402_MAX_PRICE_USD ?? 1),
+    maxTotalUsd = Number(process.env.X402_MAX_TOTAL_USD ?? 10),
+    allowedPayees = (process.env.X402_ALLOWED_PAYEES || '')
+      .split(',').map((a) => a.trim().toLowerCase()).filter(Boolean),
   } = config;
+
+  // Everything paid in this client's lifetime, in USD. The cap is per process,
+  // which is the unit an agent session actually maps to.
+  let spentUsd = 0;
   
   if (!privateKey) {
     console.error('⚠️  X402_PRIVATE_KEY not set - payments will fail');
@@ -174,6 +188,61 @@ export async function createX402Client(config) {
     console.error(`   Available networks: ${Object.keys(NETWORK_CONFIGS).join(', ')}`);
   }
   
+  /**
+   * USD value of an `accepts` entry. USDC and USDT are 6-decimal, which is what
+   * every x402 amount in this client is denominated in.
+   * @param {object} accept
+   * @returns {number}
+   */
+  const priceOf = (accept) => {
+    const atomic = Number(accept?.amount ?? accept?.maxAmountRequired ?? NaN);
+    return Number.isFinite(atomic) ? atomic / 1_000_000 : NaN;
+  };
+
+  /**
+   * Refuse terms that break this client's spending limits.
+   *
+   * Throws rather than returning false: a payment that should not happen must
+   * not fall through to a signature.
+   *
+   * @param {object} accept - The chosen `accepts` entry from the 402
+   * @throws {Error} with code PAYMENT_LIMIT_EXCEEDED or PAYEE_NOT_ALLOWED
+   */
+  function assertWithinLimits(accept) {
+    const usd = priceOf(accept);
+    if (!Number.isFinite(usd)) {
+      const error = new Error('402 did not state an amount this client can read; refusing to sign.');
+      error.code = 'PAYMENT_LIMIT_EXCEEDED';
+      throw error;
+    }
+    if (maxPriceUsd >= 0 && usd > maxPriceUsd) {
+      const error = new Error(
+        `Refusing to pay $${usd.toFixed(6)} for one call: over the $${maxPriceUsd} per-call limit. ` +
+        'Raise it with X402_MAX_PRICE_USD or maxPriceUsd if this price is expected.'
+      );
+      error.code = 'PAYMENT_LIMIT_EXCEEDED';
+      throw error;
+    }
+    if (maxTotalUsd >= 0 && spentUsd + usd > maxTotalUsd) {
+      const error = new Error(
+        `Refusing to pay $${usd.toFixed(6)}: this session has already paid $${spentUsd.toFixed(6)} of a ` +
+        `$${maxTotalUsd} budget. Raise it with X402_MAX_TOTAL_USD or maxTotalUsd.`
+      );
+      error.code = 'PAYMENT_LIMIT_EXCEEDED';
+      throw error;
+    }
+    const payTo = String(accept?.payTo || '').toLowerCase();
+    if (allowedPayees.length > 0 && !allowedPayees.includes(payTo)) {
+      const error = new Error(
+        `Refusing to pay ${accept?.payTo || '(no address)'}: not in X402_ALLOWED_PAYEES.`
+      );
+      error.code = 'PAYEE_NOT_ALLOWED';
+      throw error;
+    }
+    spentUsd += usd;
+    console.error(`   Within limits: $${usd.toFixed(6)} this call, $${spentUsd.toFixed(6)} of $${maxTotalUsd} spent`);
+  }
+
   // Set up wallet for signing payments (lazy loaded)
   let wallet = null;
   let account = null;
@@ -291,6 +360,11 @@ export async function createX402Client(config) {
       console.error(`   Amount: ${selectedAccept?.maxAmountRequired || 'unknown'}`);
       console.error(`   Network: ${selectedAccept?.extra?.networkName || selectedNetwork}`);
       console.error(`   Asset: USDC`);
+
+      // The server picks the amount and the recipient. Signing whatever a 402
+      // asks for means one hostile or compromised endpoint can drain the
+      // wallet, so the terms are checked against this client's limits first.
+      assertWithinLimits(selectedAccept);
       
       // Sign payment for the selected network
       const payment = await signPayment(wallet, account, paymentRequired, selectedNetwork, selectedAccept);

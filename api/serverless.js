@@ -86,8 +86,19 @@ function x402Gate(req, res, next) {
     req.path === '/api/ai/pricing'
   ) return next();
 
-  // Check if already has payment header
-  if (req.headers['x-payment']) return next();
+  // A payment header is not proof of payment: anyone can set a header, and this
+  // entry point has no facilitator client to check one with. It also executes no
+  // AI work (every /api/ai/* route below answers 503), so the honest answer to a
+  // paid call here is "not deployed", not "payment accepted".
+  if (req.headers['x-payment'] || req.headers['payment-signature']) {
+    return res.status(503).json({
+      error: 'AI_EXECUTION_UNAVAILABLE',
+      message:
+        'This deployment serves the payment terms only; it does not execute AI operations and cannot verify or settle a payment. ' +
+        'Nothing was charged. Call the endpoint on a deployment that runs the full backend.',
+      docs: 'https://github.com/nirholas/XActions/blob/main/docs/x402.md',
+    });
+  }
 
   if (!isX402Configured()) return next();
 
@@ -164,8 +175,10 @@ app.use(x402Gate);
 // AI API — catch-all after x402 gate (payment verified, execution on Railway)
 app.use('/api/ai', (req, res) => {
   res.status(503).json({
-    error: 'AI execution requires Railway deployment',
-    message: 'Payment accepted. Connect to the Railway API for execution.',
+    error: 'AI_EXECUTION_UNAVAILABLE',
+    message:
+      'This deployment publishes the x402 terms but does not execute AI operations. Nothing was charged.',
+    docs: 'https://github.com/nirholas/XActions/blob/main/docs/x402.md',
   });
 });
 

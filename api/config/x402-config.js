@@ -407,6 +407,7 @@ export const AI_OPERATION_PRICES = {
   'writer:rewrite': '$0.005',        // Rewrite/improve tweet
   'writer:calendar': '$0.02',        // Generate content calendar
   'writer:reply': '$0.005',          // Generate reply
+  'writer:comment': '$0.005',        // Generate a reply from a plain-language brief
 
   // Analytics operations (browser scripts: viewAnalytics, engagementAnalytics, etc.)
   'analytics:health-score': '$0.01',       // Account health monitor

@@ -7,7 +7,10 @@
  *
  *   /api/health, /api/ai/health, /api/ai/pricing  -> answered at the edge
  *   /openapi.json, /.well-known/x402              -> x402 discovery, at the edge
- *   /api/ai/<cat>/<op> without an X-PAYMENT header -> 402 payment challenge
+ *   /api/ai/<cat>/<op>                            -> x402 gate: 402 without a
+ *                                                    payment, and the payment is
+ *                                                    verified with the facilitator
+ *                                                    before anything is served
  *   /thread/*                                     -> rewritten to /thread
  *   /api/ask, /api/ask/health                     -> Ask XActions, answered at the
  *                                                    edge (docs index + free LLM lanes)
@@ -24,6 +27,7 @@
 import { Buffer } from 'node:buffer';
 import { ask, createSearcher, SUGGESTED_QUESTIONS } from '../src/ask/engine.js';
 import { buildLaneChain } from '../src/ask/lanes.js';
+import { verifyPayment } from '../src/edge/x402.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://xactions.app',
@@ -68,14 +72,55 @@ function json(data, status = 200, extraHeaders = {}) {
 }
 
 /**
- * Inline x402 payment gate for /api/ai/* — same behavior as api/serverless.js.
- * Returns a 402 Response for unpaid priced operations, or null to pass through.
+ * Decode the payment payload a client attached, from either header spelling.
+ *
+ * @param {Request} request
+ * @returns {object|null} the decoded payload, or null when there is none
  */
-function x402Gate(request, url, api) {
+function attachedPayment(request) {
+  for (const name of ['x-payment', 'payment-signature']) {
+    const raw = request.headers.get(name);
+    if (!raw) continue;
+    try {
+      return JSON.parse(atob(raw));
+    } catch {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * x402 payment gate for /api/ai/*.
+ *
+ * Returns a Response to send back (a 402 challenge, or a rejection), or null to
+ * let the request continue to the origin.
+ *
+ * The presence of an `X-PAYMENT` header is not proof of payment: anyone can set
+ * a header. This gate previously passed any request carrying one straight
+ * through to the origin, which made the whole paid surface free to anybody who
+ * sent `X-PAYMENT: x`. The payload is now decoded and checked with the
+ * facilitator against the exact terms this edge published, and a payment that
+ * does not verify is refused with the facilitator's own reason. A facilitator
+ * that cannot be reached is a refusal too: failing open on a payment gate is
+ * how an outage turns into free service.
+ *
+ * Settlement stays with the origin, which owns the work and must not charge for
+ * a response it failed to produce.
+ *
+ * @param {Request} request
+ * @param {URL} url
+ * @param {object} api - the loaded x402 config module
+ * @returns {Promise<Response|null>}
+ */
+async function x402Gate(request, url, api) {
   const path = url.pathname;
   if (!path.startsWith('/api/ai/')) return null;
   if (path === '/api/ai/' || path === '/api/ai/health' || path === '/api/ai/pricing') return null;
-  if (request.headers.get('x-payment')) return null;
   if (!api.isX402Configured()) return null;
 
   const match = path.match(/^\/api\/ai\/([^/]+)\/([^/]+)/);
@@ -83,41 +128,79 @@ function x402Gate(request, url, api) {
   const price = operation ? api.AI_OPERATION_PRICES[operation] : null;
   if (!price) return null; // free or unknown endpoint
 
-  const dollarAmount = parseFloat(price.replace('$', ''));
-  const maxAmount = Math.round(dollarAmount * 1_000_000).toString();
-  const asset =
-    (api.SUPPORTED_NETWORKS[api.NETWORK] && api.SUPPORTED_NETWORKS[api.NETWORK].usdc) ||
-    api.SUPPORTED_NETWORKS['eip155:8453'].usdc;
+  const resource = `${url.origin}${path}`;
+  const description = `XActions AI API - ${operation}`;
+  const accepts = api.buildAccepts({ price, resource, description });
+  if (accepts.length === 0) {
+    // Priced, but no chain is configured to receive. Serving it free would be
+    // worse than saying so.
+    return json(
+      {
+        error: 'payment_unavailable',
+        message: 'This endpoint is priced but no receiving address is configured for any supported chain.',
+      },
+      503,
+      corsHeaders(request),
+    );
+  }
 
   const payload = {
     x402Version: 2,
-    resource: {
-      url: `${url.origin}${path}`,
-      method: request.method,
-      description: `XActions AI API - ${operation}`,
-      mimeType: 'application/json',
-    },
-    accepts: [
-      {
-        scheme: 'exact',
-        network: api.NETWORK,
-        amount: maxAmount,
-        asset,
-        payTo: api.PAY_TO_ADDRESS,
-        maxTimeoutSeconds: 300,
-        extra: { name: 'USD Coin', version: '2' },
-      },
-    ],
+    resource: { url: resource, method: request.method, description, mimeType: 'application/json' },
+    accepts,
   };
 
-  return new Response(null, {
-    status: 402,
-    headers: {
-      'payment-required': Buffer.from(JSON.stringify(payload)).toString('base64'),
-      'content-type': 'application/json',
-      ...corsHeaders(request),
-    },
-  });
+  const attached = attachedPayment(request);
+  if (!attached) {
+    return new Response(JSON.stringify({ x402Version: 2, error: 'Payment required', ...payload }), {
+      status: 402,
+      headers: {
+        'payment-required': Buffer.from(JSON.stringify(payload)).toString('base64'),
+        'content-type': 'application/json',
+        ...corsHeaders(request),
+      },
+    });
+  }
+
+  // Check the payment against the terms for the chain the client chose. A
+  // client cannot pay on a chain we never offered, or against terms we never
+  // published, because the requirements come from `accepts`, not from them.
+  const chosen =
+    accepts.find((entry) => api.sameNetwork(entry.network, attached.network)) ||
+    (attached.network ? null : accepts[0]);
+  if (!chosen) {
+    return json(
+      {
+        error: 'unsupported_network',
+        message: `This resource is not offered on ${attached.network || 'the chain in the payment'}.`,
+        accepts,
+      },
+      402,
+      corsHeaders(request),
+    );
+  }
+
+  const facilitator = api.FACILITATOR_URL;
+  let verification;
+  try {
+    verification = await verifyPayment(facilitator, attached, chosen);
+  } catch (error) {
+    verification = { isValid: false, invalidReason: `facilitator unreachable: ${error.message}` };
+  }
+
+  if (!verification?.isValid) {
+    return json(
+      {
+        error: 'invalid_payment',
+        message: verification?.invalidReason || 'The facilitator rejected this payment.',
+        accepts,
+      },
+      402,
+      corsHeaders(request),
+    );
+  }
+
+  return null;
 }
 
 // X account actions (follow / unfollow / like / reply / post / DM / host a
@@ -313,7 +396,7 @@ export default {
     // service will not execute.
     if (requiresExtension(path)) return extensionResponse(request);
 
-    const paymentChallenge = x402Gate(request, url, api);
+    const paymentChallenge = await x402Gate(request, url, api);
     if (paymentChallenge) return paymentChallenge;
 
     return proxyToOrigin(request, url, env);
