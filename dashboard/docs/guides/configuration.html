@@ -120,6 +120,7 @@
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
+      <a class="sidebar__link" href="/docs/guides/reputation-audit">Reputation audit: AI-score your own timeline, get a shareable card</a>
       <a class="sidebar__link" href="/docs/guides/rss-monitor">Rss Monitor</a>
       <a class="sidebar__link" href="/docs/guides/scrapers">Scrapers</a>
       <a class="sidebar__link" href="/docs/guides/scraping-infrastructure">Scraping Infrastructure</a>
@@ -134,6 +135,7 @@
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
+      <a class="sidebar__link" href="/docs/guides/mcp-remote">The hosted MCP server</a>
       <a class="sidebar__link" href="/docs/guides/agents">Thought Leader Agent</a>
       <a class="sidebar__link" href="/docs/guides/agent-advanced">Thought Leader Agent — Advanced Features</a>
       <a class="sidebar__link" href="/docs/guides/agent-api-reference">Thought Leader Agent — API Reference</a>
@@ -150,8 +152,8 @@
       <a class="sidebar__link" href="/docs/guides/workflows">Workflow Engine</a>
       <a class="sidebar__link" href="/docs/guides/x-developer-api-crypto-guide-2026">X Developer API in 2026: The Complete Guide for Crypto Builders</a>
       <a class="sidebar__link" href="/docs/guides/dom-selectors">X/Twitter DOM Selector Reference</a>
-      <a class="sidebar__link" href="/docs/guides/api-reference">XActions — API Reference</a>
       <a class="sidebar__link" href="/docs/guides/ai-api">XActions AI API Documentation</a>
+      <a class="sidebar__link" href="/docs/guides/api-reference">XActions API Reference</a>
       <a class="sidebar__link" href="/docs/guides/automation">XActions Automation Framework Guide</a>
       <a class="sidebar__link" href="/docs/guides/cli-reference">XActions CLI Reference</a>
       <a class="sidebar__link" href="/docs/guides/xactions-reference">XActions Complete Function Reference</a>
@@ -161,7 +163,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0: Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -208,7 +210,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -298,8 +300,14 @@ if you are running the server.</p>
 <h2 id="session-cookies">Session cookies</h2>
 <p>Everything that reads private or session-tier data needs two cookies from a
 logged-in x.com session.</p>
-<p><strong>Where to get them:</strong> open <a target="_blank" rel="noopener noreferrer" href="https://x.com">x.com</a>, log in, then DevTools
-(<kbd>F12</kbd>) → <strong>Application</strong> → <strong>Cookies</strong> → <code>https://x.com</code>.</p>
+<p><strong>Where to get them:</strong> the CLI can read them for you, which is faster and less
+error-prone than copying by hand.</p>
+<pre><code class="language-bash">xactions login --from-browser firefox     # also: chrome, chromium, brave, edge, arc
+xactions login --cookies-file cookies.txt # Netscape, Cookie-Editor JSON, Playwright storageState
+xactions connect                          # log in through a real browser window
+</code></pre>
+<p>By hand: open <a target="_blank" rel="noopener noreferrer" href="https://x.com">x.com</a>, log in, then DevTools
+(<kbd>F12</kbd>), <strong>Application</strong>, <strong>Cookies</strong>, <code>https://x.com</code>.</p>
 <table>
 <thead>
 <tr>
@@ -363,9 +371,70 @@ await scraper.saveCookies(&#39;./cookies.json&#39;);   // persist a refreshed se
   }
 }
 </code></pre>
-<p>Without them the server still starts and still serves all 144 tools; the
+<p>Without them the server still starts and still serves all 152 tools. The
 guest-tier ones (profiles, public timelines) work and the rest report that they
 need a session.</p>
+<h3 id="mcp-server-flags-and-env">MCP server flags and env</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Flag</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>XACTIONS_MCP_TOOLS</code></td>
+<td><code>--tools &lt;list&gt;</code></td>
+<td>Expose only these tools. Accepts tool names, group names, or <code>prefix*</code> patterns, comma separated.</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_EXCLUDE</code></td>
+<td><code>--exclude &lt;list&gt;</code></td>
+<td>Hide these, same syntax.</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_REQUIRE_APPROVAL</code></td>
+<td><code>--require-approval</code></td>
+<td>Hold every write call as a draft. Nothing reaches X until <code>xactions drafts approve &lt;id&gt;</code> runs in a terminal.</td>
+</tr>
+<tr>
+<td><code>MCP_TRANSPORT=http</code></td>
+<td><code>--http</code></td>
+<td>Serve Streamable HTTP on <code>/mcp</code> instead of stdio.</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_HOST</code></td>
+<td><code>--host &lt;addr&gt;</code></td>
+<td>HTTP bind address, default <code>127.0.0.1</code>.</td>
+</tr>
+<tr>
+<td><code>PORT</code></td>
+<td><code>--port &lt;n&gt;</code></td>
+<td>HTTP port, default <code>8787</code>.</td>
+</tr>
+<tr>
+<td><code>XACTIONS_MCP_TOKEN</code></td>
+<td>none</td>
+<td>Required bearer token for <code>--http</code>. Never expose the HTTP transport without one.</td>
+</tr>
+<tr>
+<td><code>XACTIONS_ACTION_CAPS</code></td>
+<td>none</td>
+<td>JSON object overriding the daily per-action caps. Also readable from <code>~/.xactions/action-caps.json</code>.</td>
+</tr>
+<tr>
+<td><code>XACTIONS_ACCOUNT</code></td>
+<td>none</td>
+<td>Names which account the daily action ledger is charged against. Default <code>default</code>.</td>
+</tr>
+</tbody></table>
+<p><code>npx xactions-mcp --list-groups</code> prints every group with its tools, which is the
+fastest way to build a <code>--tools</code> value. The groups are <code>read</code>, <code>analytics</code>,
+<code>write</code>, <code>automation</code>, <code>monitoring</code>, <code>workflows</code>, <code>ai</code>, <code>data</code>, <code>graph</code>,
+<code>persona</code>, <code>dm</code>, <code>lists</code>, <code>spaces</code>, <code>grok</code>, <code>auth</code> and <code>drafts</code>. The <code>drafts</code>
+group is always available regardless of <code>--tools</code>, so an agent can always report
+what it is waiting on.</p>
 <h3 id="keeping-them-out-of-your-repo">Keeping them out of your repo</h3>
 <p><code>.env</code>, <code>.env.local</code>, and <code>cookies.json</code> are gitignored. A leaked <code>auth_token</code>
 is a full account takeover, so:</p>
@@ -541,7 +610,7 @@ scripts.</p>
 <p>The autonomous agent reads two JSON files that decide what it talks about and
 how it sounds. Both live in <a href="../config/"><code>config/</code></a> and are plain data, so
 adding your own is a matter of dropping in a file.</p>
-<h3 id="personas--how-the-agent-writes">Personas — how the agent writes</h3>
+<h3 id="personas-how-the-agent-writes">Personas: how the agent writes</h3>
 <p><a href="../config/personas/"><code>config/personas/</code></a> ships three:
 <code>thought-leader</code>, <code>technical-builder</code>, <code>community-builder</code>.</p>
 <pre><code class="language-json">{
@@ -556,7 +625,7 @@ adding your own is a matter of dropping in a file.</p>
 <p><code>avoid</code> matters more than it looks. It is the difference between output that
 reads like a person and output that reads like a bot, and it is the first field
 worth editing.</p>
-<h3 id="niches--what-the-agent-looks-at">Niches — what the agent looks at</h3>
+<h3 id="niches-what-the-agent-looks-at">Niches: what the agent looks at</h3>
 <p><a href="../config/niches/"><code>config/niches/</code></a> ships <code>ai-engineering</code>, <code>saas-startups</code>,
 and <code>web3-crypto</code>.</p>
 <pre><code class="language-json">{
@@ -578,12 +647,13 @@ to <code>data/agent-config.json</code> and edit, or run the wizard:</p>
 <pre><code class="language-js">const CONFIG = {
   maxUnfollows: Infinity,
   whitelist: [],
-  dryRun: true,       // Preview without acting — SET FALSE TO RUN
+  dryRun: true,       // Preview without acting. Set false to run.
   delay: 2000,
 };
 </code></pre>
-<p><code>dryRun</code> defaults to <code>true</code> on everything destructive. See
-<a href="/docs/guides/browser-scripts#start-in-dry-run">browser-scripts.md</a>.</p>
+<p>Most destructive scripts ship with <code>dryRun: true</code>, but not all of them do, and
+the ones that do not act on the first run. <strong>Read the <code>CONFIG</code> block before you
+paste.</strong> See <a href="/docs/guides/browser-scripts#start-in-dry-run">browser-scripts.md</a>.</p>
 <hr>
 <h2 id="related">Related</h2>
 <ul>
@@ -597,7 +667,7 @@ to <code>data/agent-config.json</code> and edit, or run the wizard:</p>
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/configuration.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Configuration" target="_blank" rel="noopener">Report a problem</a>
     </div>

@@ -7,8 +7,10 @@ no database, and no browser automation**.
 
 ```
 functions/
+  mcp.js               ALL  /mcp   the hosted MCP server
   openapi.json.js      GET  /openapi.json
   .well-known/
+    mcp.json.js        GET  /.well-known/mcp.json
     x402.js            GET  /.well-known/x402
   api/
     health.js          GET  /api/health
@@ -38,6 +40,27 @@ The video downloader needs nothing a Node server provides, so it now runs here
 instead.
 
 ## Endpoints
+
+### `/mcp` - the hosted MCP server
+
+A [Model Context Protocol](https://modelcontextprotocol.io) server over
+Streamable HTTP, stateless, no authentication. Any agent connects with a URL:
+
+```bash
+claude mcp add --transport http xactions https://xactions.app/mcp
+```
+
+`POST` speaks JSON-RPC. `GET` with `Accept: application/json` returns a server
+descriptor, and anything else gets the `/mcp-docs` page, so a human who pastes
+the URL into a browser sees an explanation rather than a protocol error.
+
+The page file is `dashboard/mcp-docs.html`, not `mcp.html`, on purpose: a file
+named `mcp.html` makes the asset handler canonicalise `/mcp` back to itself, and
+a browser follows that redirect into this function again.
+
+Six read-only tools, roughly 700 documentation resources, five prompts. The
+protocol core and tool definitions live in [`src/mcp/`](../src/mcp); the full
+guide is [docs/mcp-remote.md](../docs/mcp-remote.md).
 
 ### `GET /api/health`
 

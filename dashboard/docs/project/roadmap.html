@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 69 more…</a>
+      <a class="sidebar__link" href="/docs">+ 71 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -140,7 +140,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -208,6 +208,8 @@ that no longer exists. A roadmap nobody trusts is worse than no roadmap.</p>
 <ul>
 <li>Public reads over X&#39;s internal GraphQL API, no browser and no account: <code>src/scrapers/twitter/http/</code></li>
 <li>Query IDs auto-discovered from x.com&#39;s own bundles, so a rotated ID self-heals instead of 404ing: <code>src/scrapers/twitter/http/queryIds.js</code></li>
+<li>Requests signed with an <code>x-client-transaction-id</code> header computed the way x.com&#39;s own client computes it: <code>src/scrapers/twitter/http/transactionId.js</code></li>
+<li>Cookies read straight from an installed browser, or from any common cookie export: <code>xactions login --from-browser</code>, <code>--cookies-file</code></li>
 <li>Profiles, timelines, search, followers, following, threads, media, hashtags, bookmarks, likes</li>
 <li>Bluesky, Mastodon and Threads behind one normalised interface: <code>src/scrapers/</code></li>
 <li>Import the official X data archive (the GDPR zip): <code>src/portability/twitter-archive.js</code></li>
@@ -219,11 +221,15 @@ that no longer exists. A roadmap nobody trusts is worse than no roadmap.</p>
 <li>Mass block, mass unblock, mass unmute, leave all communities</li>
 <li>Engage a whole profile or an entire search: <code>scripts/engageProfile.js</code>, <code>scripts/searchSweep.js</code></li>
 <li>Speed presets with jitter, rests and back-off on every bulk action</li>
+<li>Account pool with per-account, per-operation rate-limit windows read from X&#39;s own <code>x-rate-limit-*</code> headers, rotating on a 429 and locking on a 401: <code>src/scrapers/twitter/http/accountPool.js</code></li>
+<li>Resumable scrapes: a cursor checkpoint written after every page, so a killed 50,000-follower job restarts where it stopped: <code>src/scrapers/twitter/http/checkpoint.js</code></li>
+<li>Per-account daily action caps held on disk, so the budget survives a restart and an over-cap call is refused before it reaches X: <code>src/mcp/action-caps.js</code></li>
 <li>95 browser console scripts and an MV3 extension, for people who never open a terminal</li>
 </ul>
 <h3 id="agents">Agents</h3>
 <ul>
-<li>MCP server, 151 tools: <code>src/mcp/server.js</code></li>
+<li>MCP server: <code>src/mcp/server.js</code>, over stdio or Streamable HTTP on <code>/mcp</code> (<code>--http</code>, bearer auth via <code>XACTIONS_MCP_TOKEN</code>)</li>
+<li>A <code>.mcpb</code> bundle that installs the server into Claude Desktop with no config file: <code>scripts/build-mcpb.mjs</code></li>
 <li>Approval gate: a write becomes a draft a human releases, via <code>XACTIONS_MCP_REQUIRE_APPROVAL</code>: <code>src/mcp/drafts.js</code></li>
 <li>Tool allowlists so a host loads only what it needs: <code>src/mcp/tool-groups.js</code></li>
 <li>A2A server, persona engine, workflow engine, plugin system</li>
@@ -235,6 +241,13 @@ that no longer exists. A roadmap nobody trusts is worse than no roadmap.</p>
 <li>Engagement, growth and reputation reports: <code>src/analytics/</code></li>
 <li>Best time to post, engagement leaderboard, competitor analysis, audience overlap</li>
 <li>Sentiment analysis offline by rule, or through an LLM behind the same interface</li>
+</ul>
+<h3 id="delivery">Delivery</h3>
+<ul>
+<li>Real-time streams for tweets, followers and mentions, persistent across restarts: <code>src/streaming/</code></li>
+<li>x.com&#39;s own event pipeline, read as a chunked newline-delimited JSON response rather than the WebSocket it is not: <code>src/streaming/livePipeline.js</code></li>
+<li>Signed outbound webhooks: HMAC-SHA256, timestamp, event type, stable delivery id, three retries and a replayable delivery log: <code>src/notifications/webhook.js</code></li>
+<li>Email, Slack, Discord and Telegram notification channels: <code>src/notifications/</code></li>
 </ul>
 <h3 id="writing">Writing</h3>
 <ul>
@@ -259,10 +272,10 @@ issue by itself when one breaks. <code>scripts/verify-live.mjs</code> is the beg
 <h3 id="2-make-an-account-last">2. Make an account last</h3>
 <p>An automation tool that gets you suspended has not helped you.</p>
 <ul>
-<li><strong>Per-account rate ledger</strong> in the HTTP client, reading X&#39;s own <code>x-rate-limit-*</code> headers,
-with daily caps that survive a restart. <code>quotaSupervisor.js</code> is in-process only today.</li>
-<li><strong>Account pool</strong> with lock-and-rotate on exhaustion, so long jobs slow down rather than
-burn one account. <code>ProxyManager</code> and <code>multiAccount.js</code> exist but do not cooperate yet.</li>
+<li><strong>One rate ledger, not two.</strong> The HTTP account pool tracks X&#39;s own <code>x-rate-limit-*</code>
+windows and <code>src/mcp/action-caps.js</code> holds the daily budget, but the browser-side
+<code>quotaSupervisor.js</code> still counts in-process and starts from zero on a restart. It
+should read the same on-disk ledger.</li>
 <li><strong>Dry-run by default</strong> on every destructive bulk action.</li>
 </ul>
 <h3 id="3-close-the-gap-between-quotscrapes-xquot-and-quotruns-your-presencequot">3. Close the gap between &quot;scrapes X&quot; and &quot;runs your presence&quot;</h3>
@@ -278,8 +291,9 @@ exports segments, rather than the per-page heuristic in <code>x_detect_bots</cod
 </ul>
 <h3 id="4-meet-people-where-they-are">4. Meet people where they are</h3>
 <ul>
-<li><strong>Chrome Web Store and AMO listings.</strong> The extension is load-unpacked only, so &quot;no
-console needed&quot; is not yet true for the people who need it most.</li>
+<li><strong>Chrome Web Store and Edge Add-ons listings.</strong> The extension is Manifest V3 and
+load-unpacked only, so &quot;no console needed&quot; is not yet true for the people who need it
+most. There is no Firefox build; a port would come after the two Chromium stores.</li>
 <li><strong>Homebrew tap and release binaries</strong>, so installing does not require a Node toolchain.</li>
 <li><strong>An optional official-API lane</strong> (OAuth2 PKCE) for users who would rather pay X than
 risk a suspension. Not the default, and never required.</li>
@@ -325,7 +339,7 @@ so in the description and update this file in the same PR.</p>
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/ROADMAP.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Roadmap" target="_blank" rel="noopener">Report a problem</a>
     </div>

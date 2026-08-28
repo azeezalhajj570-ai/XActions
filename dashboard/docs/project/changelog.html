@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 69 more…</a>
+      <a class="sidebar__link" href="/docs">+ 71 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -140,7 +140,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -197,6 +197,12 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a target="_blank" rel="noopener noreferrer" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h2 id="unreleased">[Unreleased]</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>A hosted MCP server: give any AI agent live access to X with one URL.</strong> <code>https://xactions.app/mcp</code> is a Model Context Protocol server running at the Cloudflare edge. <code>claude mcp add --transport http xactions https://xactions.app/mcp</code> and your agent can read profiles, posts, threads and videos from X, and search the entire XActions corpus while it writes automation code. There is no API key, no account, no OAuth, and nothing to install: it reads the same public data x.com serves a logged-out browser, through the guest-token GraphQL rail with the public embed endpoint as failover, so a read only fails when both do. Six read-only tools (<code>x_profile</code>, <code>x_posts</code>, <code>x_post</code>, <code>x_thread</code>, <code>x_video</code>, <code>xactions_docs</code>), roughly 700 documentation resources, one per guide, skill and browser script, and five prompt templates that turn the tools into finished work: account audits, thread summaries, competitor comparisons, video pulls, and &quot;build me this automation&quot; grounded in the real docs. Transport is Streamable HTTP (MCP 2025-06-18, back-compatible with 2025-03-26 and 2024-11-05) and stateless, so consecutive calls can land in different isolates on different continents and still work. Nothing in it can post, follow, like or delete. Docs: <a href="/docs/guides/mcp-remote">docs/mcp-remote.md</a>, with copy-paste config for Claude Code, Claude Desktop, Cursor, VS Code and Windsurf, and discovery at <a href="https://xactions.app/.well-known/mcp.json">/.well-known/mcp.json</a>.</li>
+<li><strong><code>xactions-edge</code>: the same server as a plain SDK, with zero dependencies.</strong> <code>npm install xactions-edge</code>, then <code>await createClient().profile(&#39;nasa&#39;)</code>. Typed methods for profiles, posts, single posts, threads, videos and docs search, plus the raw MCP surface (<code>listTools</code>, <code>call</code>, <code>listPrompts</code>, <code>getPrompt</code>, <code>listResources</code>, <code>readResource</code>) for anyone building agent tooling. It ships a complete Streamable HTTP MCP client in about 200 lines that works against any MCP server, not only this one. Runs unchanged in Node 18+, browsers, Cloudflare Workers, Deno and Bun; the only requirement is <code>fetch</code>. Failures arrive as a typed <code>XActionsError</code> that says whether retrying is worth it, and retryable ones are already retried with backoff before you see them. <code>npx xactions-edge profile nasa</code> reads X from a terminal with nothing installed, and <code>npx xactions-edge video &lt;url&gt; --save clip.mp4</code> saves the file. See <a href="/docs/guides/readme">packages/xactions-edge</a>.</li>
+<li><strong>Single-post and thread reads at the edge.</strong> <code>src/edge/postReader.js</code> normalises a post across two independent rails onto one shape: text (including long-form past 280 characters), author, every public metric including views and bookmarks, media with direct URLs and the full video variant ladder, entities, and the quoted post. Threads walk up to the root exactly, at any age, then continue down through the author&#39;s own replies, and report <code>truncated: true</code> rather than implying a thread ended where the public timeline stops.</li>
+</ul>
 <h3 id="security">Security</h3>
 <ul>
 <li><strong>Every AI endpoint is now priced or explicitly free, and a check keeps it that way.</strong> 101 endpoints were served without payment while their siblings were charged, and 66 prices pointed at routes that do not exist and answered 404 to anyone who paid attention to the catalogue. Neither is visible by reading either file alone, which is why they drifted. <code>npm run check:x402</code> reconciles the price table against the routes mounted under <code>/api/ai</code>, and fails on a price with no route, a route with neither a price nor a <code>FREE_OPERATIONS</code> declaration, or a free declaration for a route that is gone. It runs in <code>npm run docs:check</code> and in <code>npm test</code>. The rule behind the prices: this API charges for X data and X actions, and does not charge you to manage your relationship with the API itself, so <code>billing:*</code>, <code>webhooks:*</code> and <code>action:validate-session</code> stay free with a written reason.</li>
@@ -207,7 +213,7 @@
 <li><strong><code>/api/ai/health</code> and <code>/api/ai/pricing</code> advertised eleven chains the server rejects.</strong> Every route offers only the configured network; the documents now say so.</li>
 <li>Registration of the EVM <code>exact</code> scheme against Solana network ids is gone, the development bypass announces itself with an <code>X-Payment-Bypassed</code> header instead of failing open silently, a failed middleware initialization is retried after a minute instead of answering 503 until restart, and <code>api/serverless.js</code> no longer tells agents &quot;Payment accepted&quot; for a payment it never verified.</li>
 </ul>
-<h3 id="added">Added</h3>
+<h3 id="added-1">Added</h3>
 <ul>
 <li><strong><a href="https://github.com/nirholas/XActions/blob/main/docs/audits/2026-08-28-x402-audit.md">docs/audits/2026-08-28-x402-audit.md</a></strong> — the full audit: all four payment paths, what each one verifies, the nine findings with reproductions, and what is worth keeping.</li>
 <li><strong><code>tests/x402-routes.test.js</code> and <code>scripts/check-x402-routes.mjs</code></strong> — the price-to-route reconciliation, in the test suite and as <code>npm run check:x402</code>.</li>
@@ -218,9 +224,10 @@
 <ul>
 <li><strong><code>/api/ai/alert/new-followers</code> finally resolves.</strong> The <code>/alert</code> mount exists for backward compatibility with that path, but the handler was declared as <code>/alert/new-followers</code>, so the mount produced <code>/api/ai/alert/alert/new-followers</code> and the documented path never existed.</li>
 <li><strong>The x402 client no longer loads a signing library it may never use.</strong> viem is built on the first payment instead of at construction, so creating a client is instant and the spend limits hold whether or not a wallet was configured.</li>
+<li><strong>The old x402 suite no longer asserts that a fake signature is accepted.</strong> Its &quot;With valid payment&quot; block attached <code>0xMockSignature</code> and expected a 200 from the mock middleware defined in the same file, which encoded the header-is-payment bypass as correct behaviour. Acceptance is tested against the real gates in <code>tests/x402-gate.test.js</code>; what remains here is a contract test for the 402 document.</li>
 <li><strong><code>npm run docs:check</code> no longer fails on scratch files.</strong> <code>scripts/audit-docs.mjs</code> walked <code>tmp/</code>, which is gitignored, so a working note left there turned the docs gate red for everyone.</li>
 </ul>
-<h3 id="added-1">Added</h3>
+<h3 id="added-2">Added</h3>
 <ul>
 <li><strong>Sweeps run over any feed, not just a profile.</strong> <code>scripts/engageProfile.js</code> now recognises a profile, its replies tab, search results, a list, a hashtag, and your home timeline, and keeps separate progress for each. It takes the permalink from the post&#39;s timestamp rather than the first <code>/status/</code> link in the row, so a post that quotes another post is no longer at risk of having the quoted post engaged instead. Author allow and block lists, keyword and skip-keyword matching, like floors and ceilings, and a skip-verified toggle keep a mixed-feed sweep aimed; your own posts are never engaged.</li>
 <li><strong><code>XEngage.inspect()</code>.</strong> Run it in the console and every post on screen comes back with either <code>eligible: true</code> or the exact filter that rejected it. A sweep that engages nothing used to be silent about why.</li>
@@ -257,7 +264,7 @@
 <ul>
 <li><strong>One extraction module for both surfaces.</strong> <code>src/video/edgeExtractor.js</code> holds the credential-free lanes, and <code>api/services/videoExtractor.js</code> now imports them and keeps only its Puppeteer last resort, which removed 350 lines of duplicated parsing and fixed two bugs the copy had drifted into: a GraphQL query ID X rotated away from, and an fxtwitter parser that read one quality when the response carries the whole ladder. HLS playlists are filtered out of the variant list, since a <code>.m3u8</code> cannot be saved as a video file.</li>
 </ul>
-<h3 id="added-2">Added</h3>
+<h3 id="added-3">Added</h3>
 <ul>
 <li><strong>Installable by any Agent Skills installer, plus a CLI lane for agents and a <code>.mcpb</code> bundle for Claude Desktop.</strong> The 49 skills already followed the <a target="_blank" rel="noopener noreferrer" href="https://agentskills.io/specification">Agent Skills spec</a> except for one: <code>a2a-multi-agent</code> shipped with no frontmatter at all, so every third-party installer silently dropped it and resolved 48. It has <code>name</code>, <code>description</code>, <code>license</code> and <code>compatibility</code> now, and <code>npx skills add nirholas/XActions</code> installs the full catalogue (<code>references/</code> included) into whichever agent directories a machine has, alongside the existing <code>xactions skills install</code>. A rewritten root <a href="/docs/guides/agents">AGENTS.md</a> tells an agent when to shell out instead of loading the MCP server: the tool list is 150 tools and about 60 KB of JSON on connect, which is a fair price for a long session or a write and a poor one for one lookup, so the file carries the decision table plus verified recipes for profile, tweets, search, followers, non-followers and analyze with the exact <code>--compact</code> and <code>--fields</code> flags (and the fact that <code>--compact</code> wins over <code>--json</code> when both are passed). And <code>node scripts/build-mcpb.mjs</code> builds <code>xactions-&lt;version&gt;.mcpb</code>, a bundle a user drags onto Claude Desktop &gt; Settings &gt; Extensions: the manifest prompts for the session cookie, the tool groups and the approval gate at install time, so nothing is typed into a JSON config. The build validates the manifest against the MCPB schema, then unpacks what it packed and starts the server from it, so a bundle that cannot launch fails at build time; <code>.github/workflows/release-mcpb.yml</code> attaches it with a SHA-256 to every <code>v*</code> tag. Docs: <a href="/docs/guides/skills">docs/skills.md</a>, <a href="/docs/guides/mcp-setup">docs/mcp-setup.md</a>.</li>
 <li><strong>Real-time events off x.com&#39;s own pipeline, instead of polling for them.</strong> <code>createLivePipeline()</code> (<code>xactions/streaming</code>) holds one long-lived connection to <code>https://api.x.com/live_pipeline/events</code> open and pushes tweet engagement counters, DM updates and typing indicators as they happen, in under a second, with no poll interval. Topics are built with <code>Topic.tweetEngagement(id)</code>, <code>Topic.dmUpdate(conversationId)</code> and <code>Topic.dmTyping(conversationId)</code>, and <code>subscribe()</code> / <code>unsubscribe()</code> change what a running session watches without dropping the connection. Frames are normalised into <code>{ type, topic, payload, receivedAt, raw }</code> with <code>type</code> one of <code>engagement</code>, <code>dm</code>, <code>typing</code>, <code>config</code>, <code>unknown</code>, so an unmodelled frame key surfaces with its raw body rather than disappearing. It rides out trouble: a silence watchdog tied to the heartbeat the server advertises, subscriptions re-asserted before their TTL expires, reconnect with exponential backoff and jitter that re-subscribes every live topic, and a <code>close()</code> that resolves once nothing is left running. A session with no <code>auth_token</code> fails with a typed <code>LivePipelineAuthError</code> before a request is sent, because this endpoint rejects guest tokens. <code>createStream({ transport: &#39;live&#39;, topics, cookies })</code> runs a managed stream over it and emits <code>stream:engagement</code> / <code>stream:dm</code> / <code>stream:typing</code> to Socket.IO clients; <code>transport</code> defaults to <code>poll</code>, and any live stream that cannot connect, or gives up reconnecting, logs the reason once and falls back to polling. No new dependency: the transport is chunked HTTP, not a WebSocket, which is what x.com actually serves. Docs: <a href="/docs/guides/streaming#live-event-stream">docs/streaming.md</a>.</li>
@@ -271,7 +278,7 @@
 <li><strong><code>xactions login --cookies-file &lt;path&gt;</code> and <code>xactions login --from-browser [browser]</code>.</strong> Login no longer means pasting <code>auth_token</code> out of DevTools. <code>--cookies-file</code> imports a session from any common export: Netscape <code>cookies.txt</code> (including <code>#HttpOnly_</code> prefixes), Cookie-Editor / EditThisCookie JSON arrays, Playwright / Puppeteer <code>storageState</code>, or a raw <code>auth_token=...; ct0=...</code> header string. <code>--from-browser</code> reads x.com cookies straight out of a locally installed browser: Firefox on every platform, and Chromium-family browsers (chrome, chromium, brave, edge, arc) on Linux (default keyring-less key) and macOS (via the Keychain). Unsupported combinations (Windows Chromium, or a Linux Chromium sealed by the system keyring) print the exact <code>--cookies-file</code> export path to use instead. Both paths extract <code>auth_token</code> + <code>ct0</code> (and any other x.com cookies) and save through the same session storage every later command reads. New reusable module <code>src/client/auth/cookieImport.js</code> exports <code>parseCookieInput</code>, <code>detectCookieFormat</code>, and <code>readBrowserCookies</code> from the package root.</li>
 <li><strong>Every request the HTTP scraper sends is now signed the way x.com&#39;s own web client signs it.</strong> x.com attaches an <code>x-client-transaction-id</code> header to every GraphQL and internal REST call; XActions generated none, which is one of the cheapest ways to tell a scraper from a browser. <code>src/scrapers/twitter/http/transactionId.js</code> builds the value per request from the HTTP method, the request path, the clock, and the <code>{verification key, animation key}</code> pair the x.com page itself carries, and <code>TwitterHttpClient</code> signs inside its retry loop so no value is ever replayed. <code>GuestTokenManager.getHeaders({ method, path })</code> signs too. The keys are extracted once and cached under <code>$XACTIONS_HOME/transaction-keys.json</code> for 24 hours, so signing costs one SHA-256 after the first call; a cold cache takes a published pair dictionary (about 200 ms, no bundle parsing) and falls back to parsing x.com&#39;s live page and <code>ondemand.s</code> chunk (about 350 ms) through the same webpack manifest parser query-ID discovery already uses. Signing never blocks a request: every failure path leaves the request unsigned rather than throwing, and a failed lookup is remembered for ten minutes. Off with <code>XACTIONS_TRANSACTION_ID=0</code> or <code>new TwitterHttpClient({ transactionId: false })</code>. Measured on the guest tier the header makes no observable difference (<code>200</code> and the same 150-per-window budget signed or not); the reported benefit is to how long an authenticated session survives, which only an authenticated multi-day run can confirm. Also fixed while wiring it: <code>GuestTokenManager.activate()</code> sent no User-Agent, and <code>guest/activate.json</code> answers such a request with a misleading <code>404 Sorry, that page does not exist</code>, so the HTTP scraper&#39;s guest lane could not get a token at all. Docs: <a href="/docs/guides/scraping-infrastructure#request-signing-x-client-transaction-id">docs/scraping-infrastructure.md</a>.</li>
 </ul>
-<h3 id="added-3">Added</h3>
+<h3 id="added-4">Added</h3>
 <ul>
 <li><strong><code>xactions skills</code> and <code>--compact</code>.</strong> <code>xactions skills list|show|install|uninstall</code> copies the bundled SKILL.md catalogue into the place your agent reads: <code>~/.claude/skills/</code> or <code>./.claude/skills/</code> (Claude Code), <code>./.cursor/rules/*.mdc</code> (Cursor), <code>~/.codex/skills/</code> plus a managed <code>AGENTS.md</code> block (Codex), or <code>./.windsurf/rules/</code> (Windsurf), idempotently and with a per-skill report; <code>doctor</code> now counts installs per target. The new global <code>--compact</code> flag prints the read commands (<code>profile</code>, <code>tweets</code>, <code>search</code>, <code>thread</code>, <code>followers</code>, <code>following</code>, <code>non-followers</code>, <code>hashtag</code>, <code>media</code>, <code>analyze</code>) as one tab-separated <code>key=value</code> record per line with only the essential fields, and <code>--fields id,text,likes</code> picks columns; both <code>--json</code> and <code>--compact</code> keep the spinner silent when stdout is a pipe.</li>
 <li><strong>Sweep a whole profile: like, repost, and reply to every post.</strong> Doing this by hand on a hundred-post account is twenty minutes of clicking. <a href="scripts/engageProfile.js"><code>scripts/engageProfile.js</code></a> does it from the console with a floating panel: per-action toggles, speed presets, a 90-second rest every 20 posts, automatic back-off after three failures, DOM-verified actions, progress saved per profile so a reload resumes, undo for likes and reposts, and a JSON export. Replies come from templates (<code>{author}</code>, <code>{name}</code>, never the same one twice in a row) or from an LLM given a one-line brief. Grok works straight from the console because x.com&#39;s CSP allows <code>api.x.ai</code>; every other provider goes through the extension.</li>
@@ -279,20 +286,20 @@
 <li><strong>Extension LLM relay.</strong> The browser extension now answers <code>LLM_REQUEST</code> messages from page scripts by calling the provider from its service worker, which is not bound by x.com&#39;s Content-Security-Policy. Host permissions were added for OpenRouter, OpenAI, Anthropic, xAI, and localhost.</li>
 <li><strong><code>POST /api/ai/writer/comment</code></strong> and <code>createCommentGenerator()</code> in <code>xactions/ai</code>: prompt-driven reply generation with no voice profile, shared by the CLI, the API, and the extension. Replies are sanitised and regenerated once when they open with boilerplate.</li>
 </ul>
-<h3 id="added-4">Added</h3>
+<h3 id="added-5">Added</h3>
 <ul>
 <li><strong>MCP server: tool filtering, Streamable HTTP, and an approval gate.</strong> <code>XACTIONS_MCP_TOOLS</code> / <code>XACTIONS_MCP_EXCLUDE</code> (or <code>--tools</code> / <code>--exclude</code>) trim the 149-tool list by name, group (<code>read</code>, <code>write</code>, <code>dm</code>, <code>analytics</code>, ...), or <code>x_get_*</code> pattern, and a filtered tool is refused with the group to enable rather than a generic error. <code>xactions-mcp --http [--port 8787] [--host 127.0.0.1]</code> serves the MCP Streamable HTTP transport on <code>/mcp</code>, with bearer auth via <code>XACTIONS_MCP_TOKEN</code>; stdio stays the default. <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code> (or <code>--require-approval</code>) holds every write tool as a draft in <code>~/.xactions/mcp-drafts.json</code> instead of running it, and the always-available <code>x_list_drafts</code>, <code>x_draft_status</code>, <code>x_approve_draft</code>, and <code>x_discard_draft</code> tools manage the queue. Also fixed: <code>x_list_platforms</code> was declared but never handled and now lists every scraper platform with its capabilities and the adapter registry; 32 tool descriptions that were too short to guide a model were rewritten; and a coverage test now fails the build if a declared tool has no handler. Docs: <a href="/docs/guides/mcp-setup">MCP setup guide</a>.</li>
 </ul>
-<h3 id="added-5">Added</h3>
+<h3 id="added-6">Added</h3>
 <ul>
 <li><strong>GraphQL query IDs refresh themselves from x.com&#39;s bundles.</strong> The HTTP scraper pinned every GraphQL query ID to a value copied from twikit, and X rotates those IDs with each web release; on 2026-08-27, 22 of the 26 pinned IDs were stale, including <code>UserByScreenName</code>, <code>TweetDetail</code> and <code>SearchTimeline</code>. <code>src/scrapers/twitter/http/queryIds.js</code> now loads an x.com page, reads its webpack chunk manifest, downloads <code>main</code> plus the feature chunks that carry our operations, and extracts the live <code>{queryId, operationName}</code> pairs into <code>~/.xactions/query-ids.json</code> (honours <code>XACTIONS_HOME</code>). <code>TwitterHttpClient</code> prefers the cached ID over the pinned one, refreshes once and retries when a call answers <code>404</code> or a <code>400</code> naming the persisted query, and refreshes in the background when the cache is older than 24 hours. The pinned table stays as the offline fallback. <code>queryIdStatus()</code> exposes <code>{cached, fetchedAt, count}</code> for <code>xactions doctor</code>.</li>
 </ul>
-<h3 id="added-6">Added</h3>
+<h3 id="added-7">Added</h3>
 <ul>
 <li><strong>Import your official X archive.</strong> <code>importTwitterArchive(path)</code> in <code>src/portability</code> reads the data export X sends you (the GDPR zip, or the folder you extracted it to) and returns normalised tweets, likes, following, followers, blocks, mutes, DMs grouped by conversation, lists, account, profile and media references. Zips are streamed entry by entry with <code>yauzl</code> so multi-gigabyte archives never have to fit in memory; multi-part files (<code>tweets-part1.js</code>) are merged in order. <code>summarizeArchive</code> and <code>formatArchiveReport</code> produce a counts, date range, busiest year and top hashtag report; <code>exportArchive</code> writes the import in the same JSON/CSV/Markdown/HTML layout <code>export</code> produces, and <code>migrate</code> accepts <code>source: &#39;twitterArchive&#39;</code> to go straight from the zip to a Bluesky or Mastodon dry run. See <a href="/docs/guides/portability#import-your-x-archive">docs/portability.md</a>.</li>
 </ul>
 <h2 id="350---2026-08-04">[3.5.0] - 2026-08-04</h2>
-<h3 id="added-7">Added</h3>
+<h3 id="added-8">Added</h3>
 <h4 id="a-cli-you-can-find-your-way-around">A CLI you can find your way around</h4>
 <ul>
 <li><strong>Commands are grouped by task.</strong> Running <code>xactions</code> printed fifty-three commands in one flat alphabetical list, which tells a newcomer nothing about where to start and an experienced user nothing about what else exists. The root help now sorts them into eight task-shaped groups (Start here, Read an account, Followers and audience, Search and monitor, Write and grow, Automate, Move data, Low level) with an examples block and pointers to <code>quickstart</code>, per-command help, and completions. The grouping is reconciled against the live command tree, so a newly registered command still appears (under &quot;More&quot;) and a group entry naming a deleted command is caught by a test rather than shipped.</li>
@@ -340,7 +347,7 @@
 <li><strong><code>tests/x402-integration.test.js</code> failed for every contributor.</strong> Its skip condition was inverted: it skipped in CI and ran on laptops, so a clean checkout produced 21 red <code>ECONNREFUSED</code> failures. It now probes for a server and skips when there is not one.</li>
 <li>Two A2A tests asserted a hardcoded <code>3.1.0</code> against the real version.</li>
 </ul>
-<h3 id="added-8">Added</h3>
+<h3 id="added-9">Added</h3>
 <h4 id="examples-and-tutorials">Examples and tutorials</h4>
 <ul>
 <li><strong><a href="examples/"><code>examples/</code></a></strong> — 8 runnable programs, each verified against the live API before release: profile lookup, timeline analysis, offline sentiment reports, a three-network comparison, CSV export, non-follower analysis, a keyword monitor, and an MCP client that drives the server over stdio.</li>
@@ -394,7 +401,7 @@
 <ul>
 <li>Every script in <code>scripts/twitter/</code> (beyond the two already rewritten) was read end-to-end and fixed where real bugs were found. Highlights: all scripts using top-level <code>const CONFIG</code> broke on re-paste into an already-open DevTools console (a <code>SyntaxError</code>, since <code>const</code>/<code>let</code> bindings persist across console pastes in the same tab) — fixed to <code>var</code> everywhere. Added consistent <code>window.stopX()</code> abort switches to every long-running loop that lacked one. Fixed stale-DOM bugs in <code>mass-unblock.js</code>/<code>mass-unmute.js</code> (cached elements pointing at rows already removed from a virtualized list), a wrong-author-attribution bug on quote-tweets in <code>bookmark-exporter.js</code>, a duplicate-processing risk in the hashtag/location commenters, several <code>window.location.href</code> reloads that silently killed the running script mid-workflow, and wired up half-implemented options (filters, reply templates, video quality selection) that were declared but never actually checked.</li>
 </ul>
-<h3 id="added-9">Added</h3>
+<h3 id="added-10">Added</h3>
 <h4 id="google-cloud-run-deployment-for-the-hosted-api">Google Cloud Run deployment for the hosted API</h4>
 <ul>
 <li><code>deploy/gcp/provision-api.sh</code> + <code>deploy/gcp/cloudbuild-api.yaml</code>: one-shot provisioning (Cloud SQL Postgres, Secret Manager, IAM) and build/deploy for the <code>xactions-api</code> Cloud Run service, reusing the existing Memorystore Redis instance instead of standing up new infra. <code>api/services/jobQueue.js</code>&#39;s Bull queue now namespaces its Redis keys so it can safely share that instance.</li>
@@ -428,7 +435,7 @@
 <li>Repaired every broken documentation cross-link (664 .md links plus repo-file links) and rebuilt the sitemap from 47 stale URLs to 535 real ones.</li>
 </ul>
 <h2 id="322---2026-07-19">[3.2.2] - 2026-07-19</h2>
-<h3 id="added-10">Added</h3>
+<h3 id="added-11">Added</h3>
 <h4 id="xactionsapp-is-live-again-on-cloudflare-pages-free">xactions.app is live again, on Cloudflare Pages (free)</h4>
 <ul>
 <li><code>deploy/cloudflare/</code>: build script + <code>_redirects</code> deploying the full site
@@ -450,13 +457,13 @@ environments without Cloudflare access</li>
 <li>Reliability: end-of-list stall detection that never fired, missing <code>videoComponent</code> selectors, unrevoked Blob URLs, setInterval re-entrancy</li>
 <li><code>src/cli/index.js</code>: <code>await</code> in a non-async SIGINT handler crashed the whole CLI on load</li>
 </ul>
-<h3 id="added-11">Added</h3>
+<h3 id="added-12">Added</h3>
 <h4 id="cloud-run-deployment-for-xactionsapp">Cloud Run deployment for xactions.app</h4>
 <ul>
 <li><code>deploy/gcp/</code>: Dockerfile, nginx config, and Cloud Build pipeline serving the landing page, dashboard, docs, tutorials, and blog with the same clean-URL routing the Vercel deployment had (Vercel deployment is disabled and the domain has been down)</li>
 </ul>
 <h2 id="320---2026-07-19">[3.2.0] - 2026-07-19</h2>
-<h3 id="added-12">Added</h3>
+<h3 id="added-13">Added</h3>
 <h4 id="scraper-toolbox-browser-console">Scraper Toolbox (browser console)</h4>
 <ul>
 <li><code>scripts/twitter/scraper-toolbox.js</code>: interactive on-page control panel for scraping any X timeline (profile, search, list, likes, bookmarks, home)</li>
@@ -478,7 +485,7 @@ environments without Cloudflare access</li>
 <li>Video attachments using the newer <code>videoComponent</code> testid were not detected</li>
 </ul>
 <h2 id="310---2026-02-25">[3.1.0] - 2026-02-25</h2>
-<h3 id="added-13">Added</h3>
+<h3 id="added-14">Added</h3>
 <h4 id="plugin-system">Plugin System</h4>
 <ul>
 <li>Community plugin architecture — create <code>xactions-plugin-*</code> npm packages</li>
@@ -587,7 +594,7 @@ environments without Cloudflare access</li>
 <li>Dependencies updated: vitest 4.x, puppeteer 24.x, added node-cron, better-sqlite3, exceljs</li>
 </ul>
 <h2 id="100---2026-02-11">[1.0.0] - 2026-02-11</h2>
-<h3 id="added-14">Added</h3>
+<h3 id="added-15">Added</h3>
 <ul>
 <li>Initial release</li>
 </ul>
@@ -595,7 +602,7 @@ environments without Cloudflare access</li>
     </article>
 
     <div class="page-meta">
-      <span>37 min read</span>
+      <span>39 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/CHANGELOG.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Changelog" target="_blank" rel="noopener">Report a problem</a>
     </div>

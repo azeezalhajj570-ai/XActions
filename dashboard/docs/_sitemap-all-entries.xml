@@ -219,6 +219,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://xactions.app/docs/guides/mcp-remote</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://xactions.app/docs/guides/mcp-setup</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -245,6 +250,11 @@
   </url>
   <url>
     <loc>https://xactions.app/docs/guides/price-correlation</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/guides/reputation-audit</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -635,6 +645,11 @@
   </url>
   <url>
     <loc>https://xactions.app/docs/skills/profile-management</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://xactions.app/docs/skills/reputation-audit</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

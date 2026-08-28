@@ -50,9 +50,11 @@ function stubTwitter() {
 }
 
 const ctx = {
+  // The real searcher returns raw index chunks, with the short keys the asset
+  // uses. Anything richer here would test a shape that never ships.
   getSearcher: async () => ({
     search: (query) => (query.includes('nothing') ? [] : [
-      { title: 'Video Downloader', url: 'https://xactions.app/docs/video-downloader', text: 'Download videos from any public post.' },
+      { t: 'Video Downloader', u: 'https://xactions.app/docs/video-downloader', p: 'docs/video-downloader.md', k: 'doc', x: 'Download videos from any public post.', score: 9.1 },
     ]),
   }),
   getResources: async () => buildResourceIndex({
@@ -142,6 +144,12 @@ describe('tools', () => {
     const { result } = await rpc('tools/call', { name: 'xactions_docs', arguments: { query: 'how do I download a video' } });
     expect(result.isError).toBe(false);
     expect(result.structuredContent.results).toHaveLength(1);
+    expect(result.structuredContent.results[0]).toMatchObject({
+      title: 'Video Downloader',
+      url: 'https://xactions.app/docs/video-downloader',
+      kind: 'doc',
+      text: 'Download videos from any public post.',
+    });
     expect(result.content[0].text).toContain('https://xactions.app/docs/video-downloader');
   });
 

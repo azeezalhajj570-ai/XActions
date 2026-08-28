@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 69 more…</a>
+      <a class="sidebar__link" href="/docs">+ 71 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -140,7 +140,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -203,12 +203,16 @@ discovering afterwards that you removed people you meant to keep. This tutorial
 is built around not doing that.</p>
 <hr>
 <h2 id="step-0--log-in">Step 0 — Log in</h2>
-<pre><code class="language-bash">npx xactions login
+<pre><code class="language-bash">npx xactions connect
 </code></pre>
+<p>That opens a real browser, waits for you to log in normally, and captures the
+session. If you are already logged in to X in a local browser,
+<code>npx xactions login --from-browser chrome</code> skips the window entirely.</p>
 <p>Follower and following lists are session-tier: X will not serve them to a
-logged-out request. You need both <code>auth_token</code> and <code>ct0</code>. See
-<a href="/docs/learn/your-first-scrape#step-4--log-in">Tutorial 01, step 4</a> if you have not
-done this.</p>
+logged-out request, and you need both <code>auth_token</code> and <code>ct0</code>. See
+<a href="/docs/learn/your-first-scrape#step-4--log-in">Tutorial 01, step 4</a> for the manual
+route and for what each cookie does. <code>npx xactions doctor</code> confirms where you
+stand.</p>
 <hr>
 <h2 id="step-1--look-before-you-touch">Step 1 — Look before you touch</h2>
 <pre><code class="language-bash">npx xactions non-followers YOUR_USERNAME
@@ -227,8 +231,10 @@ Non-followers:
 </code></pre>
 <p>This reads both lists and diffs them. It changes nothing.</p>
 <p>Save the full list before going further:</p>
-<pre><code class="language-bash">npx xactions non-followers YOUR_USERNAME --output non-followers.json
+<pre><code class="language-bash">npx xactions non-followers YOUR_USERNAME --limit 5000 --output non-followers.json
 </code></pre>
+<p><code>--limit</code> defaults to 500, which is not enough for most accounts. <code>--json</code>
+prints the same data on stdout instead, if you would rather pipe it.</p>
 <hr>
 <h2 id="step-2--decide-who-you-actually-want-gone">Step 2 — Decide who you actually want gone</h2>
 <p>858 accounts is not a decision, it is a number. Sort it into things you can
@@ -315,6 +321,16 @@ npx xactions bulk unfollow cut-list.json --delay 3000 --resume
 </code></pre>
 <p>It accepts JSON, CSV, or a plain text file of handles, so you can hand-edit the
 list before running it. That is usually worth doing.</p>
+<h3 id="ask-an-assistant-with-a-hand-on-the-brake">Ask an assistant, with a hand on the brake</h3>
+<p>If an assistant is driving through <a href="/docs/learn/mcp-with-claude">MCP</a>, run the server
+with <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code>. Every unfollow it decides on is held as a
+draft rather than executed, and you release them yourself:</p>
+<pre><code class="language-bash">xactions drafts list
+xactions drafts approve &lt;id&gt;
+xactions drafts discard &lt;id&gt;
+</code></pre>
+<p>That is the difference between an assistant that suggests 400 unfollows and one
+that performs them. See <a href="/docs/learn/mcp-with-claude#step-7--make-it-ask-before-it-acts">Tutorial 02, step 7</a>.</p>
 <h3 id="ask-an-assistant">Ask an assistant</h3>
 <p>With the <a href="/docs/learn/mcp-with-claude">MCP server</a> configured:</p>
 <blockquote>
@@ -385,6 +401,7 @@ PostgreSQL. See <a href="/docs/guides/database#follower-history">docs/database.m
 <li><code>dryRun: true</code> is the default for a reason</li>
 <li>50 at a time, 3s apart, a few hundred a day</li>
 <li>Unfollower detection is snapshot diffing, so start recording now</li>
+<li>Let an agent do it only behind the draft-approval gate</li>
 </ul>
 <h2 id="next">Next</h2>
 <ul>
@@ -396,7 +413,7 @@ PostgreSQL. See <a href="/docs/guides/database#follower-history">docs/database.m
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>4 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/tutorials/03-clean-up-your-following.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Tutorial%2003%20%E2%80%94%20Clean%20up%20your%20following%20list" target="_blank" rel="noopener">Report a problem</a>
     </div>

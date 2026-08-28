@@ -256,7 +256,16 @@ export const EDGE_TOOLS = [
       const question = String(query || '').trim();
       if (!question) throw new ToolInputError('query is required.');
       const searcher = await ctx.getSearcher();
-      const results = searcher.search(question, { limit: clamp(limit, 6, 20) });
+      // The retrieval index stores short keys to keep the asset small. Expand
+      // them here so the tool's output is self-describing to a model.
+      const results = searcher.search(question, { limit: clamp(limit, 6, 20) }).map((chunk) => ({
+        title: chunk.t,
+        url: chunk.u,
+        path: chunk.p,
+        kind: chunk.k,
+        text: chunk.x,
+        score: chunk.score,
+      }));
       if (!results.length) {
         return {
           text: `Nothing in the XActions docs matched "${question}". Try naming the action (unfollow, scrape, schedule, download) or the surface (CLI, MCP, browser script).`,
@@ -264,7 +273,7 @@ export const EDGE_TOOLS = [
         };
       }
       const text = results
-        .map((source, index) => `${index + 1}. ${source.title} (${source.url})\n${source.text.trim()}`)
+        .map((source, index) => `${index + 1}. ${source.title} (${source.url})\n${String(source.text || '').trim()}`)
         .join('\n\n');
       return { text, data: { query: question, results } };
     },
@@ -279,7 +288,10 @@ export const EDGE_TOOLS = [
  */
 export function toolErrorMessage(error) {
   if (error instanceof ToolInputError) return error.message;
-  const status = statusForError(error);
+  // Errors carry the upstream status directly when they have one. Reading it
+  // first means a 429 raised anywhere in a fallback chain still produces the
+  // actionable message, not the last rail's raw wording.
+  const status = Number(error?.status) || statusForError(error);
   if (status === 404) return `Not found: ${error.message}`;
   if (status === 429) return 'X is rate-limiting anonymous reads right now. Wait about a minute and try again.';
   if (status === 403) return 'X refused this read without an account. Only public profiles, posts and timelines are available here.';

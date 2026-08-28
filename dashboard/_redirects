@@ -12,6 +12,13 @@
 /tutorials /tutorials/index.html 200
 
 # Clean URL routes
+# /mcp is the hosted MCP server (functions/mcp.js), which hands a browser the
+# page below. This rule keeps the page reachable at /mcp even when the function
+# is not deployed. Pages Functions take precedence, so the function wins when
+# it is there. The page cannot be named mcp.html: that would make the asset
+# handler canonicalise /mcp back to itself and loop.
+/mcp /mcp-docs 200
+
 /login /login.html 200
 /pricing /pricing.html 200
 /about /about.html 200
@@ -24,7 +31,6 @@
 /ai /ai.html 200
 /ask /ask.html 200
 /ai-api /ai-api.html 200
-/mcp /mcp.html 200
 /monitor /monitor.html 200
 /automations /automations.html 200
 /workflows /workflows.html 200

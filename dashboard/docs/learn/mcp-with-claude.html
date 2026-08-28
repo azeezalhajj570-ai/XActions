@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 69 more…</a>
+      <a class="sidebar__link" href="/docs">+ 71 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -140,7 +140,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -196,7 +196,8 @@
 <h1 id="tutorial-02--claude-that-can-use-x">Tutorial 02 — Claude that can use X</h1>
 <p><strong>Time:</strong> 10 minutes · <strong>Login required:</strong> optional · <strong>You need:</strong> Node.js 18+ and an MCP client</p>
 <p>MCP (Model Context Protocol) is how AI assistants call external tools. This
-tutorial connects XActions&#39; 144 tools to Claude Desktop, Cursor, or Windsurf, so
+tutorial connects the XActions MCP server&#39;s 152 tools to Claude Desktop, Cursor,
+or Windsurf, so
 you can ask for a competitor analysis in English and have the assistant actually
 go and get the data.</p>
 <p>Assumes <a href="/docs/learn/your-first-scrape">Tutorial 01</a>.</p>
@@ -208,9 +209,16 @@ saves most of the debugging people do later:</p>
 </code></pre>
 <p>You should see, on stderr:</p>
 <pre><code>💻 XActions MCP Server: Local mode (free)
-⚡ XActions MCP Server v3.5.0 - 152 tools
+   Using Puppeteer for browser automation
 
-📋 Tools available: 151
+⚡ XActions MCP Server v3.5.0 — 152 tools
+   The free, open-source Twitter/X MCP server
+   https://github.com/nirholas/XActions
+
+⚠️  No auth_token configured. Some tools require authentication.
+   ...
+
+📋 Tools available: 152
    Scraping: x_get_profile, x_get_followers, x_get_following, x_get_tweets, x_search_tweets, x_get_thread, x_download_video
    Analysis: x_detect_unfollowers, x_analyze_sentiment, x_best_time_to_post, x_competitor_analysis, x_brand_monitor
    Actions: x_follow, x_unfollow, x_like, x_post_tweet, x_post_thread, x_reply
@@ -226,16 +234,19 @@ saves most of the debugging people do later:</p>
 cd XActions &amp;&amp; npm install
 node examples/08-mcp-tool-call.js
 </code></pre>
-<pre><code>Connected to xactions-mcp v3.4.4
-Server offers 144 tools.
+<pre><code>Connected to xactions-mcp v3.5.0
+Server offers 152 tools.
 
-Calling x_get_profile — Get profile information for a user...
+Calling x_get_profile — Get profile information for a user including bio, follower count, etc. Supports Twitter, Bluesky, Threads, and Mastodon.
 
 {
   &quot;name&quot;: &quot;NASA&quot;,
   &quot;username&quot;: &quot;NASA&quot;,
-  &quot;followers&quot;: 92227380,
-  ...
+  &quot;bio&quot;: &quot;Making the seemingly impossible, possible. ✨&quot;,
+  &quot;followers&quot;: 92356527,
+  &quot;tweets&quot;: 74197,
+  &quot;verified&quot;: true,
+  &quot;platform&quot;: &quot;twitter&quot;
 }
 </code></pre>
 <p>If that prints a profile, the server is healthy. Anything that goes wrong from
@@ -277,7 +288,7 @@ servers are spawned at application startup.</p>
 </code></pre>
 <hr>
 <h2 id="step-3--add-a-session">Step 3 — Add a session</h2>
-<p>Without a session the server still starts and still offers all 144 tools. The
+<p>Without a session the MCP server still starts and still offers all 152 tools. The
 guest-tier ones work; the rest report that they need a login. To unlock
 everything, put your cookies in the <code>env</code> block:</p>
 <pre><code class="language-json">{
@@ -324,7 +335,7 @@ sentiment.</p>
 <code>x_get_tweets</code> to pull the timeline, then its own reasoning over the results.</p>
 <hr>
 <h2 id="step-5--know-what-it-can-do">Step 5 — Know what it can do</h2>
-<p>The 144 tools group roughly like this:</p>
+<p>The MCP server&#39;s 152 tools group roughly like this:</p>
 <table>
 <thead>
 <tr>
@@ -355,13 +366,18 @@ sentiment.</p>
 </tr>
 <tr>
 <td>Bulk</td>
-<td><code>x_unfollow_non_followers</code>, <code>x_detect_unfollowers</code>, <code>x_mass_block</code></td>
+<td><code>x_unfollow_non_followers</code>, <code>x_detect_unfollowers</code>, <code>x_smart_unfollow</code></td>
 <td align="center">yes</td>
 </tr>
 <tr>
 <td>Analytics</td>
-<td><code>x_best_time_to_post</code>, <code>x_engagement_analytics</code>, <code>x_shadowban_check</code></td>
+<td><code>x_best_time_to_post</code>, <code>x_engagement_report</code>, <code>x_get_post_analytics</code></td>
 <td align="center">mixed</td>
+</tr>
+<tr>
+<td>Drafts</td>
+<td><code>x_list_drafts</code>, <code>x_draft_status</code>, <code>x_approve_draft</code>, <code>x_discard_draft</code></td>
+<td align="center">no</td>
 </tr>
 <tr>
 <td>Cross-platform</td>
@@ -369,19 +385,88 @@ sentiment.</p>
 <td align="center">no</td>
 </tr>
 </tbody></table>
-<p>To list them yourself:</p>
+<p>To list them yourself, ask the assistant <em>&quot;What XActions tools do you have?&quot;</em>,
+or print the real list with no assistant in the loop:</p>
 <pre><code class="language-bash">node examples/08-mcp-tool-call.js x_get_profile nasa
 </code></pre>
-<p>or ask the assistant: <em>&quot;What XActions tools do you have?&quot;</em></p>
+<p>That example prints the live tool count and the description of whichever tool
+you name, so it doubles as a way to check a tool exists before building a prompt
+around it.</p>
 <hr>
 <h2 id="step-6--give-it-a-playbook">Step 6 — Give it a playbook</h2>
 <p>Tools tell an assistant <em>what it can do</em>. <a href="/docs/guides/skills">Skills</a> tell it
 <em>how to do a specific job well</em>: which tools in which order, what the rate
 limits are, what not to do.</p>
+<p>There are 49 of them in <a href="../skills/"><code>skills/</code></a>. They are plain markdown, so
+they work with any assistant, MCP or not. Install them where your agent looks:</p>
+<pre><code class="language-bash">npx xactions skills list                            # what exists, and where it is installed
+npx xactions skills install --all --global          # every skill, under your home directory
+npx xactions skills install follower-monitoring     # one skill, into ./.claude/skills
+npx xactions skills install --all --target cursor   # or codex, windsurf, project
+</code></pre>
+<pre><code>  + follower-monitoring            claude    installed /your/project/.claude/skills/follower-monitoring
+  + content-posting                claude    installed /your/project/.claude/skills/content-posting
+
+  2 installed
+</code></pre>
+<p><code>--target</code> picks the agent (<code>claude</code>, <code>project</code>, <code>cursor</code>, <code>codex</code>, <code>windsurf</code>);
+<code>--global</code> installs under your home directory instead of the current project.
+<code>xactions skills show &lt;name&gt;</code> prints one without installing it, and
+<code>xactions skills uninstall</code> reverses it. <code>xactions doctor</code> tells you how many are
+installed for each agent.</p>
+<p>Without installing anything you can still point an assistant straight at one:</p>
 <pre><code>Read skills/follower-monitoring/SKILL.md, then set up unfollower tracking for my account.
 </code></pre>
-<p>There are 49 of them in <a href="../skills/"><code>skills/</code></a>. They are plain markdown, so they
-work with any assistant, MCP or not.</p>
+<hr>
+<h2 id="step-7--make-it-ask-before-it-acts">Step 7 — Make it ask before it acts</h2>
+<p>By default an assistant that decides to call <code>x_post_tweet</code> posts. If you would
+rather review first, start the server in approval mode:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;xactions&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;xactions-mcp&quot;],
+      &quot;env&quot;: {
+        &quot;XACTIONS_SESSION_COOKIE&quot;: &quot;your_auth_token_value&quot;,
+        &quot;XACTIONS_CSRF_TOKEN&quot;: &quot;your_ct0_value&quot;,
+        &quot;XACTIONS_MCP_REQUIRE_APPROVAL&quot;: &quot;1&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<p>Now every write tool (post, reply, follow, unfollow, like, block, DM) is saved
+as a draft instead of running, and the assistant is told exactly that:</p>
+<pre><code>{
+  &quot;held&quot;: true,
+  &quot;draftId&quot;: &quot;88aae55b&quot;,
+  &quot;tool&quot;: &quot;x_post_tweet&quot;,
+  &quot;args&quot;: { &quot;text&quot;: &quot;A post an agent proposed. Never sent.&quot; },
+  &quot;message&quot;: &quot;Approval mode is on. \&quot;x_post_tweet\&quot; was saved as draft 88aae55b and has NOT been executed.&quot;,
+  &quot;next&quot;: &quot;Review with x_draft_status, run with x_approve_draft {\&quot;id\&quot;:\&quot;88aae55b\&quot;}, or drop with x_discard_draft.&quot;
+}
+</code></pre>
+<p>Reads are untouched, so the assistant can still research freely. Review the
+queue from your terminal:</p>
+<pre><code class="language-bash">xactions drafts list                 # everything waiting, newest first
+xactions drafts show 88aae55b        # one draft with its full arguments
+xactions drafts approve 88aae55b     # run it exactly as the agent submitted it
+xactions drafts discard 88aae55b     # delete it without running it
+xactions drafts clear                # drop executed and failed ones, keep pending
+</code></pre>
+<pre><code>  ID        STATUS    AGE       TOOL                      ARGS
+  88aae55b  pending   just now  x_post_tweet              text=&quot;A post an agent proposed. Never sent.&quot;
+
+  1 draft, 1 pending. Approve one with `xactions drafts approve &lt;id&gt;`, everything with `--all`.
+</code></pre>
+<p>Approving replays the stored call through the same code path the original call
+would have taken, so an approved draft is the thing the agent asked for, not a
+re-typed approximation of it.</p>
+<p>Drafts live in <code>~/.xactions/mcp-drafts.json</code>. The assistant can inspect its own
+queue with <code>x_list_drafts</code> and <code>x_draft_status</code>.</p>
+<p><a href="../examples/09-draft-approval.js"><code>examples/09-draft-approval.js</code></a> walks the
+whole cycle in one runnable program, against a throwaway draft store, and never
+touches X.</p>
 <hr>
 <h2 id="when-it-does-not-connect">When it does not connect</h2>
 <p>Work down this list in order. It is ordered by how often each one is the answer.</p>
@@ -411,7 +496,8 @@ fails there, the problem is not the client.</p>
 <li>Config lives in the client, and a full restart is required</li>
 <li>Cookies go in the MCP <code>env</code> block, not a <code>.env</code> file</li>
 <li>Guest tools work with no login; the rest need <code>auth_token</code> <strong>and</strong> <code>ct0</code></li>
-<li>Skills turn a pile of tools into a procedure</li>
+<li>Skills turn a pile of tools into a procedure, and <code>xactions skills install</code> puts them where your agent looks</li>
+<li><code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code> turns every write into a draft you approve</li>
 </ul>
 <h2 id="next">Next</h2>
 <ul>
@@ -423,7 +509,7 @@ fails there, the problem is not the client.</p>
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/tutorials/02-mcp-with-claude.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Tutorial%2002%20%E2%80%94%20Claude%20that%20can%20use%20X" target="_blank" rel="noopener">Report a problem</a>
     </div>

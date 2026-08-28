@@ -120,6 +120,7 @@
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
+      <a class="sidebar__link" href="/docs/guides/reputation-audit">Reputation audit: AI-score your own timeline, get a shareable card</a>
       <a class="sidebar__link" href="/docs/guides/rss-monitor">Rss Monitor</a>
       <a class="sidebar__link" href="/docs/guides/scrapers">Scrapers</a>
       <a class="sidebar__link" href="/docs/guides/scraping-infrastructure">Scraping Infrastructure</a>
@@ -134,6 +135,7 @@
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
+      <a class="sidebar__link" href="/docs/guides/mcp-remote">The hosted MCP server</a>
       <a class="sidebar__link" href="/docs/guides/agents">Thought Leader Agent</a>
       <a class="sidebar__link" href="/docs/guides/agent-advanced">Thought Leader Agent — Advanced Features</a>
       <a class="sidebar__link" href="/docs/guides/agent-api-reference">Thought Leader Agent — API Reference</a>
@@ -150,8 +152,8 @@
       <a class="sidebar__link" href="/docs/guides/workflows">Workflow Engine</a>
       <a class="sidebar__link" href="/docs/guides/x-developer-api-crypto-guide-2026">X Developer API in 2026: The Complete Guide for Crypto Builders</a>
       <a class="sidebar__link" href="/docs/guides/dom-selectors">X/Twitter DOM Selector Reference</a>
-      <a class="sidebar__link" href="/docs/guides/api-reference">XActions — API Reference</a>
       <a class="sidebar__link" href="/docs/guides/ai-api">XActions AI API Documentation</a>
+      <a class="sidebar__link" href="/docs/guides/api-reference">XActions API Reference</a>
       <a class="sidebar__link" href="/docs/guides/automation">XActions Automation Framework Guide</a>
       <a class="sidebar__link" href="/docs/guides/cli-reference">XActions CLI Reference</a>
       <a class="sidebar__link" href="/docs/guides/xactions-reference">XActions Complete Function Reference</a>
@@ -161,7 +163,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0: Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -208,7 +210,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -336,14 +338,22 @@ command you ran and its full output.</p>
 </tbody></table>
 <p>X answers a logged-out request to a session-tier endpoint with a bare <code>404</code>,
 which is why the error mentions 404 even though the resource exists.</p>
-<p><strong>Fix:</strong> supply a session.</p>
-<pre><code class="language-bash">npx xactions login          # prompts for auth_token and ct0
+<p><strong>Fix:</strong> supply a session. Fastest first:</p>
+<pre><code class="language-bash">xactions login --from-browser firefox     # reads x.com cookies out of your browser
+xactions login --cookies-file cookies.txt # a cookies file you already exported
+xactions connect                          # log in through a real browser window
+xactions login                            # paste auth_token and ct0 by hand
 </code></pre>
-<p>or, for the library and the examples:</p>
+<p><code>--from-browser</code> accepts <code>chrome</code>, <code>chromium</code>, <code>brave</code>, <code>edge</code>, <code>arc</code> and
+<code>firefox</code>. It works headlessly for Firefox everywhere, and for Chromium-family
+browsers on Linux and macOS. If your browser seals its cookie store with the
+system keyring, or you are on Windows, XActions tells you which file to export
+and use with <code>--cookies-file</code>.</p>
+<p>For the library and the examples:</p>
 <pre><code class="language-bash">export X_AUTH_TOKEN=...
 export X_CSRF_TOKEN=...
 </code></pre>
-<p>Get both values from DevTools → <strong>Application</strong> → <strong>Cookies</strong> → <code>https://x.com</code>.</p>
+<p>Get both values from DevTools, <strong>Application</strong>, <strong>Cookies</strong>, <code>https://x.com</code>.</p>
 <h3 id="why-ct0-matters">Why ct0 matters</h3>
 <p><code>auth_token</code> identifies you; <code>ct0</code> is the CSRF token X requires as a request
 header before it will treat a session as logged in. <strong>With only <code>auth_token</code>,
@@ -396,6 +406,14 @@ If you see this error:</p>
 <p><strong>Guest tokens are throttled hard.</strong> Authenticating raises the ceiling
 substantially, so a login is the fix for read-heavy work as well as for
 session-tier endpoints.</p>
+<p>One session gets roughly 50 GraphQL calls per operation per 15 minutes, which
+stalls a large follower scrape partway through. Two features exist for that: an
+<strong>account pool</strong> spreads calls over several sessions and rotates on a 429, and
+<strong>checkpoints</strong> let an interrupted scrape resume from its last cursor instead of
+starting over. Both are in
+<a href="/docs/guides/scraping-infrastructure#account-pool-and-resumable-scrapes-http-scraper">scraping-infrastructure.md</a>.
+<code>xactions doctor</code> reports whether a pool exists and how many of its accounts can
+serve right now.</p>
 <p>For browser console scripts, throttling looks different: buttons quietly stop
 responding and the progress count stops climbing while the page keeps
 scrolling. Stop the run, wait an hour, and raise <code>delay</code> in the script&#39;s
@@ -407,18 +425,32 @@ vary by account age and standing, and X does not publish them.</p>
 <h2 id="query-not-found">Query not found</h2>
 <pre><code>HTTP 404: {&quot;message&quot;:&quot;Query not found&quot;}
 </code></pre>
-<p>X rotates the query IDs of its internal GraphQL endpoints. When one changes,
-requests to the old ID return this.</p>
-<p>XActions keeps every query ID in one place,
-<a href="../src/scrapers/twitter/http/endpoints.js"><code>src/scrapers/twitter/http/endpoints.js</code></a>,
-and a test fails if a second copy ever appears. To update one:</p>
-<ol>
-<li>Open x.com in a browser with DevTools on the <strong>Network</strong> tab.</li>
-<li>Trigger the action (view a profile, run a search).</li>
-<li>Find the <code>graphql</code> request whose path ends in the operation name.</li>
-<li>Copy the ID segment from the URL: <code>/i/api/graphql/&lt;THIS&gt;/UserByScreenName</code>.</li>
-<li>Update the entry in <code>endpoints.js</code> and open a PR. Others are hitting it too.</li>
-</ol>
+<p>X rotates the query IDs of its internal GraphQL endpoints whenever it ships a
+new web bundle, and a request to the old ID answers with this.</p>
+<p><strong>You should almost never see it.</strong> XActions discovers the current IDs the same
+way x.com&#39;s own client gets them: it reads them out of the live JavaScript
+bundles and caches them in <code>~/.xactions/query-ids.json</code>. A call that fails for a
+stale ID triggers one refresh and one retry automatically, and a cache older
+than 24 hours refreshes in the background. The pinned table in
+<a href="../src/scrapers/twitter/http/endpoints.js"><code>src/scrapers/twitter/http/endpoints.js</code></a>
+is only the offline fallback.</p>
+<p>If you do see it:</p>
+<pre><code class="language-bash">xactions doctor --refresh-ids
+</code></pre>
+<p>That probes x.com now, rewrites the cache, and prints which operations resolve
+from the cache versus the pinned table. Then re-run your command.</p>
+<p>Still failing? The three causes, in order of likelihood:</p>
+<ul>
+<li><strong>No network route to x.com</strong> (a proxy, a firewall, an offline machine).
+Discovery cannot run, so the pinned table is all there is. <code>xactions doctor</code>
+says so explicitly.</li>
+<li><strong>The operation is not one XActions pins.</strong> <code>resolveGraphQL(&#39;&lt;Operation&gt;&#39;)</code>
+falls through to the generated table, which covers every operation x.com
+ships. See <a href="/docs/guides/scraping-infrastructure#graphql-query-id-discovery">scraping-infrastructure.md</a>.</li>
+<li><strong>X removed the operation.</strong> <code>npm run sync:endpoints:check</code> exits non-zero
+when an operation XActions tracks has disappeared from x.com&#39;s bundles.
+That one is worth an issue.</li>
+</ul>
 <hr>
 <h2 id="mcp-server-not-connecting">MCP server not connecting</h2>
 <p>First, verify the server itself works, independent of your AI client:</p>
@@ -427,6 +459,13 @@ and a test fails if a second copy ever appears. To update one:</p>
 <p>That spawns the server, completes the handshake, lists the tools, and calls
 one. If it prints a profile, the server is fine and the problem is client
 configuration.</p>
+<p>If the handshake works but the tools you expect are missing, check whether the
+server was started with a filter: <code>--tools</code> / <code>XACTIONS_MCP_TOOLS</code> and
+<code>--exclude</code> / <code>XACTIONS_MCP_EXCLUDE</code> hide everything they do not name. Run
+<code>npx xactions-mcp --list-groups</code> to see the full set. And if write tools return
+a draft id instead of acting, the server is in approval mode
+(<code>--require-approval</code>): run <code>xactions drafts list</code> to see what is held, then
+<code>xactions drafts approve &lt;id&gt;</code>.</p>
 <p>Then check, in order:</p>
 <p><strong>Config file location.</strong> Claude Desktop reads
 <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS and
@@ -520,7 +559,7 @@ that are not bugs.</li>
     </article>
 
     <div class="page-meta">
-      <span>6 min read</span>
+      <span>7 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/troubleshooting.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Troubleshooting" target="_blank" rel="noopener">Report a problem</a>
     </div>

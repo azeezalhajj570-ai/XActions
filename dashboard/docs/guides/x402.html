@@ -120,6 +120,7 @@
       <a class="sidebar__link" href="/docs/guides/plugins">Plugin System</a>
       <a class="sidebar__link" href="/docs/guides/streaming">Real-Time Streaming</a>
       <a class="sidebar__link" href="/docs/guides/streams">Real-time Streams — Live Twitter Monitoring</a>
+      <a class="sidebar__link" href="/docs/guides/reputation-audit">Reputation audit: AI-score your own timeline, get a shareable card</a>
       <a class="sidebar__link" href="/docs/guides/rss-monitor">Rss Monitor</a>
       <a class="sidebar__link" href="/docs/guides/scrapers">Scrapers</a>
       <a class="sidebar__link" href="/docs/guides/scraping-infrastructure">Scraping Infrastructure</a>
@@ -134,6 +135,7 @@
       <a class="sidebar__link" href="/docs/guides/scheduling">Task Scheduling</a>
       <a class="sidebar__link" href="/docs/guides/teams">Team Management</a>
       <a class="sidebar__link" href="/docs/guides/cryptocurrency-api-guide">The Complete Guide to Cryptocurrency APIs in 2026</a>
+      <a class="sidebar__link" href="/docs/guides/mcp-remote">The hosted MCP server</a>
       <a class="sidebar__link" href="/docs/guides/agents">Thought Leader Agent</a>
       <a class="sidebar__link" href="/docs/guides/agent-advanced">Thought Leader Agent — Advanced Features</a>
       <a class="sidebar__link" href="/docs/guides/agent-api-reference">Thought Leader Agent — API Reference</a>
@@ -150,8 +152,8 @@
       <a class="sidebar__link" href="/docs/guides/workflows">Workflow Engine</a>
       <a class="sidebar__link" href="/docs/guides/x-developer-api-crypto-guide-2026">X Developer API in 2026: The Complete Guide for Crypto Builders</a>
       <a class="sidebar__link" href="/docs/guides/dom-selectors">X/Twitter DOM Selector Reference</a>
-      <a class="sidebar__link" href="/docs/guides/api-reference">XActions — API Reference</a>
       <a class="sidebar__link" href="/docs/guides/ai-api">XActions AI API Documentation</a>
+      <a class="sidebar__link" href="/docs/guides/api-reference">XActions API Reference</a>
       <a class="sidebar__link" href="/docs/guides/automation">XActions Automation Framework Guide</a>
       <a class="sidebar__link" href="/docs/guides/cli-reference">XActions CLI Reference</a>
       <a class="sidebar__link" href="/docs/guides/xactions-reference">XActions Complete Function Reference</a>
@@ -161,7 +163,7 @@
       <a class="sidebar__link" href="/docs/guides/growth_strategy">XActions Growth Strategy: 76 → 100,000 Stars</a>
       <a class="sidebar__link" href="/docs/guides/mcp-setup">XActions MCP Server Setup Guide</a>
       <a class="sidebar__link" href="/docs/guides/rest-api">XActions REST API Reference</a>
-      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0 — Complete Feature Inventory</a>
+      <a class="sidebar__link" href="/docs/guides/feature_inventory">XActions v3.5.0: Complete Feature Inventory</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -208,7 +210,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -433,11 +435,66 @@ No password, no email, no reset flow.</p>
 Desktop, Cursor or Codex. This path is <strong>free and unauthenticated by design</strong>: the
 process runs as you, on your machine, against your own logged-in browser session.
 There is nobody to authenticate to. See <a href="/docs/guides/mcp-setup">mcp-setup.md</a>.</p>
-<h3 id="remote-over-streamable-http">Remote, over Streamable HTTP</h3>
+<h3 id="remote-over-streamable-http-live-at-httpsxactionsappmcp">Remote, over Streamable HTTP: live at <code>https://xactions.app/mcp</code></h3>
 <p>A hosted MCP server is a different animal: it is a public endpoint, so it needs
 both identity and a way to charge. XActions handles them separately.</p>
-<p><strong>Payment: x402 per tool call.</strong> <code>src/mcp/x402-mcp.js</code> prices individual tools
-and gates them exactly the way the HTTP API is gated. A <code>tools/call</code> for a priced
+<p>Point any MCP client at that URL and it works on the first try. There is nothing
+to sign up for.</p>
+<pre><code class="language-json">{ &quot;mcpServers&quot;: { &quot;xactions&quot;: { &quot;url&quot;: &quot;https://xactions.app/mcp&quot; } } }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Price</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>xactions_docs</code></td>
+<td>free</td>
+<td>Answers about XActions from its own documentation</td>
+</tr>
+<tr>
+<td><code>x_video</code></td>
+<td>free</td>
+<td>Every mp4 variant for a post that has video</td>
+</tr>
+<tr>
+<td><code>x_profile</code></td>
+<td>$0.001</td>
+<td>One account&#39;s public profile</td>
+</tr>
+<tr>
+<td><code>x_post</code></td>
+<td>$0.001</td>
+<td>One post with its engagement metrics</td>
+</tr>
+<tr>
+<td><code>x_posts</code></td>
+<td>$0.005</td>
+<td>An account&#39;s recent posts</td>
+</tr>
+<tr>
+<td><code>x_thread</code></td>
+<td>$0.005</td>
+<td>A thread, unrolled</td>
+</tr>
+</tbody></table>
+<p><code>tools/list</code> carries the price in <code>_meta[&quot;x402/price&quot;]</code>, so an agent budgets
+before it calls rather than discovering the cost by being refused.</p>
+<p><strong>Payment: x402 per tool call.</strong> <a href="/docs/guides/readme"><code>@xactions/x402-mcp</code></a>
+prices individual tools and gates them exactly the way the HTTP API is gated.
+That package is deliberately generic: it knows nothing about X, and it is
+published so any MCP server can charge for its tools in three lines.</p>
+<pre><code class="language-js">const gate = createToolPaymentGate({ payTo, prices: { search: &#39;$0.01&#39; } });
+
+const checked = await gate.check({ message, request });
+if (checked.response) return checked.response;     // unpaid: the terms
+const response = await yourServer.handle(message, checked.context);
+return gate.finalize(response, checked);           // paid: settle, attach receipt
+</code></pre>
+<p> A <code>tools/call</code> for a priced
 tool with no payment comes back as a tool result with <code>isError: true</code> whose
 <code>structuredContent</code> is the same <code>PaymentRequired</code> document the HTTP 402 carries.
 The client signs, then retries the call with the payload in
@@ -571,7 +628,7 @@ outright removes the question.</p>
     </article>
 
     <div class="page-meta">
-      <span>8 min read</span>
+      <span>9 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/x402.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Paying%20for%20XActions%3A%20x402%20and%20MCP" target="_blank" rel="noopener">Report a problem</a>
     </div>

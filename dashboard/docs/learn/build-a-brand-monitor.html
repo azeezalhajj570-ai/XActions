@@ -93,7 +93,7 @@
       <a class="sidebar__link" href="/docs/guides/a2a-protocol">A2A Protocol — XActions</a>
       <a class="sidebar__link" href="/docs/guides/portability">Account Portability — Export, Migrate &amp; Diff</a>
       <a class="sidebar__link" href="/docs/guides/algorithm-builder">Algorithm Builder — 24/7 Niche Growth Automation</a>
-      <a class="sidebar__link" href="/docs">+ 69 more…</a>
+      <a class="sidebar__link" href="/docs">+ 71 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Tutorials</div>
@@ -140,7 +140,7 @@
       <a class="sidebar__link" href="/docs/skills/algorithm-cultivation">Algorithm Cultivation &amp; Thought Leadership</a>
       <a class="sidebar__link" href="/docs/skills/analytics-insights">Analytics &amp; Insights</a>
       <a class="sidebar__link" href="/docs/skills/articles-longform">Articles &amp; Longform</a>
-      <a class="sidebar__link" href="/docs">+ 44 more…</a>
+      <a class="sidebar__link" href="/docs">+ 45 more…</a>
     </div>
     <div class="sidebar__group">
       <div class="sidebar__heading">Skill References</div>
@@ -209,8 +209,9 @@ npm install xactions
 <pre><code class="language-bash">export X_AUTH_TOKEN=...    # from DevTools &gt; Application &gt; Cookies &gt; x.com
 export X_CSRF_TOKEN=...
 </code></pre>
-<p>Search is session-tier, so both cookies are required. See
-<a href="/docs/learn/your-first-scrape#step-4--log-in">Tutorial 01, step 4</a>.</p>
+<p>Search is session-tier, so both cookies are required. <code>npx xactions connect</code>
+captures them for you through a real browser if you would rather not dig them
+out by hand. See <a href="/docs/learn/your-first-scrape#step-4--log-in">Tutorial 01, step 4</a>.</p>
 <hr>
 <h2 id="pass-1--get-the-mentions">Pass 1 — Get the mentions</h2>
 <p><code>monitor.js</code>:</p>
@@ -222,7 +223,7 @@ const scraper = new Scraper();
 await scraper.setCookies(`auth_token=${process.env.X_AUTH_TOKEN}; ct0=${process.env.X_CSRF_TOKEN}`);
 
 for await (const tweet of scraper.searchTweets(QUERY, 20, SearchMode.Latest)) {
-  console.log(`@${tweet.username}: ${tweet.text.replace(/\s+/g, &#39; &#39;).slice(0, 100)}`);
+  console.log(`${tweet.id}: ${tweet.text.replace(/\s+/g, &#39; &#39;).slice(0, 100)}`);
 }
 </code></pre>
 <pre><code class="language-bash">node monitor.js &quot;your brand&quot;
@@ -249,7 +250,7 @@ async function poll() {
     if (baseline) continue;
 
     fresh += 1;
-    console.log(`@${tweet.username}: ${tweet.text.slice(0, 100)}`);
+    console.log(`${tweet.id}: ${tweet.text.slice(0, 100)}`);
   }
 
   if (baseline) {
@@ -280,9 +281,13 @@ const sentiment = await analyzeSentiment(tweet.text);
 const sentiment = await analyzeSentiment(tweet.text || &#39;&#39;);
 const marker = { positive: &#39;+&#39;, negative: &#39;!&#39;, neutral: &#39; &#39; }[sentiment.label];
 
-console.log(`${marker} @${tweet.username}: ${tweet.text.slice(0, 90)}`);
-console.log(`   https://x.com/${tweet.username}/status/${tweet.id}`);
+console.log(`${marker} ${tweet.text.slice(0, 90)}`);
+console.log(`   https://x.com/i/web/status/${tweet.id}`);
 </code></pre>
+<p><code>https://x.com/i/web/status/&lt;id&gt;</code> is the form to reach for when you are building
+links from search or timeline results. It needs only the post id and redirects
+to the real permalink, so it keeps working even when a result does not carry the
+author&#39;s handle.</p>
 <p>Want a model instead? Same function, same return shape, so nothing downstream
 changes:</p>
 <pre><code class="language-js">const sentiment = await analyzeSentiment(tweet.text, { mode: &#39;llm&#39; });
@@ -302,8 +307,8 @@ webhook:</p>
       method: &#39;POST&#39;,
       headers: { &#39;Content-Type&#39;: &#39;application/json&#39; },
       body: JSON.stringify({
-        text: `Negative mention by @${tweet.username}: ${tweet.text}`,
-        url: `https://x.com/${tweet.username}/status/${tweet.id}`,
+        text: `Negative mention: ${tweet.text}`,
+        url: `https://x.com/i/web/status/${tweet.id}`,
         sentiment,
         detectedAt: new Date().toISOString(),
       }),
@@ -388,6 +393,7 @@ anywhere will do.</p>
 <li>Sentiment analysis runs offline and free; upgrade to a model only if you must</li>
 <li>A failed poll returns, it does not throw</li>
 <li><code>error.code === &#39;RATE_LIMITED&#39;</code> carries <code>rateLimitReset</code>: use it to back off</li>
+<li>Build post links from the id (<code>/i/web/status/&lt;id&gt;</code>), which never depends on a handle</li>
 </ul>
 <h2 id="next">Next</h2>
 <ul>
