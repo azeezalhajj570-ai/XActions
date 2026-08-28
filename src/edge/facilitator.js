@@ -49,7 +49,10 @@ export async function getSupported(facilitatorUrl) {
   } catch {
     // Unreachable: leave networks null so the caller offers its configured set.
   }
-  cache.set(base, entry);
+  // Only a successful probe is cached. Caching a failure would leave this
+  // isolate publishing terms with no fee payer merged in for the whole TTL,
+  // with no way to recover from one blip at the facilitator.
+  if (entry.networks) cache.set(base, entry);
   return entry;
 }
 

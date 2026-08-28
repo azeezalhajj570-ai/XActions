@@ -16,4 +16,24 @@ mv pages-out/index.html pages-out/dashboard.html
 cp site/index.html pages-out/index.html
 cp llms.txt llms-full.txt pages-out/
 cp deploy/cloudflare/_redirects pages-out/_redirects
+
+# /mcp is the MCP endpoint, served by functions/mcp.js. Pages serves a matching
+# static asset before it invokes a function, so leaving mcp.html at that path
+# would shadow the endpoint and answer POST /mcp with a bare 405 from the asset
+# server. The page moves aside; the function serves it back to any client that
+# asks for HTML, so the URL still renders in a browser.
+mv pages-out/mcp.html pages-out/mcp-docs.html
+
+# Which paths reach functions/. Without this file Pages infers the list, and a
+# static asset that shares a path with a function wins: dashboard/mcp.html was
+# shadowing functions/mcp.js, so POST /mcp answered 405 from the asset server
+# instead of speaking MCP. Listing the dynamic paths explicitly settles it, and
+# keeps every other request on the static path with no Worker invocation.
+cat > pages-out/_routes.json <<'ROUTES'
+{
+  "version": 1,
+  "include": ["/api/*", "/mcp", "/openapi.json", "/.well-known/*"],
+  "exclude": []
+}
+ROUTES
 echo "Built pages-out/ ($(find pages-out -type f | wc -l) files)"
