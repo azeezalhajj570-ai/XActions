@@ -113,7 +113,7 @@ Each prompt is designed to:
 
 These 23 tutorials cover **every XActions feature**:
 
-- ✅ **152 MCP tools** — Covered across tutorials 01-23
+- ✅ **153 MCP tools** — Covered across tutorials 01-23
 - ✅ **15 browser automation scripts** — Tutorials 03, 07, 16, 19, 20
 - ✅ **56 CLI commands** — Tutorial 15
 - ✅ **5 scraper modules** — Tutorials 04, 17
