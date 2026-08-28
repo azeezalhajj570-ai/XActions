@@ -1,4 +1,4 @@
-{"version":1,"digest":"00a39c7c45f23a9e","counts":{"cli":134,"mcp":152,"script":177},"actions":[
+{"version":1,"digest":"b431b3446c278c22","counts":{"cli":135,"mcp":153,"script":177},"actions":[
 {"kind":"cli","id":"agent","title":"xactions agent","command":"xactions agent","description":"24/7 LLM-powered thought leadership agent","alias":null,"path":"src/cli/index.js"},
 {"kind":"cli","id":"agent-login","title":"xactions agent login","command":"xactions agent login","description":"Open browser for manual X.com login (saves session cookies)","alias":null,"path":"src/cli/index.js"},
 {"kind":"cli","id":"agent-report","title":"xactions agent report","command":"xactions agent report","description":"Generate a growth report for the last N days","alias":null,"path":"src/cli/index.js"},
@@ -39,6 +39,7 @@
 {"kind":"cli","id":"dataset-list","title":"xactions dataset list","command":"xactions dataset list","description":"List all datasets","alias":null,"path":"src/cli/index.js"},
 {"kind":"cli","id":"diff","title":"xactions diff <dirA> <dirB>","command":"xactions diff <dirA> <dirB>","description":"Compare two account exports and show changes","alias":null,"path":"src/cli/index.js"},
 {"kind":"cli","id":"doctor","title":"xactions doctor","command":"xactions doctor","description":"Check the install, the guest tier, the saved session, the query-ID cache and the MCP server","alias":null,"path":"src/cli/commands/doctor.js"},
+{"kind":"cli","id":"download","title":"xactions download <target>","command":"xactions download <target>","description":"Download photos, videos and GIFs from a profile, tweet, search or community","alias":"dl","path":"src/cli/commands/download.js"},
 {"kind":"cli","id":"drafts","title":"xactions drafts","command":"xactions drafts","description":"Review, approve or discard MCP write calls held by approval mode","alias":null,"path":"src/cli/commands/drafts.js"},
 {"kind":"cli","id":"drafts-approve","title":"xactions drafts approve [id]","command":"xactions drafts approve [id]","description":"Run a held draft exactly as the agent submitted it","alias":null,"path":"src/cli/commands/drafts.js"},
 {"kind":"cli","id":"drafts-clear","title":"xactions drafts clear","command":"xactions drafts clear","description":"Remove executed and failed drafts, keeping pending ones","alias":null,"path":"src/cli/commands/drafts.js"},
@@ -168,6 +169,7 @@
 {"kind":"mcp","id":"x_detect_unfollowers","title":"x_detect_unfollowers","description":"Get current followers for comparison. Run periodically to detect unfollowers.","required":["username"],"path":"src/mcp/server.js"},
 {"kind":"mcp","id":"x_diff_exports","title":"x_diff_exports","description":"Compare two account exports to find new/lost followers, deleted tweets, and engagement changes. Generates a diff report in JSON and Markdown.","required":["dirA","dirB"],"path":"src/mcp/server.js"},
 {"kind":"mcp","id":"x_discard_draft","title":"x_discard_draft","description":"Delete a draft without executing it. Use this to reject a held write, or to clean up drafts that have already been executed or failed.","required":["id"],"path":"src/mcp/server.js"},
+{"kind":"mcp","id":"x_download_media","title":"x_download_media","description":"Download every photo, video and GIF from a profile, a single tweet, a","required":["target"],"path":"src/mcp/server.js"},
 {"kind":"mcp","id":"x_download_video","title":"x_download_video","description":"Download the video attached to a tweet and return the local file path plus the resolved media URL and metadata.","required":["tweetUrl"],"path":"src/mcp/server.js"},
 {"kind":"mcp","id":"x_draft_status","title":"x_draft_status","description":"Show one draft in full: the tool, the arguments it will run with, its current state, and the result or error if it has already been approved.","required":["id"],"path":"src/mcp/server.js"},
 {"kind":"mcp","id":"x_engage","title":"x_engage","description":"Sweep a feed and engage every post on it: like, repost, and reply across a profile, a search, or a list. Replies come from your templates or from an LLM given a plain-language brief. Defaults to a dry run; pass dryRun: false to act. Progress is saved per feed, so a second call skips what the first already did.","required":[],"path":"src/mcp/server.js"},
