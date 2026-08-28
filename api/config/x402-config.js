@@ -1140,7 +1140,11 @@ export function buildAccepts({ price, resource, description, maxTimeoutSeconds =
       resource,
       description,
       mimeType: 'application/json',
-      extra: { name: 'USD Coin', version: '2' },
+      // On EVM this is the EIP-712 domain the wallet signs USDC's
+      // transferWithAuthorization against. Solana has no such domain: what it
+      // needs instead is the facilitator's fee payer, which only the
+      // facilitator can supply, so it is merged in later from /supported.
+      ...(network.startsWith('solana:') ? {} : { extra: { name: 'USD Coin', version: '2' } }),
     });
   }
   return accepts;

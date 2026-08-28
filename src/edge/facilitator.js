@@ -63,11 +63,38 @@ export async function getSupported(facilitatorUrl) {
  */
 export function settleable(accepts, supported, toV1Network) {
   if (!supported?.networks) return accepts;
-  const filtered = accepts.filter(
-    (entry) => supported.networks.has(entry.network) || supported.networks.has(toV1Network(entry.network)),
-  );
+  const filtered = accepts
+    .filter(
+      (entry) => supported.networks.has(entry.network) || supported.networks.has(toV1Network(entry.network)),
+    )
+    .map((entry) => withFacilitatorExtra(entry, supported, toV1Network));
   // Every configured chain unsupported is an operator misconfiguration, not a
   // reason to serve for free. Publish the configured terms and let /api/ai/health
   // report the mismatch.
   return filtered.length ? filtered : accepts;
+}
+
+/**
+ * Merge the facilitator's own `extra` for this chain into a requirements entry.
+ *
+ * Solana's exact scheme needs `extra.feePayer`: the account that pays the
+ * network fee and co-signs the transfer, which is the facilitator's own key and
+ * therefore only the facilitator can tell us. Without it a payer builds a
+ * transaction the facilitator rejects with `missing_fee_payer`, and the caller
+ * has no way to discover the right value.
+ *
+ * @param {object} entry
+ * @param {{ kinds: object[] }} supported
+ * @param {(network: string) => string} toV1Network
+ * @returns {object}
+ */
+export function withFacilitatorExtra(entry, supported, toV1Network) {
+  const kind = (supported.kinds || []).find(
+    (candidate) =>
+      candidate.scheme === entry.scheme &&
+      (candidate.network === entry.network || toV1Network(candidate.network) === toV1Network(entry.network)) &&
+      candidate.extra,
+  );
+  if (!kind) return entry;
+  return { ...entry, extra: { ...(entry.extra || {}), ...kind.extra } };
 }

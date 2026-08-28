@@ -159,7 +159,13 @@ export async function verifyPayment(facilitator, paymentPayload, paymentRequirem
     body: JSON.stringify({ x402Version: 1, paymentPayload, paymentRequirements }),
   });
   if (!response.ok) {
-    return { isValid: false, invalidReason: `facilitator /verify HTTP ${response.status}` };
+    // Pass the facilitator's own words through. "HTTP 400" tells a caller
+    // nothing they can act on; "invalid transaction signature" does.
+    const detail = await response.text().catch(() => '');
+    return {
+      isValid: false,
+      invalidReason: `facilitator /verify HTTP ${response.status}${detail ? `: ${detail.slice(0, 300)}` : ''}`,
+    };
   }
   return response.json();
 }
@@ -179,7 +185,11 @@ export async function settlePayment(facilitator, paymentPayload, paymentRequirem
     body: JSON.stringify({ x402Version: 1, paymentPayload, paymentRequirements }),
   });
   if (!response.ok) {
-    return { success: false, errorReason: `facilitator /settle HTTP ${response.status}` };
+    const detail = await response.text().catch(() => '');
+    return {
+      success: false,
+      errorReason: `facilitator /settle HTTP ${response.status}${detail ? `: ${detail.slice(0, 300)}` : ''}`,
+    };
   }
   return response.json();
 }
