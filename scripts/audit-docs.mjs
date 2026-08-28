@@ -27,7 +27,7 @@
  * @license Apache-2.0
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -486,6 +486,67 @@ const counts = [
     (f) => `claims ${f.claimed} ${f.label}, actual ${f.actual}`,
   ),
 ];
+
+// --fix rewrites the counts this audit knows how to derive. Detection and repair
+// share the findings above, so the fixer can never disagree with the checker about
+// what is stale or rewrite a number the checker deliberately skipped.
+if (process.argv.includes('--fix')) {
+  const edits = new Map();
+
+  const queue = (finding, actual) => {
+    if (!actual) return;
+    if (!edits.has(finding.file)) edits.set(finding.file, []);
+    edits.get(finding.file).push({ line: finding.line, claimed: finding.claimed, actual });
+  };
+
+  for (const f of staleToolCounts) queue(f, MCP_TOOL_COUNT);
+  for (const f of staleCounts) queue(f, f.actual);
+
+  let changedFiles = 0;
+  let changedLines = 0;
+
+  for (const [rel, items] of edits) {
+    const full = join(ROOT, rel);
+    let text;
+    try {
+      text = readFileSync(full, 'utf8');
+    } catch {
+      continue;
+    }
+    const lines = text.split('\n');
+    let touched = false;
+
+    for (const { line, claimed, actual } of items) {
+      const i = line - 1;
+      if (i < 0 || i >= lines.length) continue;
+      // Replace the claimed number only where it is a standalone count, keeping
+      // any "+" suffix off: "151+ tools" becomes "152 tools", not "152+ tools",
+      // because the number is now exact.
+      const next = lines[i].replace(
+        new RegExp(`(?<![\\w.])${claimed}\\+?(?=\\s)`, 'g'),
+        String(actual),
+      );
+      if (next !== lines[i]) {
+        lines[i] = next;
+        touched = true;
+        changedLines += 1;
+      }
+    }
+
+    if (touched) {
+      writeFileSync(full, lines.join('\n'));
+      changedFiles += 1;
+      console.log(`  updated ${rel}`);
+    }
+  }
+
+  console.log(
+    changedLines > 0
+      ? `\nRewrote ${changedLines} count(s) across ${changedFiles} file(s). Re-run to confirm.\n`
+      : '\nNothing to fix.\n',
+  );
+  process.exit(0);
+}
 
 const failedCategories = counts.filter((n) => n > 0).length;
 

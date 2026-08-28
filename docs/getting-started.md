@@ -56,7 +56,7 @@ xactions followers elonmusk --count 500 --output followers.csv
 xactions non-followers myhandle
 ```
 
-See the full [CLI Reference](cli-reference.md) for all 55 commands.
+See the full [CLI Reference](cli-reference.md) for all 56 commands.
 
 ---
 
@@ -111,7 +111,7 @@ Generate this config automatically:
 xactions mcp-config
 ```
 
-151 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See [MCP Setup](mcp-setup.md).
+152 MCP tools available — scraping, posting, engagement, analytics, streaming, and more. See [MCP Setup](mcp-setup.md).
 
 ---
 
@@ -194,7 +194,7 @@ X/Twitter enforces aggressive rate limits. All XActions tools include built-in d
 
 | Guide | Description |
 |-------|-------------|
-| [CLI Reference](cli-reference.md) | All 55 CLI commands |
+| [CLI Reference](cli-reference.md) | All 56 CLI commands |
 | [API Reference](api-reference.md) | Node.js library functions |
 | [MCP Setup](mcp-setup.md) | AI agent integration |
 | [Browser Scripts](browser-scripts.md) | Complete script catalog |
