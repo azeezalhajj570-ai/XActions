@@ -10,7 +10,7 @@
  * All single-action functions return `{ success: boolean }`.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { GRAPHQL, REST } from './endpoints.js';

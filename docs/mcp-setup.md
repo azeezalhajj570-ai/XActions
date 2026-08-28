@@ -573,6 +573,70 @@ npx puppeteer browsers install chrome
 
 ---
 
+## Two ways in, and when not to use this server
+
+A 150-tool server is a lot to hand a client that only needs to read one
+profile. Every tool ships its JSON schema on connect, so the `tools/list`
+payload is about 60 KB before any work happens. That is a fair price for a
+long session or for writes, and a poor one for a single lookup.
+
+XActions offers both lanes from the same install, which is unusual: the CLI
+runs the same code as the MCP tools, so nothing is lost by choosing it.
+
+```bash
+xactions profile NASA --compact
+xactions tweets NASA --limit 50 --fields id,date,likes,text --compact
+xactions analyze NASA SpaceX --compact
+```
+
+`--compact` prints one record per line as tab-separated `key=value` pairs, and
+`--fields` narrows the columns. One Bash call, no schemas loaded, and `jq` or
+`wc` can finish the job before the answer ever reaches the model.
+
+Use this MCP server when you are writing (posting, following, muting) and want
+the [approval mode](#approval-mode-draft-before-you-post) gate, or when a
+session will make enough calls that the schema cost amortises. Use the CLI when
+you need a few facts and you are done. If you do load the server for a
+read-only session, narrow it first with
+[tool filtering](#tool-filtering): `XACTIONS_MCP_TOOLS=read`.
+
+The full decision table, with the recipes and the exact flags, is in
+[AGENTS.md](../AGENTS.md), which coding agents read automatically.
+
+### One-click install: the .mcpb bundle
+
+Instead of editing a JSON config by hand, download `xactions-<version>.mcpb`
+from the [releases page](https://github.com/nirholas/XActions/releases) and
+drag it onto **Claude Desktop > Settings > Extensions**.
+
+The bundle carries the server and its production dependencies, so there is no
+npm install and no absolute path to type. Its manifest declares the settings it
+needs, and Claude Desktop collects them at install time:
+
+| Field | What it sets |
+|---|---|
+| X session cookie (auth_token) | `XACTIONS_SESSION_COOKIE`, stored by the host as a secret. Leave it empty to run the guest tier |
+| Tool groups to expose | `XACTIONS_MCP_TOOLS`, for example `read,analytics` |
+| Tool groups to hide | `XACTIONS_MCP_EXCLUDE`, for example `write,dm` |
+| Hold writes for approval | `XACTIONS_MCP_REQUIRE_APPROVAL` |
+
+Browser-driven tools download Chromium into your own puppeteer cache the first
+time they run; every HTTP tool works without it.
+
+To build the bundle from a clone:
+
+```bash
+node scripts/build-mcpb.mjs                 # dist/xactions-<version>.mcpb
+node scripts/build-mcpb.mjs --manifest-only # write and validate the manifest only
+```
+
+The build stages the payload, installs production dependencies inside the
+bundle, validates the manifest against the MCPB schema, packs it, then unpacks
+the result and starts the server from it, so a bundle that cannot launch fails
+at build time rather than on someone's desktop.
+
+---
+
 ## Links
 
 - **GitHub**: [github.com/nirholas/XActions](https://github.com/nirholas/XActions)

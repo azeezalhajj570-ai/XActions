@@ -7,7 +7,7 @@
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
  * @see https://xactions.app
- * @license MIT
+ * @license Apache-2.0
  */
 
 import {
@@ -516,6 +516,141 @@ export async function x_retweet({ url }) {
     return { success: true, message: 'Retweeted' };
   }
   return { success: false, message: 'Could not retweet' };
+}
+
+
+// ============================================================================
+// Engagement sweeps (profile / search / list)
+// ============================================================================
+
+/**
+ * Sweep a feed: like, repost, and reply to its posts.
+ *
+ * The same engine the `xactions engage` CLI runs (src/engage/), so a sweep an
+ * agent starts and a sweep a human starts behave identically, share the
+ * `~/.xactions/engage/` progress files, and skip what the other already did.
+ *
+ * Replies come from `templates` or, when `prompt` is set, from an LLM given
+ * that brief. This runs on the HTTP client, so any provider works: there is
+ * no page CSP in the way as there is in the browser script.
+ *
+ * @param {object} args
+ * @param {string} [args.username] - Profile to sweep
+ * @param {string} [args.search] - Search query to sweep instead
+ * @param {string} [args.list] - List ID to sweep instead
+ * @param {boolean} [args.like=true]
+ * @param {boolean} [args.repost=false]
+ * @param {boolean} [args.comment=false]
+ * @param {number} [args.limit=20]
+ * @param {string} [args.prompt] - Brief for LLM-written replies
+ * @param {string[]} [args.templates] - Reply templates ({author}, {name})
+ * @param {boolean} [args.dryRun=true] - Defaults to a preview, on purpose
+ * @returns {Promise<object>} Run report
+ */
+export async function x_engage(args = {}) {
+  const {
+    username, search, list, mode,
+    like = true, repost = false, comment = false,
+    limit = 20, includeReplies = false, includeReposts = false,
+    since, onlyFrom = [], skipUsers = [], keywords = [], skipKeywords = [],
+    minLikes = 0, maxLikes = 0,
+    prompt, persona, provider, model, apiKey, baseUrl,
+    templates = [], delaySeconds = 20, jitterSeconds = 10,
+    dryRun = true, reset = false, resume = true,
+  } = args;
+
+  const engage = await import('../engage/runner.js');
+  const { createEngageState } = await import('../engage/state.js');
+
+  const actions = { like: !!like, repost: !!repost, comment: !!comment };
+  if (!actions.like && !actions.repost && !actions.comment) {
+    throw new Error('x_engage: enable at least one of like, repost, comment');
+  }
+
+  const source = engage.resolveSource({ username, search, list, includeReplies, mode });
+  const scraper = await ensureHttpScraper();
+
+  let me = '';
+  if (!dryRun) {
+    const loggedIn = await scraper.isLoggedIn().catch(() => false);
+    if (!loggedIn) {
+      throw new Error('x_engage: not authenticated. Set XACTIONS_SESSION_COOKIE (auth_token) and XACTIONS_CSRF_TOKEN (ct0), or call with dryRun: true to preview.');
+    }
+    me = await scraper.me().then((p) => p?.username || '').catch(() => '');
+  }
+
+  let generator = null;
+  if (actions.comment) {
+    if (prompt) {
+      const { createCommentGenerator } = await import('../ai/commentGenerator.js');
+      generator = createCommentGenerator({ prompt, persona, provider, model, apiKey, baseUrl });
+    } else if (templates.length === 0) {
+      throw new Error('x_engage: comment needs either a prompt (LLM) or at least one template');
+    }
+  }
+
+  const state = await createEngageState({
+    stateKey: source.stateKey,
+    enabled: resume !== false,
+    reset: !!reset,
+  });
+
+  const filters = {
+    actions,
+    includeReplies: !!includeReplies,
+    includeReposts: !!includeReposts,
+    since: since ? new Date(since) : null,
+    done: state.done,
+    onlyFrom, skipUsers, keywords, skipKeywords,
+    minLikes: Number(minLikes) || 0,
+    maxLikes: Number(maxLikes) || 0,
+    self: me,
+  };
+
+  const cappedLimit = Math.max(1, Math.min(Number(limit) || 20, 200));
+  const { fetched, selected, skipped } = await engage.collectTweets(scraper, source, filters, cappedLimit);
+
+  if (fetched.length === 0) {
+    throw new Error(`x_engage: X returned no posts for ${source.label}. Check the target, or authenticate if it is a protected or search feed.`);
+  }
+
+  if (selected.length === 0) {
+    const reasons = {};
+    for (const s of skipped) reasons[s.why] = (reasons[s.why] || 0) + 1;
+    return {
+      source: source.label,
+      kind: source.kind,
+      dryRun: !!dryRun,
+      processed: 0,
+      message: 'Every post was filtered out. Nothing was engaged.',
+      skippedReasons: reasons,
+      priorRuns: state.priorCount,
+    };
+  }
+
+  const report = await engage.runEngage({
+    scraper,
+    source,
+    tweets: selected,
+    actions,
+    done: state.done,
+    templates,
+    generator,
+    dryRun: !!dryRun,
+    delay: Number(delaySeconds) || 0,
+    jitter: Number(jitterSeconds) || 0,
+    onProgressSaved: state.save,
+  });
+
+  return {
+    ...report,
+    read: fetched.length,
+    skipped: skipped.length,
+    priorRuns: state.priorCount,
+    stateFile: state.file,
+    commentSource: generator ? `ai:${generator.target.provider}/${generator.target.model}` : (actions.comment ? 'templates' : null),
+    note: dryRun ? 'Dry run: nothing was posted. Call again with dryRun: false to act.' : undefined,
+  };
 }
 
 // ============================================================================
@@ -1519,6 +1654,7 @@ export const toolMap = {
   x_get_bookmarks,
   x_clear_bookmarks,
   x_auto_like,
+  x_engage,
   // Discovery
   x_get_trends,
   x_get_explore,

@@ -12,7 +12,7 @@
  * GET  /api/unfollowers/schedule    — get current schedule
  * 
  * @author nichxbt
- * @license MIT
+ * @license Apache-2.0
  */
 
 import express from 'express';

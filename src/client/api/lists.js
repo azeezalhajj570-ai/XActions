@@ -3,7 +3,7 @@
  * XActions Client — Lists API
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { Tweet } from '../models/Tweet.js';

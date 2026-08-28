@@ -4,7 +4,7 @@
  * Automatically captures follower counts, engagement, and growth metrics on a schedule.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { saveAccountSnapshot, saveDailyEngagement } from './historyStore.js';

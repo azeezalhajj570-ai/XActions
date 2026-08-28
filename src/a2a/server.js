@@ -17,7 +17,7 @@
  *   GET  /a2a/skills               — List skills
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import express from 'express';

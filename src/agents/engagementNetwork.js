@@ -11,7 +11,7 @@
  * and may result in account suspension. Use responsibly.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // by nichxbt

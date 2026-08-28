@@ -24,6 +24,35 @@ permissions:
   contents: write
 
 jobs:
+  # Runs before anything is published. A tag is not a promise that the code works,
+  # so the suite has to say so first; publish-npm needs this job to pass.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run tests
+        run: npm test
+
   release:
     name: Create Release
     runs-on: ubuntu-latest
@@ -90,10 +119,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # A tag must not publish code the suite has never run against. `needs: [release, test]`
+  # is the whole gate: a red test job stops the publish instead of shipping past it.
   publish-npm:
     name: Publish to npm
     runs-on: ubuntu-latest
-    needs: release
+    needs: [release, test]
     if: "!contains(github.ref, 'beta') && !contains(github.ref, 'alpha')"
 
     steps:

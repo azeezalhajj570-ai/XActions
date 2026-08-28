@@ -6,7 +6,7 @@
  * Supports HMAC verification, retry with backoff, and subscription management.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import crypto from 'crypto';

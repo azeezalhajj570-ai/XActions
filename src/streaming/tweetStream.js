@@ -4,7 +4,7 @@
  * Watches a user's tweets and emits new ones via callback.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { scrapeTweets } from '../scrapers/index.js';

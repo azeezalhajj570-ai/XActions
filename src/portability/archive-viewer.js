@@ -6,7 +6,7 @@
  * Dark theme, card-based tweet display, pagination, profile header with stats, search.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 /**

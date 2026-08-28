@@ -6,7 +6,7 @@
  * Use Tweet.fromGraphQL(raw) to parse raw API responses.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 /**

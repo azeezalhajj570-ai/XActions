@@ -537,7 +537,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/mcp-setup.md",
-    "minutes": 8
+    "minutes": 10
   },
   {
     "slug": "monitoring",
@@ -561,7 +561,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/notifications.md",
-    "minutes": 1
+    "minutes": 2
   },
   {
     "slug": "plugins",
@@ -657,7 +657,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/scrapers.md",
-    "minutes": 3
+    "minutes": 5
   },
   {
     "slug": "scraping-infrastructure",
@@ -1682,7 +1682,7 @@
   {
     "slug": "xactions-mcp-server",
     "title": "XActions MCP Server",
-    "description": "The definitive free Twitter/X MCP server. 149 tools for AI agents.",
+    "description": "The definitive free Twitter/X MCP server. 150 tools for AI agents.",
     "section": "Agent Skills",
     "icon": "🎯",
     "urlPath": "/docs/skills/xactions-mcp-server",

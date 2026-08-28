@@ -404,6 +404,139 @@ const profile = await mastodon.scrapeProfile(&#39;user@mastodon.social&#39;);
 };
 </code></pre>
 <hr>
+<h2 id="communities-notifications-trends-and-spaces-http-client">Communities, notifications, trends and Spaces (HTTP client)</h2>
+<p>These run on the HTTP client, not Puppeteer: no browser starts, and each call is
+one GraphQL request. Import them from <code>xactions/scrapers/twitter/http</code>, or reach
+them as methods on the object <code>createHttpScraper()</code> returns. Every read here
+needs a logged-in session (<code>xactions login</code>); trends by place are the exception
+and work on the guest tier.</p>
+<pre><code class="language-js">import { createHttpScraper } from &#39;xactions/scrapers/twitter/http&#39;;
+
+const x = await createHttpScraper({ cookie: process.env.X_COOKIE });
+
+const community = await x.scrapeCommunity(&#39;1493446837214187523&#39;);
+const posts = await x.scrapeCommunityTweets(community.id, { limit: 100 });
+const mine = await x.scrapeMyCommunities();
+</code></pre>
+<h3 id="communities">Communities</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scrapeCommunity(id)</code></td>
+<td>Community details: name, description, member count, rules, moderators</td>
+</tr>
+<tr>
+<td><code>scrapeCommunityTweets(id, opts)</code></td>
+<td>Community timeline, <code>{ ranking: &#39;latest&#39; | &#39;top&#39; }</code></td>
+</tr>
+<tr>
+<td><code>scrapeCommunityMedia(id, opts)</code></td>
+<td>Media posts from a community</td>
+</tr>
+<tr>
+<td><code>searchCommunityTweets(query, opts)</code></td>
+<td>Search within communities</td>
+</tr>
+<tr>
+<td><code>scrapeMyCommunities(opts)</code></td>
+<td>Communities the logged-in account belongs to</td>
+</tr>
+<tr>
+<td><code>scrapeCommunityDiscovery(opts)</code></td>
+<td>Communities X suggests</td>
+</tr>
+<tr>
+<td><code>joinCommunity(id)</code> / <code>leaveCommunity(id)</code></td>
+<td>Membership mutations</td>
+</tr>
+<tr>
+<td><code>requestToJoinCommunity(id, opts)</code></td>
+<td>Ask to join a restricted community</td>
+</tr>
+</tbody></table>
+<h3 id="notifications">Notifications</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scrapeNotifications(opts)</code></td>
+<td>The full notifications timeline as typed events</td>
+</tr>
+<tr>
+<td><code>scrapeMentions(opts)</code></td>
+<td>The Mentions tab only</td>
+</tr>
+<tr>
+<td><code>scrapeVerifiedNotifications(opts)</code></td>
+<td>The Verified tab only</td>
+</tr>
+</tbody></table>
+<p>Each entry is normalised to <code>{ id, type, users, tweet, timestamp }</code>, where
+<code>type</code> is one of <code>follow</code>, <code>like</code>, <code>retweet</code>, <code>reply</code>, <code>mention</code>, <code>quote</code> or
+<code>generic</code>, so a notification handler can switch on it without reading X&#39;s raw
+entry shapes.</p>
+<h3 id="trends-highlights-and-spaces">Trends, highlights and Spaces</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scrapeTrends(opts)</code></td>
+<td>Trends for the account&#39;s own location</td>
+</tr>
+<tr>
+<td><code>scrapeTrendsByWoeid(woeid)</code></td>
+<td>Trends for a place; <code>1</code> is worldwide</td>
+</tr>
+<tr>
+<td><code>scrapeTrendLocations()</code></td>
+<td>Every place X publishes trends for, with WOEIDs</td>
+</tr>
+<tr>
+<td><code>scrapeExplorePage(opts)</code></td>
+<td>The Explore tab, tab by tab</td>
+</tr>
+<tr>
+<td><code>scrapeHighlights(user, opts)</code></td>
+<td>Posts an account pinned to its Highlights tab</td>
+</tr>
+<tr>
+<td><code>scrapeArticles(user, opts)</code></td>
+<td>Long-form Articles by an account</td>
+</tr>
+<tr>
+<td><code>scrapeVerifiedFollowers(user, opts)</code></td>
+<td>Verified followers only</td>
+</tr>
+<tr>
+<td><code>scrapeFollowersYouKnow(user, opts)</code></td>
+<td>Followers the logged-in account also follows</td>
+</tr>
+<tr>
+<td><code>scrapeAudioSpace(spaceId)</code></td>
+<td>Space details: title, state, host, speakers, listener count</td>
+</tr>
+</tbody></table>
+<pre><code class="language-js">// What is trending in Japan right now (woeid 23424856)
+const jp = await x.scrapeTrendsByWoeid(23424856);
+console.log(jp.map((t) =&gt; `${t.name} (${t.postCount ?? &#39;n/a&#39;})`).join(&#39;\n&#39;));
+</code></pre>
+<p>The query IDs behind all of these are discovered from x.com at runtime and
+cached, so they keep working when X rotates them. See
+<a href="/docs/guides/scraping-infrastructure#graphql-query-id-discovery">Scraping infrastructure</a>.</p>
+<hr>
 <h2 id="adapter-system">Adapter System</h2>
 <p>Swap browser backends without changing scraper code.</p>
 <h3 id="available-adapters">Available Adapters</h3>
@@ -648,7 +781,7 @@ const browser = new StealthBrowser({
     </article>
 
     <div class="page-meta">
-      <span>3 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scrapers.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scrapers" target="_blank" rel="noopener">Report a problem</a>
     </div>

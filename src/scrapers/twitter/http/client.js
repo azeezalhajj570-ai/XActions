@@ -7,7 +7,7 @@
  * detection, retry with exponential back-off, and proxy support.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import {
@@ -31,6 +31,7 @@ import {
   maybeRefreshInBackground,
   isStaleQueryIdError,
 } from './queryIds.js';
+import { getTransactionId, isTransactionIdEnabled } from './transactionId.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -85,6 +86,11 @@ export class TwitterHttpClient {
    *   background when the on-disk cache is older than 24h. Defaults to true,
    *   except under vitest where it defaults to false so unit tests never reach
    *   the network unless they opt in.
+   * @param {boolean} [options.transactionId] - Sign every request with an
+   *   `x-client-transaction-id` header, the way x.com's own web client does.
+   *   Defaults to on outside vitest, and can be switched off globally with
+   *   `XACTIONS_TRANSACTION_ID=0` for debugging. Signing never blocks a
+   *   request: if the keys cannot be obtained the request goes out unsigned.
    */
   constructor(options = {}) {
     this._cookies = {};
@@ -95,6 +101,7 @@ export class TwitterHttpClient {
     this._proxyDispatcher = null;
     this._userAgents = USER_AGENTS;
     this._autoRefreshQueryIds = options.autoRefreshQueryIds ?? !process.env.VITEST;
+    this._transactionId = options.transactionId;
 
     if (options.userAgent && options.userAgent !== 'rotate') {
       this._userAgents = [options.userAgent];
@@ -207,6 +214,32 @@ export class TwitterHttpClient {
     return headers;
   }
 
+  /**
+   * Attach `x-client-transaction-id` to a request's headers, in place.
+   *
+   * x.com's web client signs every GraphQL and internal REST call with this
+   * header; sessions that omit it look unlike any real browser. Generation is
+   * best-effort by design, so a signing failure leaves the headers untouched
+   * and the request still goes out.
+   *
+   * @param {string} method
+   * @param {string} url
+   * @param {object} headers Mutated in place
+   * @private
+   */
+  async _signRequest(method, url, headers) {
+    if (!isTransactionIdEnabled({ enabled: this._transactionId })) return;
+    const id = await getTransactionId(method, url, {
+      enabled: this._transactionId,
+      fetch: this._fetch,
+    });
+    if (id) {
+      headers['x-client-transaction-id'] = id;
+    } else if (this._debug) {
+      console.log(`[TwitterHttpClient] ${method} ${url} → sent unsigned (no transaction keys)`);
+    }
+  }
+
   // ---- Core request -------------------------------------------------------
 
   /**
@@ -229,10 +262,16 @@ export class TwitterHttpClient {
         ? JSON.stringify(options.body)
         : options.body;
 
+    const callerSigned = Boolean(headers['x-client-transaction-id']);
+
     let lastError;
     for (let attempt = 0; attempt <= this._maxRetries; attempt++) {
       const startTime = Date.now();
       try {
+        // Signed per attempt, not per call: the value encodes the current
+        // second, and x.com's web client never replays one. A caller that
+        // supplied its own header keeps it.
+        if (!callerSigned) await this._signRequest(method, url, headers);
         const res = await this._fetch(url, await this._requestInit(method, headers, body));
         const elapsed = Date.now() - startTime;
         if (this._debug) {

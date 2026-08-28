@@ -20,7 +20,7 @@
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
  * @see https://xactions.app
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { VERSION } from '../version.js';
@@ -340,6 +340,45 @@ const TOOLS = [
         },
       },
       required: ['url'],
+    },
+  },
+  {
+    name: 'x_engage',
+    description: 'Sweep a feed and engage every post on it: like, repost, and reply across a profile, a search, or a list. Replies come from your templates or from an LLM given a plain-language brief. Defaults to a dry run; pass dryRun: false to act. Progress is saved per feed, so a second call skips what the first already did.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        username: { type: 'string', description: 'Profile to sweep, without the @. Give exactly one of username, search, or list.' },
+        search: { type: 'string', description: 'Search query to sweep instead of a profile' },
+        list: { type: 'string', description: 'List ID to sweep instead of a profile (digits from x.com/i/lists/<id>)' },
+        mode: { type: 'string', enum: ['Latest', 'Top'], description: 'Search ranking (search only). Default Latest.' },
+        like: { type: 'boolean', description: 'Like each post (default true)' },
+        repost: { type: 'boolean', description: 'Repost each post (default false)' },
+        comment: { type: 'boolean', description: 'Reply to each post (default false). Needs prompt or templates.' },
+        limit: { type: 'number', description: 'Maximum posts to engage, 1-200 (default 20)' },
+        prompt: { type: 'string', description: 'How the replies should sound, e.g. "supportive, specific, one honest question, no hype". Turns on LLM replies.' },
+        persona: { type: 'string', description: 'Optional persona line for the LLM, e.g. "You are @you, a founder building X"' },
+        templates: { type: 'array', items: { type: 'string' }, description: 'Reply templates; {author} and {name} are filled in. Used directly, or as the fallback when the model fails.' },
+        provider: { type: 'string', enum: ['openrouter', 'openai', 'xai', 'anthropic', 'ollama', 'custom'], description: 'LLM provider (default openrouter)' },
+        model: { type: 'string', description: 'LLM model; provider default if omitted' },
+        apiKey: { type: 'string', description: 'LLM API key; falls back to OPENROUTER_API_KEY / OPENAI_API_KEY / XAI_API_KEY / ANTHROPIC_API_KEY' },
+        baseUrl: { type: 'string', description: 'Chat-completions URL for provider "custom"' },
+        includeReplies: { type: 'boolean', description: 'Include replies, not just top-level posts' },
+        includeReposts: { type: 'boolean', description: "Include posts the account reposted from others" },
+        since: { type: 'string', description: 'Only posts on or after this ISO date' },
+        onlyFrom: { type: 'array', items: { type: 'string' }, description: 'Only engage posts by these authors (useful on search and list feeds)' },
+        skipUsers: { type: 'array', items: { type: 'string' }, description: 'Never engage posts by these authors' },
+        keywords: { type: 'array', items: { type: 'string' }, description: 'Only posts containing one of these words' },
+        skipKeywords: { type: 'array', items: { type: 'string' }, description: 'Skip posts containing any of these words' },
+        minLikes: { type: 'number', description: 'Only posts with at least this many likes' },
+        maxLikes: { type: 'number', description: 'Only posts with at most this many likes (0 = no ceiling)' },
+        delaySeconds: { type: 'number', description: 'Seconds between posts (default 20). Lower is likelier to be rate limited.' },
+        jitterSeconds: { type: 'number', description: 'Random spread added to the delay (default 10)' },
+        dryRun: { type: 'boolean', description: 'Preview without posting. Defaults to true.' },
+        reset: { type: 'boolean', description: 'Forget saved progress for this feed first' },
+        resume: { type: 'boolean', description: 'Read and write saved progress (default true)' },
+      },
+      required: [],
     },
   },
   {
@@ -4079,9 +4118,15 @@ async function executeActionBudgetTool(args = {}, options = {}) {
 async function enforceActionCap(name, args, options) {
   const charge = resolveActionCharge(name, args);
   if (!charge) return null;
+  // A sweep charges several classes at once (like + repost + reply), so the
+  // resolver may hand back a list. Every entry has to clear the ledger.
+  const charges = Array.isArray(charge) ? charge : [charge];
+  if (charges.length === 0) return null;
   const account = await resolveActionAccount(options);
   try {
-    actionCaps.checkAndRecord(account, charge.actionClass, { count: charge.count });
+    for (const one of charges) {
+      actionCaps.checkAndRecord(account, one.actionClass, { count: one.count });
+    }
     return null;
   } catch (error) {
     if (!(error instanceof actionCaps.ActionCapExceededError)) throw error;

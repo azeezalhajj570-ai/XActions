@@ -23,7 +23,7 @@
  *   to the next account, a 401/403 locks the account and moves on.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import fs from 'node:fs';

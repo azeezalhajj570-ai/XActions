@@ -11,7 +11,7 @@
  * Depends on: client.js (TwitterHttpClient), endpoints.js, errors.js
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { GRAPHQL, REST, REST_BASE } from './endpoints.js';

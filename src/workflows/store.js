@@ -8,7 +8,7 @@
  * - JSON files (fallback, stores in ~/.xactions/workflows/)
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import fs from 'fs/promises';

@@ -5,7 +5,7 @@
  * Fetch trending topics and explore tabs via Twitter's internal REST endpoint.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { GRAPHQL_ENDPOINTS, buildGraphQLUrl } from './graphqlQueries.js';

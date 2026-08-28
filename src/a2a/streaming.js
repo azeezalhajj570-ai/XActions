@@ -6,7 +6,7 @@
  * and agent-to-agent communication.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

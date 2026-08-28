@@ -7,7 +7,7 @@
  *   execute(params, context) → result
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import scrapers from '../scrapers/index.js';

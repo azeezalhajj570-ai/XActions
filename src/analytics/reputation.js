@@ -7,7 +7,7 @@
  * detects anomalies, and triggers alerts.
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { analyzeSentiment, analyzeBatch, aggregateResults } from './sentiment.js';

@@ -4,7 +4,7 @@
  * Comprehensive error hierarchy for all Twitter API and scraper errors.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

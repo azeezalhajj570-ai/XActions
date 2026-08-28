@@ -2,7 +2,7 @@
 /**
  * XActions AI Content Optimizer API Routes
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { Router } from 'express';

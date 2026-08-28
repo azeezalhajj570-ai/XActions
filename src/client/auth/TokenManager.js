@@ -10,7 +10,7 @@
  * For authenticated requests, a CSRF token (ct0 cookie) replaces the guest token.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { BEARER_TOKEN } from '../api/graphqlQueries.js';

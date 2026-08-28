@@ -373,6 +373,73 @@ xactions notify configure
 }
 </code></pre>
 <p>Create a bot via <a target="_blank" rel="noopener noreferrer" href="https://t.me/BotFather">@BotFather</a>. Get your chat ID by messaging the bot and checking <code>/getUpdates</code>.</p>
+<h3 id="generic-webhook-signed">Generic webhook (signed)</h3>
+<p>Any HTTPS endpoint can receive notifications. Unlike the Slack and Discord
+channels, this one signs what it sends, retries, and keeps a delivery log you
+can replay from.</p>
+<pre><code class="language-javascript">{
+  webhook: {
+    enabled: true,
+    url: &#39;https://your-service.example/hooks/xactions&#39;
+  }
+}
+</code></pre>
+<p>Set <code>XACTIONS_WEBHOOK_SECRET</code> and every delivery carries four headers:</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>X-XActions-Signature</code></td>
+<td><code>sha256=&lt;hex&gt;</code>, an HMAC of the exact request body</td>
+</tr>
+<tr>
+<td><code>X-XActions-Timestamp</code></td>
+<td>Unix seconds when the body was signed</td>
+</tr>
+<tr>
+<td><code>X-XActions-Event</code></td>
+<td>Event name, for example <code>notification</code></td>
+</tr>
+<tr>
+<td><code>X-XActions-Delivery</code></td>
+<td>UUID for this delivery, stable across retries</td>
+</tr>
+</tbody></table>
+<p>Failed deliveries are retried three times with exponential backoff and jitter.
+Every attempt is recorded in <code>~/.xactions/webhook-deliveries.json</code> (the last 500,
+honours <code>XACTIONS_HOME</code>).</p>
+<h4 id="verifying-a-delivery">Verifying a delivery</h4>
+<p>Verify against the raw body, before any JSON parsing, or the bytes will not
+match. The comparison is constant-time and rejects a timestamp older than five
+minutes, so a captured request cannot be replayed at you later.</p>
+<pre><code class="language-javascript">import express from &#39;express&#39;;
+import { verifyWebhookSignature } from &#39;xactions&#39;;
+
+const app = express();
+
+app.post(&#39;/hooks/xactions&#39;,
+  express.raw({ type: &#39;application/json&#39; }),
+  (req, res) =&gt; {
+    const result = verifyWebhookSignature(req.body, req.headers, process.env.XACTIONS_WEBHOOK_SECRET);
+    if (!result.valid) return res.status(401).json({ error: result.reason });
+
+    const event = JSON.parse(req.body.toString(&#39;utf8&#39;));
+    console.log(req.headers[&#39;x-xactions-event&#39;], event);
+    res.json({ ok: true });
+  });
+</code></pre>
+<h4 id="inspecting-and-replaying">Inspecting and replaying</h4>
+<pre><code class="language-javascript">import { listWebhookDeliveries, replayWebhookDelivery } from &#39;xactions&#39;;
+
+listWebhookDeliveries({ status: &#39;failed&#39;, limit: 20 });
+await replayWebhookDelivery(&#39;4b1f0c8e-...&#39;);  // same payload, new delivery id, linked by replayOf
+</code></pre>
+<p><code>signWebhookBody</code> and <code>deliverWebhook</code> are exported from the package root too,
+so a script can sign or send one directly without going through the notifier.</p>
 <h2 id="severity-levels">Severity Levels</h2>
 <table>
 <thead>
@@ -416,7 +483,7 @@ xactions notify configure
     </article>
 
     <div class="page-meta">
-      <span>1 min read</span>
+      <span>2 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/notifications.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Notifications" target="_blank" rel="noopener">Report a problem</a>
     </div>

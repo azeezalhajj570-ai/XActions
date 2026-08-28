@@ -660,6 +660,107 @@ xactions drafts discard 3f9c1a2b    # drop it
 </code></pre>
 <p>This is the setup for a read-only agent session where a person releases posts from a shell: give the agent <code>XACTIONS_MCP_REQUIRE_APPROVAL=1</code>, and review the queue with <code>xactions drafts list</code> whenever you like. Both sides honour <code>XACTIONS_HOME</code>, so point them at the same directory if you have moved it. Full reference: <a href="/docs/guides/cli-reference#drafts-approve-mcp-write-calls-from-the-terminal">cli-reference.md</a>.</p>
 <hr>
+<h2 id="daily-action-caps">Daily action caps</h2>
+<p>X suspends accounts that follow, like or post faster than a person could. Its
+limits are enforced on X&#39;s side, but by the time X says &quot;over the limit&quot; the
+account is already flagged. XActions keeps an agent under the line on purpose:
+every write tool is charged against a rolling 24 hour budget for its action
+class, and a call that would go over is refused before anything reaches X.</p>
+<p>The ledger lives in <code>~/.xactions/action-ledger.json</code> (honours <code>XACTIONS_HOME</code>),
+so a budget spent this morning is still spent after a restart, a crash, or a
+fresh <code>npx xactions-mcp</code>. A cap that resets when the process does is not a cap.</p>
+<p>Nothing needs configuring: the defaults apply the moment the server starts.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Default per 24h</th>
+<th>Tools charged to it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>post</code></td>
+<td>2400</td>
+<td><code>x_post_tweet</code>, <code>x_post_thread</code>, <code>x_create_poll</code>, <code>x_schedule_post</code>, <code>x_publish_article</code>, <code>x_persona_run</code>, <code>x_workflow_run</code></td>
+</tr>
+<tr>
+<td><code>reply</code></td>
+<td>2400</td>
+<td><code>x_reply</code>, <code>x_quote_tweet</code>, <code>x_auto_comment</code></td>
+</tr>
+<tr>
+<td><code>like</code></td>
+<td>500</td>
+<td><code>x_like</code>, <code>x_auto_like</code>, <code>x_bookmark</code></td>
+</tr>
+<tr>
+<td><code>repost</code></td>
+<td>500</td>
+<td><code>x_retweet</code>, <code>x_auto_retweet</code></td>
+</tr>
+<tr>
+<td><code>follow</code></td>
+<td>400</td>
+<td><code>x_follow</code>, <code>x_auto_follow</code>, <code>x_follow_engagers</code></td>
+</tr>
+<tr>
+<td><code>unfollow</code></td>
+<td>400</td>
+<td><code>x_unfollow</code>, <code>x_unfollow_non_followers</code>, <code>x_unfollow_all</code>, <code>x_smart_unfollow</code></td>
+</tr>
+<tr>
+<td><code>dm</code></td>
+<td>500</td>
+<td><code>x_send_dm</code></td>
+</tr>
+<tr>
+<td><code>block</code></td>
+<td>500</td>
+<td><code>x_block_user</code></td>
+</tr>
+<tr>
+<td><code>mute</code></td>
+<td>500</td>
+<td><code>x_mute_user</code>, <code>x_unmute_user</code></td>
+</tr>
+<tr>
+<td><code>delete</code></td>
+<td>2400</td>
+<td><code>x_delete_tweet</code>, <code>x_clear_bookmarks</code></td>
+</tr>
+</tbody></table>
+<p>The published sources are X&#39;s own limits page (2,400 posts and 500 direct
+messages a day, 400 follows a day). Classes X does not publish a number for
+reuse the closest published figure, deliberately on the low side.</p>
+<p>Ask for the remaining budget at any time with the <code>x_action_budget</code> tool, which
+is always available and never charged:</p>
+<pre><code class="language-json">{
+  &quot;account&quot;: &quot;nichxbt&quot;,
+  &quot;windowHours&quot;: 24,
+  &quot;classes&quot;: {
+    &quot;follow&quot;: { &quot;cap&quot;: 400, &quot;used&quot;: 37, &quot;remaining&quot;: 363, &quot;resetAt&quot;: &quot;2026-08-28T09:14:02.113Z&quot; }
+  }
+}
+</code></pre>
+<p>A refused call answers with the class, the cap, and when the next slot frees, so
+an agent can wait rather than retry into a suspension:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: &quot;Daily cap reached for \&quot;follow\&quot; on account \&quot;nichxbt\&quot;: 400/400 in the last 24h.&quot;,
+  &quot;code&quot;: &quot;ACTION_CAP_EXCEEDED&quot;,
+  &quot;resetAt&quot;: &quot;2026-08-28T09:14:02.113Z&quot;
+}
+</code></pre>
+<h3 id="changing-the-caps">Changing the caps</h3>
+<p>Set <code>XACTIONS_ACTION_CAPS</code> to a JSON object, or write the same shape to
+<code>~/.xactions/action-caps.json</code>. A flat map sets every account; an <code>accounts</code> key
+sets one. <code>0</code> disables a class entirely.</p>
+<pre><code class="language-bash">XACTIONS_ACTION_CAPS=&#39;{&quot;follow&quot;:150,&quot;like&quot;:300,&quot;accounts&quot;:{&quot;brand&quot;:{&quot;post&quot;:50}}}&#39;
+</code></pre>
+<p>Which account a call is charged to is, in order: the server&#39;s <code>account</code> option,
+<code>XACTIONS_ACCOUNT</code>, the username of the saved session, then <code>default</code>. Approving
+a held draft is charged the same as running the tool directly, so the approval
+gate cannot be used to spend past a cap.</p>
+<hr>
 <h2 id="available-tools">Available Tools</h2>
 <h3 id="scraping-free-no-api-key-needed">Scraping (free, no API key needed)</h3>
 <table>
@@ -876,7 +977,7 @@ npx puppeteer browsers install chrome
     </article>
 
     <div class="page-meta">
-      <span>8 min read</span>
+      <span>10 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/mcp-setup.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20XActions%20MCP%20Server%20Setup%20Guide" target="_blank" rel="noopener">Report a problem</a>
     </div>

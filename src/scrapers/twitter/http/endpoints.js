@@ -2,19 +2,57 @@
 /**
  * Twitter/X Internal API Endpoint Map
  *
- * These endpoints are reverse-engineered from Twitter's web client.
- * GraphQL query IDs change periodically — update them when Twitter deploys new bundles.
+ * Every internal GraphQL call to x.com is addressed by a persisted query ID
+ * (`/i/api/graphql/<queryId>/<operationName>`). X rotates those IDs whenever it
+ * ships a new web bundle, and a stale ID answers `404 Query not found`.
+ *
+ * The query IDs, feature-switch values and field-toggle names below are no
+ * longer typed in by hand. They are read out of x.com's own JavaScript bundles
+ * and regenerated into `./x-endpoints.generated.js` by
+ * `npm run sync:endpoints`; `npm run sync:endpoints:check` fails when the
+ * committed table has fallen behind. This file keeps the parts a human decides:
+ * which operations XActions tracks under which key, any hand-pinned query ID,
+ * the request-variable shapes, and the rate-limit budgets.
+ *
+ * Resolution order for any operation, unchanged: the runtime discovery cache in
+ * `./queryIds.js` first (it was read from the bundle x.com is serving right
+ * now), then this table.
  *
  * Sources:
- *   - the-convocation/twitter-scraper (MIT) — src/api-data.ts
- *   - d60/twikit (MIT) — twikit/client/gql.py, twikit/client/v11.py, twikit/constants.py
- *   - Twitter web client network inspection
+ *   - fa0311/TwitterInternalAPIDocument (MIT) - docs/json/GraphQL.json,
+ *     docs/json/v1.1.json, via ./x-endpoints.generated.js
+ *   - the-convocation/twitter-scraper (MIT) - src/api-data.ts
+ *   - d60/twikit (MIT) - twikit/client/gql.py, twikit/client/v11.py,
+ *     twikit/constants.py
+ *   - x.com web client network inspection
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { resolveOperation } from './queryIds.js';
+import { USER_AGENT_STRINGS } from '../../../client/auth/userAgents.generated.js';
+import {
+  UPSTREAM,
+  OPERATIONS as UPSTREAM_OPERATIONS,
+  FEATURE_NAMES,
+  FEATURE_VALUES,
+  FIELD_TOGGLE_NAMES,
+  REST_V11,
+} from './x-endpoints.generated.js';
+
+export { UPSTREAM_OPERATIONS, REST_V11 };
+
+/**
+ * Provenance of the generated half of this module: which upstream commit the
+ * query IDs came from, when it was published, and when we fetched it.
+ *
+ * `xactions doctor` and the endpoint audit read this rather than a date written
+ * into a comment, so "last verified on ..." is a fact with a source.
+ *
+ * @type {typeof UPSTREAM}
+ */
+export const ENDPOINT_TABLE_SOURCE = UPSTREAM;
 
 // ---------------------------------------------------------------------------
 // Base URLs
@@ -33,94 +71,153 @@ export const BEARER_TOKEN =
   'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
 
 // ---------------------------------------------------------------------------
-// GraphQL Query / Mutation IDs
+// GraphQL operations XActions tracks
 // ---------------------------------------------------------------------------
-// Cross-referenced from:
-//   - the-convocation/twitter-scraper src/api-data.ts (endpoints object)
-//   - d60/twikit twikit/client/gql.py (Endpoint class)
-// When both sources provide an ID, the more recent one is preferred.
-// Query IDs marked [twikit] or [scraper] indicate their primary source.
+// The key is what the rest of the codebase says (`GRAPHQL.Likes`); the value is
+// the operation name x.com addresses it by (`Favoriters`). The two differ often
+// enough that the mapping has to be written down. Query IDs come from
+// `./x-endpoints.generated.js`, so adding a key here is the whole job of
+// tracking a new operation.
 
-export const GRAPHQL = {
+/**
+ * Curated key -> x.com operation name.
+ * @type {Readonly<Record<string, string>>}
+ */
+export const TRACKED_OPERATIONS = Object.freeze({
   // ---- Queries (user profiles) ----
-  UserByScreenName:     { queryId: 'Gb-d6r0vxPOADdG62OEBpQ', operationName: 'UserByScreenName' },     // live x.com bundle, 2026-08-27
-  UserByRestId:         { queryId: 'xvmVfRLmnr1alc5f2dib0Q', operationName: 'UserByRestId' },         // live x.com bundle, 2026-08-27 — also in scraper
+  UserByScreenName: 'UserByScreenName',
+  UserByRestId: 'UserByRestId',
 
   // ---- Queries (user timelines) ----
-  UserTweets:           { queryId: 'SXVCYB8XHSS25nzIljNtZA', operationName: 'UserTweets' },           // live x.com bundle, 2026-08-27
-  UserTweetsAndReplies: { queryId: 'qUpkZU6eN8MbtQb7rC_pYg', operationName: 'UserTweetsAndReplies' }, // live x.com bundle, 2026-08-27
-  UserMedia:            { queryId: 'VyudDWQnr9vJNw7GasFz2g', operationName: 'UserMedia' },             // live x.com bundle, 2026-08-27
-  UserLikes:            { queryId: 'xA8fDIbrJfy4ojjjXmSR-A', operationName: 'Likes' },                // live x.com bundle, 2026-08-27
+  UserTweets: 'UserTweets',
+  UserTweetsAndReplies: 'UserTweetsAndReplies',
+  UserMedia: 'UserMedia',
+  UserLikes: 'Likes',
 
   // ---- Queries (tweets) ----
-  TweetDetail:          { queryId: 'XMOz5h24KAZ86qKffKTLdQ', operationName: 'TweetDetail' },          // live x.com bundle, 2026-08-27
-  TweetResultByRestId:  { queryId: 'GZsN2Pc4knAoit6pXa4HSA', operationName: 'TweetResultByRestId' },  // live x.com bundle, 2026-08-27
+  TweetDetail: 'TweetDetail',
+  TweetResultByRestId: 'TweetResultByRestId',
 
   // ---- Queries (search) ----
-  SearchTimeline:       { queryId: 'hyPfJYJ_XAtDYoslQc-Rgg', operationName: 'SearchTimeline' },       // live x.com bundle, 2026-08-27
+  SearchTimeline: 'SearchTimeline',
 
   // ---- Queries (relationships) ----
-  Followers:            { queryId: 'JNyQdTISpzCkj_1fqxDvFg', operationName: 'Followers' },             // live x.com bundle, 2026-08-27
-  Following:            { queryId: 'qGZZDF3mp91q7X22s3HxpA', operationName: 'Following' },            // live x.com bundle, 2026-08-27
+  Followers: 'Followers',
+  Following: 'Following',
 
   // ---- Queries (engagement) ----
-  Likes:                { queryId: 'yObihOW0q78g0PONS3QWVw', operationName: 'Favoriters' },           // live x.com bundle, 2026-08-27 — who liked a tweet
-  Retweeters:           { queryId: 'ROjiuYueotTnWoI8m2YaiQ', operationName: 'Retweeters' },           // live x.com bundle, 2026-08-27
+  Likes: 'Favoriters',
+  Retweeters: 'Retweeters',
 
   // ---- Queries (lists) ----
-  ListMembers:          { queryId: '8rYmkvWQe9jRRZdy_-vkGA', operationName: 'ListMembers' },          // live x.com bundle, 2026-08-27
-  ListTimeline:         { queryId: '1LE3u14FJjPZUHKFGzos2g', operationName: 'ListLatestTweetsTimeline' }, // live x.com bundle, 2026-08-27
+  ListMembers: 'ListMembers',
+  ListTimeline: 'ListLatestTweetsTimeline',
 
   // ---- Queries (bookmarks, auth required) ----
-  BookmarkTimeline:     { queryId: 'iblrFnKr6PZUR-dWpfXG6g', operationName: 'Bookmarks' },            // live x.com bundle, 2026-08-27
+  BookmarkTimeline: 'Bookmarks',
 
   // ---- Queries (timelines) ----
-  HomeTimeline:         { queryId: 'wp06oo3fRGU4P1sK8rECqQ', operationName: 'HomeTimeline' },          // live x.com bundle, 2026-08-27
-  HomeLatestTimeline:   { queryId: 'BLQWpfVqtgBqAqwRRJcJjA', operationName: 'HomeLatestTimeline' },    // live x.com bundle, 2026-08-27
+  HomeTimeline: 'HomeTimeline',
+  HomeLatestTimeline: 'HomeLatestTimeline',
 
   // ---- Mutations (tweets) ----
-  CreateTweet:     { queryId: 'WXTdKnLddrQOunD6MhWi3g', operationName: 'CreateTweet' },               // live x.com bundle, 2026-08-27
-  DeleteTweet:     { queryId: 'nxpZCY2K-I6QoFHAHeojFQ', operationName: 'DeleteTweet' },                // live x.com bundle, 2026-08-27 — also in scraper
+  CreateTweet: 'CreateTweet',
+  DeleteTweet: 'DeleteTweet',
 
   // ---- Mutations (engagement) ----
-  FavoriteTweet:   { queryId: 'lI07N6Otwv1PhnEgXILM7A', operationName: 'FavoriteTweet' },             // live x.com bundle, 2026-08-27 — also in scraper
-  UnfavoriteTweet: { queryId: 'ZYKSe-w7KEslx3JhSIk5LA', operationName: 'UnfavoriteTweet' },           // live x.com bundle, 2026-08-27 — also in scraper
-  CreateRetweet:   { queryId: 'mbRO74GrOvSfRcJnlMapnQ', operationName: 'CreateRetweet' },              // live x.com bundle, 2026-08-27 — also in scraper
-  DeleteRetweet:   { queryId: 'ZyZigVsNiFO6v1dEks1eWg', operationName: 'DeleteRetweet' },             // live x.com bundle, 2026-08-27 — also in scraper
+  FavoriteTweet: 'FavoriteTweet',
+  UnfavoriteTweet: 'UnfavoriteTweet',
+  CreateRetweet: 'CreateRetweet',
+  DeleteRetweet: 'DeleteRetweet',
 
   // ---- Mutations (bookmarks) ----
-  CreateBookmark:  { queryId: 'aoDbu3RHznuiSkQ9aNM67Q', operationName: 'CreateBookmark' },            // live x.com bundle, 2026-08-27 — also in scraper
-  DeleteBookmark:  { queryId: 'Wlmlj2-xzyS1GN3a6cj-mQ', operationName: 'DeleteBookmark' },           // live x.com bundle, 2026-08-27
+  CreateBookmark: 'CreateBookmark',
+  DeleteBookmark: 'DeleteBookmark',
 
   // ---- Queries (communities) ----
-  CommunityByRestId:                         { queryId: 'KW2CcDlT6D26JLajPjL5KA', operationName: 'CommunityByRestId' },                         // live x.com bundle, 2026-08-27
-  CommunityTweetsTimeline:                   { queryId: 'EwftYyqQemkckQ0wzGM6uw', operationName: 'CommunityTweetsTimeline' },                   // live x.com bundle, 2026-08-27 (rankingMode Recency|Relevance)
-  CommunityMediaTimeline:                    { queryId: 'ESJtwnI_apuGesbJncpc0Q', operationName: 'CommunityMediaTimeline' },                    // live x.com bundle, 2026-08-27
-  GlobalCommunitiesPostSearchTimeline:       { queryId: 'PgGU9J7vYfQ7vCGUICnMDQ', operationName: 'GlobalCommunitiesPostSearchTimeline' },       // live x.com bundle, 2026-08-27 (post search, Top)
-  GlobalCommunitiesLatestPostSearchTimeline: { queryId: 'OLcWToLopIqEtIQLgMeH9g', operationName: 'GlobalCommunitiesLatestPostSearchTimeline' }, // live x.com bundle, 2026-08-27 (post search, Latest)
-  CommunitiesMembershipsTimeline:            { queryId: '5CAFmEfqEEHpaQh5OvMf5Q', operationName: 'CommunitiesMembershipsTimeline' },            // live x.com bundle, 2026-08-27 (viewer's communities)
-  CommunityDiscoveryTimeline:                { queryId: 'mIfTIPdezu2obBzq1q1q6Q', operationName: 'CommunityDiscoveryTimeline' },                // live x.com bundle, 2026-08-27
+  CommunityByRestId: 'CommunityByRestId',
+  CommunityTweetsTimeline: 'CommunityTweetsTimeline',
+  CommunityMediaTimeline: 'CommunityMediaTimeline',
+  GlobalCommunitiesPostSearchTimeline: 'GlobalCommunitiesPostSearchTimeline',
+  GlobalCommunitiesLatestPostSearchTimeline: 'GlobalCommunitiesLatestPostSearchTimeline',
+  CommunitiesMembershipsTimeline: 'CommunitiesMembershipsTimeline',
+  CommunityDiscoveryTimeline: 'CommunityDiscoveryTimeline',
 
   // ---- Mutations (communities) ----
-  JoinCommunity:          { queryId: 'aUN7S2onDMr0Mp19QNT3Sw', operationName: 'JoinCommunity' },          // live x.com bundle, 2026-08-27
-  LeaveCommunity:         { queryId: 'pIi88QWEs6LWhfm0-8pXDw', operationName: 'LeaveCommunity' },         // live x.com bundle, 2026-08-27
-  RequestToJoinCommunity: { queryId: 'bdUGDQcMiz2p_8j9aEqx6A', operationName: 'RequestToJoinCommunity' }, // live x.com bundle, 2026-08-27
+  JoinCommunity: 'JoinCommunity',
+  LeaveCommunity: 'LeaveCommunity',
+  RequestToJoinCommunity: 'RequestToJoinCommunity',
 
   // ---- Queries (notifications, auth required) ----
-  NotificationsTimeline: { queryId: '8kmedJD_u653xqEjZIS7yA', operationName: 'NotificationsTimeline' }, // live x.com bundle, 2026-08-27 (timeline_type All|Verified|Mentions)
+  NotificationsTimeline: 'NotificationsTimeline',
 
   // ---- Queries (explore / trends) ----
-  ExplorePage: { queryId: 'jo4rJIWiO5pQlMk6FYphZQ', operationName: 'ExplorePage' }, // live x.com bundle, 2026-08-27
+  ExplorePage: 'ExplorePage',
+  TrendHistory: 'TrendHistory',
+  TrendRelevantUsers: 'TrendRelevantUsers',
 
   // ---- Queries (profile side-timelines) ----
-  UserHighlightsTweets:  { queryId: 'ryXhzHPlD6YJE137gSf7mQ', operationName: 'UserHighlightsTweets' },  // live x.com bundle, 2026-08-27
-  UserArticlesTweets:    { queryId: 'ZmMjUyrTpwYfTGAdylEyMw', operationName: 'UserArticlesTweets' },    // live x.com bundle, 2026-08-27
-  BlueVerifiedFollowers: { queryId: 'u3PkPbg--arppBcwNbF1ig', operationName: 'BlueVerifiedFollowers' }, // live x.com bundle, 2026-08-27
-  FollowersYouKnow:      { queryId: 'VFqixXkwK2VqJ9PedvCNqg', operationName: 'FollowersYouKnow' },      // live x.com bundle, 2026-08-27
+  UserHighlightsTweets: 'UserHighlightsTweets',
+  UserArticlesTweets: 'UserArticlesTweets',
+  BlueVerifiedFollowers: 'BlueVerifiedFollowers',
+  FollowersYouKnow: 'FollowersYouKnow',
+
+  // ---- Queries (community notes, called Birdwatch internally) ----
+  CommunityNotesTimeline: 'BirdwatchFetchGlobalTimeline',
+  CommunityNotesForTweet: 'BirdwatchFetchNotes',
+  CommunityNote: 'BirdwatchFetchOneNote',
 
   // ---- Queries (spaces) ----
-  AudioSpaceById: { queryId: 'Bh0L6azTQoMs9rJKeCF4wQ', operationName: 'AudioSpaceById' }, // live x.com bundle, 2026-08-27
-};
+  AudioSpaceById: 'AudioSpaceById',
+});
+
+/**
+ * Hand-pinned query IDs, which win over the generated table.
+ *
+ * Empty by default, and it should stay that way: the generated table is read
+ * from the bundle x.com actually serves. Pin an operation here only to hold it
+ * at a known-good ID while a regression is investigated, and write down why.
+ *
+ * @type {Readonly<Record<string, string>>}
+ */
+export const QUERY_ID_PINS = Object.freeze({});
+
+/**
+ * Tracked operations the generated table does not carry. Populated when x.com
+ * retires an operation between syncs; `resolveGraphQL` then fails for that one
+ * key with a message naming the fix, instead of the whole module refusing to
+ * load. `npm run sync:endpoints:check` exits non-zero when this is non-empty.
+ *
+ * @type {readonly string[]}
+ */
+export const MISSING_OPERATIONS = Object.freeze(
+  Object.entries(TRACKED_OPERATIONS)
+    .filter(([key, name]) => !(name in UPSTREAM_OPERATIONS) && !(key in QUERY_ID_PINS))
+    .map(([key]) => key),
+);
+
+/**
+ * GraphQL Query / Mutation IDs, keyed the way the codebase refers to them.
+ *
+ * @type {Readonly<Record<string, Readonly<{queryId: string, operationName: string, type: string}>>>}
+ */
+export const GRAPHQL = Object.freeze(
+  Object.fromEntries(
+    Object.entries(TRACKED_OPERATIONS)
+      .filter(([key]) => !MISSING_OPERATIONS.includes(key))
+      .map(([key, operationName]) => {
+        const upstream = UPSTREAM_OPERATIONS[operationName];
+        return [
+          key,
+          Object.freeze({
+            queryId: QUERY_ID_PINS[key] ?? upstream.queryId,
+            operationName,
+            type: upstream?.type ?? 'query',
+          }),
+        ];
+      }),
+  ),
+);
 
 /**
  * Resolve a GRAPHQL table entry to the query ID currently in use.
@@ -129,18 +226,43 @@ export const GRAPHQL = {
  * (`./queryIds.js`) has a cached ID for the operation, that one wins, because
  * it was read from x.com's live bundle and the table value may have rotated.
  *
- * @param {keyof typeof GRAPHQL} key
+ * A key XActions does not track but x.com ships resolves too, straight from the
+ * generated table, so reaching one of the other operations in
+ * `UPSTREAM_OPERATIONS` does not require editing this file first.
+ *
+ * @param {keyof typeof GRAPHQL | string} key
  * @returns {{queryId: string, operationName: string, source: 'cache'|'hardcoded'}}
  */
 export function resolveGraphQL(key) {
-  const entry = GRAPHQL[key];
-  if (!entry) throw new Error(`Unknown GraphQL endpoint key: ${key}`);
+  const entry = GRAPHQL[key] ?? untrackedEntry(key);
+  if (!entry) {
+    if (MISSING_OPERATIONS.includes(key)) {
+      throw new Error(
+        `GraphQL operation ${TRACKED_OPERATIONS[key]} (key ${key}) is no longer in x.com's bundles. ` +
+          'Run `npm run sync:endpoints`, then either remove the key from TRACKED_OPERATIONS or pin it in QUERY_ID_PINS.',
+      );
+    }
+    throw new Error(`Unknown GraphQL endpoint key: ${key}`);
+  }
   const resolved = resolveOperation(entry.operationName);
   return {
     queryId: resolved.queryId || entry.queryId,
     operationName: entry.operationName,
     source: resolved.queryId ? resolved.source : 'hardcoded',
   };
+}
+
+/**
+ * Build an entry for an operation x.com ships that the curated table does not
+ * name.
+ *
+ * @param {string} operationName
+ * @returns {{queryId: string, operationName: string, type: string}|null}
+ */
+function untrackedEntry(operationName) {
+  const upstream = UPSTREAM_OPERATIONS[operationName];
+  if (!upstream) return null;
+  return { queryId: upstream.queryId, operationName, type: upstream.type };
 }
 
 // ---------------------------------------------------------------------------
@@ -190,56 +312,135 @@ export const REST = {
 };
 
 // ---------------------------------------------------------------------------
-// Default GraphQL Feature Flags
-// Merged from the-convocation/twitter-scraper api-data.ts and d60/twikit constants.py
-// These flags are sent with nearly every GraphQL request by the Twitter web client.
+// GraphQL feature switches and field toggles
 // ---------------------------------------------------------------------------
+// x.com's web client declares, per operation, which feature switches it sends
+// and what value it sends for each. Both are read out of its bundles into
+// ./x-endpoints.generated.js, so the defaults below are what x.com itself is
+// sending today rather than a snapshot someone transcribed.
 
-export const DEFAULT_FEATURES = {
-  rweb_video_screen_enabled: false,
-  profile_label_improvements_pcf_label_in_post_enabled: true,
-  rweb_tipjar_consumption_enabled: false,
+/**
+ * Feature switches we send regardless of what upstream declares.
+ *
+ * All three were sent by every client for years and x.com's bundles no longer
+ * declare them anywhere. They are kept because established third-party clients
+ * still send them and requests still succeed; dropping them is a live-traffic
+ * change nobody has tested. Delete the entry to stop sending one.
+ *
+ * @type {Readonly<Record<string, boolean>>}
+ */
+export const FEATURE_PINS = Object.freeze({
   responsive_web_graphql_exclude_directive_enabled: true,
-  verified_phone_label_enabled: false,
-  creator_subscriptions_tweet_preview_api_enabled: true,
-  responsive_web_graphql_timeline_navigation_enabled: true,
   responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-  premium_content_api_read_enabled: false,
-  communities_web_enable_tweet_community_results_fetch: true,
-  c9s_tweet_anatomy_moderator_badge_enabled: true,
-  responsive_web_grok_analyze_button_fetch_trends_enabled: false,
-  responsive_web_grok_analyze_post_followups_enabled: true,
-  responsive_web_jetfuel_frame: true,
-  responsive_web_grok_share_attachment_enabled: true,
-  responsive_web_grok_annotations_enabled: true,
-  articles_preview_enabled: true,
-  responsive_web_edit_tweet_api_enabled: true,
-  graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-  view_counts_everywhere_api_enabled: true,
-  longform_notetweets_consumption_enabled: true,
-  responsive_web_twitter_article_tweet_consumption_enabled: true,
   tweet_awards_web_tipping_enabled: false,
-  responsive_web_grok_show_grok_translated_post: true,
-  responsive_web_grok_analysis_button_from_backend: true,
-  post_ctas_fetch_enabled: true,
-  freedom_of_speech_not_reach_fetch_enabled: true,
-  standardized_nudges_misinfo: true,
-  tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
-  longform_notetweets_rich_text_read_enabled: true,
-  longform_notetweets_inline_media_enabled: true,
-  responsive_web_grok_image_annotation_enabled: true,
-  responsive_web_grok_imagine_annotation_enabled: true,
-  responsive_web_grok_community_note_auto_translation_is_enabled: false,
-  responsive_web_enhance_cards_enabled: false,
-  responsive_web_profile_redirect_enabled: false,
-};
+});
 
-export const DEFAULT_FIELD_TOGGLES = {
+/**
+ * Field-toggle values.
+ *
+ * Upstream records which operations accept a toggle but not the value the
+ * client sends, because a toggle is passed as a request parameter rather than
+ * baked into the bundle. A toggle named by an operation and absent here is sent
+ * as `false`, which asks for the smaller response and is the safe default; pin
+ * a `true` here when a caller needs the extra payload.
+ *
+ * @type {Readonly<Record<string, boolean>>}
+ */
+export const FIELD_TOGGLE_VALUES = Object.freeze({
   withArticleRichContentState: true,
   withArticlePlainText: false,
   withGrokAnalyze: false,
   withDisallowedReplyControls: false,
-};
+});
+
+/**
+ * The exact feature switches one operation declares, with their values.
+ *
+ * Sending an operation only the switches it asks for is closer to what the web
+ * client does than sending the merged default set, and it is the way to satisfy
+ * an operation outside the curated table.
+ *
+ * @param {string} operationName
+ * @returns {Record<string, boolean>} empty when x.com ships no such operation
+ */
+export function operationFeatures(operationName) {
+  const upstream = UPSTREAM_OPERATIONS[operationName];
+  if (!upstream) return {};
+  const out = {};
+  for (const index of upstream.featureIdx) {
+    const name = FEATURE_NAMES[index];
+    if (name !== undefined) out[name] = FEATURE_VALUES[name];
+  }
+  return out;
+}
+
+/**
+ * The exact field toggles one operation declares, with their values.
+ *
+ * @param {string} operationName
+ * @returns {Record<string, boolean>} empty when x.com ships no such operation
+ */
+export function operationFieldToggles(operationName) {
+  const upstream = UPSTREAM_OPERATIONS[operationName];
+  if (!upstream) return {};
+  const out = {};
+  for (const index of upstream.toggleIdx) {
+    const name = FIELD_TOGGLE_NAMES[index];
+    if (name !== undefined) out[name] = FIELD_TOGGLE_VALUES[name] ?? false;
+  }
+  return out;
+}
+
+/**
+ * Tracked operations whose switches are deliberately kept out of the merged
+ * default.
+ *
+ * Most operations share one broad timeline feature family, so merging them
+ * costs nothing. A few carry a family of their own that no other request would
+ * ever send, and folding those into the default would put, for example, six
+ * `responsive_web_birdwatch_*` switches on a plain `UserTweets` call. Reach
+ * these through `operationFeatures(name)` instead, which is the narrower and
+ * more faithful set anyway.
+ *
+ * @type {readonly string[]}
+ */
+export const SPECIALISED_OPERATIONS = Object.freeze(['BirdwatchFetchNotes', 'BirdwatchFetchOneNote']);
+
+/**
+ * Merge one map per tracked operation into a single default, sorted so the
+ * object is stable across regenerations.
+ *
+ * @param {(operationName: string) => Record<string, boolean>} per
+ * @param {Record<string, boolean>} pins
+ * @returns {Record<string, boolean>}
+ */
+function mergeAcrossTracked(per, pins = {}) {
+  const merged = {};
+  for (const operationName of Object.values(TRACKED_OPERATIONS)) {
+    if (SPECIALISED_OPERATIONS.includes(operationName)) continue;
+    Object.assign(merged, per(operationName));
+  }
+  Object.assign(merged, pins);
+  return Object.fromEntries(Object.entries(merged).sort(([a], [b]) => (a < b ? -1 : 1)));
+}
+
+/**
+ * Feature switches sent with a GraphQL request when the caller names none:
+ * every switch any tracked operation declares, plus `FEATURE_PINS`.
+ *
+ * X rejects a request that omits a switch the operation requires
+ * ("The following features cannot be null"), so the merged set is the safe
+ * default. `operationFeatures()` gives the narrower per-operation set.
+ *
+ * @type {Record<string, boolean>}
+ */
+export const DEFAULT_FEATURES = mergeAcrossTracked(operationFeatures, FEATURE_PINS);
+
+/**
+ * Field toggles sent with a GraphQL request when the caller names none.
+ * @type {Record<string, boolean>}
+ */
+export const DEFAULT_FIELD_TOGGLES = mergeAcrossTracked(operationFieldToggles);
 
 // ---------------------------------------------------------------------------
 // User Feature Flags (for UserByScreenName / UserByRestId queries)
@@ -314,17 +515,22 @@ export const RATE_LIMITS = {
 };
 
 // ---------------------------------------------------------------------------
-// User Agent Strings (realistic Chrome 131–133 on Windows/Mac/Linux, Feb 2026)
+// User Agent Strings
 // ---------------------------------------------------------------------------
+// Refreshed by `npm run sync:user-agents` from fa0311/latest-user-agent, so the
+// pool tracks the browser versions shipping now instead of whichever ones were
+// current when someone last edited this file. A user agent two major versions
+// behind is itself a signal worth avoiding.
+//
+// `src/client/auth/userAgent.js` is the richer surface: it holds one consistent
+// profile (user agent plus matching client hints) per session rather than
+// rotating per request.
 
-export const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-];
+/**
+ * Browser User-Agent strings, one per generated profile.
+ * @type {string[]}
+ */
+export const USER_AGENTS = [...USER_AGENT_STRINGS];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -614,7 +820,7 @@ export async function validateEndpoints(options = {}) {
       // Only 404 means the query ID is stale.
       if (res.status === 404) {
         results.invalid.push(key);
-        results.errors[key] = `HTTP 404 — query ID likely stale`;
+        results.errors[key] = `HTTP 404, query ID likely stale`;
       } else {
         results.valid.push(key);
       }

@@ -17,7 +17,7 @@
  *   DEEPGRAM_API_KEY  — For Deepgram STT
  * 
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // Singleton agent instance — only one Space at a time

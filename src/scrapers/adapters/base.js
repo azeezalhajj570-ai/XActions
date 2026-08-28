@@ -7,7 +7,7 @@
  * or any other scraping framework.
  * 
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 /**

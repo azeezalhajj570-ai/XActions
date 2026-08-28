@@ -6,7 +6,7 @@
     {
       "id": "a2a-multi-agent",
       "name": "A2A Multi-Agent",
-      "version": null,
+      "version": "1.0",
       "path": "skills/a2a-multi-agent/SKILL.md",
       "description": "Agent-to-Agent protocol integration for multi-agent workflows."
     },

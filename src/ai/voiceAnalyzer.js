@@ -6,7 +6,7 @@
  * The killer feature: scrape tweets → analyze voice → generate in their style.
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

@@ -4,7 +4,7 @@
  * Watches mentions of a username and emits new ones.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { searchTweets } from '../scrapers/index.js';

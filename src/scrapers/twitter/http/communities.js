@@ -16,7 +16,7 @@
  * Depends on: endpoints.js, paging.js, tweets.js, relationships.js
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { GRAPHQL } from './endpoints.js';

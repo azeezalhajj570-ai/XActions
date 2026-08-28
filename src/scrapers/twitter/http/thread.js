@@ -13,7 +13,7 @@
  * No browser required. Uses the HTTP client directly.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { GRAPHQL } from './endpoints.js';

@@ -6,7 +6,7 @@
  * artifact storage, history tracking, execution, and cleanup.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import {

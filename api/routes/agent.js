@@ -16,7 +16,7 @@
  * GET  /api/agent/content          — content created by agent
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import express from 'express';

@@ -3,7 +3,7 @@
  * XActions Client — Barrel Export
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // Main entry point

@@ -1,112 +1,317 @@
-# XActions — Agent Instructions
+# XActions for agents
 
-> X/Twitter automation toolkit: browser scripts, CLI, Node.js library, MCP server, web dashboard. No API fees. By nichxbt.
+X/Twitter automation with no X API key: a CLI, a Node library, 150 MCP tools,
+49 agent skills, browser console scripts, and a web dashboard. Apache-2.0, by
+nichxbt.
 
-## Quick Reference
+This file is for the agent, not the human. It answers one question first,
+because getting it wrong costs the whole session: **do you shell out to the
+CLI, or do you load the MCP server?**
 
-| User Request | Solution |
+---
+
+## Two lanes into the same engine
+
+XActions ships both lanes from one install, and they call the same code. The
+difference is what each costs you before you have read a single tweet.
+
+| | CLI lane | MCP lane |
+|---|---|---|
+| How you call it | one Bash call, `xactions <cmd> --compact` | a tool call, after the client connects the server |
+| What loads into context up front | nothing | the whole tool list |
+| What comes back | the rows you asked for, one per line | a JSON result object |
+| Writes | reads, plus `engage` and `bulk` | every write tool, with an approval gate |
+| Usable without client configuration | yes, it is just a process | no, the client must be configured first |
+
+The tool list is not small. The server advertises 150 tools, and the
+`tools/list` payload it serves is about 60 KB of JSON before you have done any
+work at all. Measure it yourself:
+
+```bash
+node -e "import('./src/mcp/server.js').then(m => console.log(JSON.stringify(m.TOOLS).length, 'bytes,', m.TOOLS.length, 'tools'))"
+```
+
+That cost is worth paying when you are going to make many calls in a session,
+keep state between them, or write. It is not worth paying to answer "how many
+followers does this account have."
+
+### The rule
+
+**Reading a handful of things? Shell out. Working a long session, or writing?
+Load the server.**
+
+Concretely, prefer the CLI when:
+
+- You need one or two facts and then you are done.
+- You are inside a larger task where X is a detail, not the subject.
+- You want to pipe, filter, or count the result with `jq`, `grep`, `sort`,
+  `wc`, or feed it to another command in the same Bash call.
+- The client has no MCP configuration and you are not going to add one.
+
+Prefer the MCP server when:
+
+- You are posting, replying, following, muting, or deleting, and you want the
+  draft-approval gate to hold each write for a human.
+- The session will make many calls and the per-call schema cost amortises.
+- You want the structured error objects and the session state the server keeps
+  across calls.
+
+Nothing stops you from using both. `xactions mcp-config` writes the client
+config, and the CLI keeps working next to it.
+
+---
+
+## The CLI lane
+
+### The output contract
+
+Two flags, and they are global, so every read command takes them:
+
+- `--compact` prints one record per line as tab-separated `key=value` pairs,
+  essential fields only, no colours and no spinners.
+- `--fields <list>` narrows that to exactly the columns you name, in the order
+  you name them.
+
+`--json` is per command and prints the full structured object.
+
+**`--compact` wins when both are passed.** They are alternatives, not a pair:
+pick `--compact` when you are going to read the answer yourself, and `--json`
+when you are going to pipe it into `jq`.
+
+Field names are shared across commands, so `--fields likes` means the same
+thing everywhere. The defaults per record kind:
+
+| Record kind | Default columns |
 |---|---|
-| Unfollow everyone | `src/unfollowEveryone.js` |
-| Unfollow non-followers | `src/unfollowback.js` |
-| Download Twitter video | `scripts/videoDownloader.js` |
-| Detect unfollowers | `src/detectUnfollowers.js` |
-| Train algorithm for a niche | `src/automation/algorithmBuilder.js` (browser) or `xactions persona create` (CLI) |
-| Become a thought leader / grow account | `skills/algorithm-cultivation/SKILL.md` |
-| 24/7 LLM-powered growth agent | `src/algorithmBuilder.js` + `src/personaEngine.js` — run via `xactions persona run <id>` |
-| Create a persona for automation | `xactions persona create` or MCP tool `x_persona_create` |
-| Twitter automation without API | XActions uses browser automation |
-| MCP server for Twitter | `src/mcp/server.js` |
+| tweet | `id username date likes retweets replies views text` |
+| profile | `id username name followers following tweets verified bio` |
+| user | `id username name followers verified bio` |
+| media | `type url tweetUrl` |
+| report | `username followers following postsPerDay engagementRate medianEngagement mediaShare bestHourUTC bestWeekday` |
 
-## Project Structure
+Anything else the record carried can still be named in `--fields`.
 
+### Recipes
+
+Read a profile:
+
+```bash
+xactions profile NASA --compact
+xactions profile NASA --fields username,followers,verified --compact
 ```
-src/           → Core scripts, automation/, scrapers/, cli/, mcp/
-api/           → Express.js backend (routes/, services/, middleware/)
-dashboard/     → Static HTML frontend
-scripts/       → Standalone utility scripts
-skills/        → 31 Agent Skills (skills/*/SKILL.md)
-docs/          → Documentation and examples
-archive/       → Legacy browser-only scripts
-prisma/        → Database schema
-bin/           → CLI entry point (unfollowx)
-extension/     → Browser extension (Chrome/Edge)
+
+Read someone's posts:
+
+```bash
+xactions tweets NASA --limit 50 --compact
+xactions tweets NASA --limit 200 --fields id,date,likes,text --compact
+xactions tweets NASA --limit 50 --json | jq '[.[] | select(.likes > 1000)] | length'
 ```
+
+Search:
+
+```bash
+xactions search "agent skills" --limit 40 --compact
+xactions search "mcp server" --filter top --limit 25 --fields username,likes,text --compact
+```
+
+`--filter` takes `latest` (the default), `top`, `people`, `photos`, `videos`.
+
+Followers, and who does not follow back:
+
+```bash
+xactions followers nichxbt --limit 500 --compact
+xactions following nichxbt --limit 500 --fields username,followers --compact
+xactions non-followers nichxbt --limit 500 --compact
+```
+
+Account report, and comparisons:
+
+```bash
+xactions analyze NASA --compact
+xactions analyze NASA SpaceX --fields username,followers,engagementRate,bestHourUTC --compact
+```
+
+`analyze` takes several usernames and samples `--limit` posts from each
+(default 50, clamped to the 5 to 200 range).
+
+The rest of the read surface, same flags:
+
+```bash
+xactions hashtag ai --limit 50 --compact
+xactions thread https://x.com/NASA/status/1234567890 --compact
+xactions media NASA --limit 30 --compact
+```
+
+### One Bash call, whole answer
+
+The point of the lane is that the shell does the second half of the work, so
+nothing intermediate has to pass through the context window:
+
+```bash
+# Top five posts by likes, text only
+xactions tweets NASA --limit 200 --json | jq -r 'sort_by(-.likes) | .[:5] | .[] | "\(.likes)\t\(.text)"'
+
+# How many of the accounts I follow do not follow back
+xactions non-followers nichxbt --limit 1000 --compact | wc -l
+
+# Accounts above 100k followers, from a follower list
+xactions followers nichxbt --limit 1000 --json | jq -r '.[] | select(.followers > 100000) | .username'
+```
+
+### What needs a login
+
+Public reads work with no account: `profile`, `tweets`, `thread`, `media`,
+`analyze`, `hashtag`. Search, `followers`, `following`, `non-followers`, likes,
+bookmarks and DMs need a session.
+
+```bash
+xactions doctor    # what works right now, and what each failure needs
+xactions connect   # log in through a real browser and save the session
+xactions login     # or paste an auth_token cookie
+```
+
+`xactions doctor` is the first command to run when something returns nothing:
+it reports the guest tier, the saved session, the query-ID cache and the
+installed skills, with the fix next to each failure.
+
+---
+
+## The MCP lane
+
+```bash
+xactions mcp-config                     # print the config for Claude Desktop
+xactions mcp-config --client cursor     # or cursor, windsurf, vscode
+xactions mcp-config --write             # write it into Claude Desktop's config file
+node src/mcp/server.js                  # run it directly over stdio
+```
+
+### Do not load all 150 tools
+
+The tool list is filterable by group, and a filtered tool is neither advertised
+nor callable, so the schema cost drops with it. Groups: `read`, `write`, `dm`,
+`lists`, `spaces`, `analytics`, `ai`, `grok`, `automation`, `monitoring`,
+`workflows`, `persona`, `graph`, `data`, `x402`, `drafts`, `auth`.
+
+```bash
+XACTIONS_MCP_TOOLS=read,analytics node src/mcp/server.js
+XACTIONS_MCP_EXCLUDE=write,dm node src/mcp/server.js
+node src/mcp/server.js --tools read,analytics
+node src/mcp/server.js --exclude write,dm
+```
+
+If a session is only ever going to read, `XACTIONS_MCP_TOOLS=read` is the
+closest the MCP lane gets to the CLI lane's context cost.
+
+### Hold writes for a human
+
+```bash
+XACTIONS_MCP_REQUIRE_APPROVAL=1 node src/mcp/server.js
+```
+
+Every tool that posts, deletes, follows, mutes or sends is then saved as a
+draft instead of running. Release or bin them with the `x_list_drafts`,
+`x_approve_draft` and `x_discard_draft` tools, or from the shell:
+
+```bash
+xactions drafts list
+xactions drafts show <id>
+xactions drafts approve <id>
+xactions drafts discard <id>
+```
+
+### Environment
+
+| Variable | Effect |
+|---|---|
+| `XACTIONS_SESSION_COOKIE` | The `auth_token` cookie. Without it the server runs the guest tier |
+| `XACTIONS_MODE` | `local` (default, free, Puppeteer) or `remote` |
+| `XACTIONS_MCP_TOOLS` | Allowlist of tool names or groups |
+| `XACTIONS_MCP_EXCLUDE` | Denylist, applied after the allowlist |
+| `XACTIONS_MCP_REQUIRE_APPROVAL` | Hold every write tool as a draft |
+
+### Installing without a config file
+
+`.mcpb` is a bundle the user drags onto Claude Desktop > Settings > Extensions.
+It carries the server and its dependencies, and its manifest prompts for the
+session cookie and the tool groups at install time, so nothing is typed into a
+config file. Built with `node scripts/build-mcpb.mjs`, attached to each release
+by `.github/workflows/release-mcpb.yml`.
+
+---
 
 ## Skills
 
-31 skills in `skills/*/SKILL.md`. Read the relevant SKILL.md when a user's request matches a category.
-
-- **Unfollow management** — mass unfollow, non-follower cleanup
-- **Analytics & insights** — engagement, hashtags, competitors, best times
-- **Content posting** — tweets, threads, polls, scheduling, reposts
-- **Twitter scraping** — profiles, followers, tweets, media, bookmarks
-- **Growth automation** — auto-like, follow engagers, keyword follow
-- **Algorithm cultivation** — thought leader training, niche optimization
-- **Community management** — join/leave communities
-- **Follower monitoring** — follower alerts, continuous tracking
-- **Blocking & muting** — bot blocking, bulk mute
-- **Content cleanup** — delete tweets, unlike, clear history
-- **Direct messages** — auto DM, message management
-- **Bookmarks** — export, organize, folder management
-- **Lists** — create, manage, bulk add members
-- **Profile management** — edit profile, avatar, header, bio
-- **Settings & privacy** — protected tweets, notification preferences
-- **Notifications management** — filtering, auto-response, notification controls
-- **Engagement & interaction** — auto-reply, auto-repost, plug replies
-- **Discovery & explore** — trending, topics, search
-- **Premium & subscriptions** — subscription features
-- **Spaces & live** — create, join, schedule spaces
-- **Grok AI** — chat, image generation
-- **Articles & longform** — compose, publish articles
-- **Business & ads** — campaigns, boosts, ads dashboard
-- **Creator monetization** — revenue, analytics
-- **Community health monitoring** — follower quality audits, engagement authenticity
-- **Competitor intelligence** — competitor profile, content, and audience analysis
-- **Content repurposing** — repackage top tweets into threads, carousels, variations
-- **Lead generation** — find and qualify B2B leads from X conversations
-- **Viral thread generation** — research trends and generate high-engagement threads
-- **XActions CLI** — `bin/unfollowx` command-line tool
-- **XActions MCP server** — `src/mcp/server.js` for AI agents
-
-## Key Technical Context
-
-- Browser scripts run in **DevTools console on x.com**, not Node.js
-- DOM selectors change frequently — see [selectors.md](docs/agents/selectors.md)
-- Scripts in `src/automation/` require pasting `src/automation/core.js` first
-- State persistence uses `sessionStorage` (lost on tab close)
-- CLI entry point: `bin/unfollowx`, installed via `npm install -g xactions`
-- MCP server: `src/mcp/server.js` — used by Claude Desktop and AI agents
-- Prefer `data-testid` selectors — most stable across X/Twitter UI updates
-- X enforces aggressive rate limits; all automation must include 1-3s delays between actions
-
-## Patterns & Style
-
-- Browser script patterns: [browser-script-patterns.md](docs/agents/browser-script-patterns.md)
-- Adding features: [contributing-features.md](docs/agents/contributing-features.md)
-- DOM selectors (verified January 2026): [selectors.md](docs/agents/selectors.md)
-- `const` over `let`, async/await, emojis in `console.log`
-- Author credit: `// by nichxbt`
-
-## Codespace Performance
+49 skills live in [`skills/`](skills/), one directory each, following the
+[Agent Skills specification](https://agentskills.io/specification): a
+`SKILL.md` with `name` and `description` frontmatter, plus `references/` where
+a skill needs more than one file. Read the one that matches the request before
+you start; each names the exact script, page and arguments for its job, and the
+mistakes to avoid.
 
 ```bash
-ps aux --sort=-%cpu | head -20    # See top CPU consumers
-pkill -f "vitest"                  # Kill vitest workers
-pkill -f "tsgo --noEmit"          # Kill type-checker
+xactions skills list                    # every skill, and where each is installed
+xactions skills show follower-monitoring
+xactions skills install --all --global  # ~/.claude/skills/<id>/
+xactions skills install --all --target cursor
 ```
 
-Common resource hogs: `tsgo --noEmit` (~500% CPU), vitest workers (15x ~100% CPU each), multiple tsserver instances.
+Any third-party installer that follows the spec resolves the same tree:
 
-## Terminal Management
+```bash
+npx skills add nirholas/XActions
+```
 
-- Always use background terminals (`isBackground: true`) for every command
-- Always kill the terminal after the command completes
-- Do not reuse foreground shell sessions — stale sessions block future operations
-- If a terminal appears unresponsive, kill it and create a new one
+The catalogue and what each skill covers: [`docs/skills.md`](docs/skills.md).
+The machine-readable index: [`skills/index.json`](skills/index.json).
 
-## Mandatory Rules
+---
 
-1. **Never mock, stub, or fake anything.** Real implementations only.
-2. **TypeScript strict mode** — no `any`, no `@ts-ignore`.
-3. **Always kill terminals** after commands complete.
-4. **Always commit and push** as `nirholas`.
+## Where things live
+
+```
+src/cli/          The xactions command. index.js registers most commands,
+                  commands/ holds the ones with their own modules
+src/mcp/          MCP server, tool groups, draft-approval gate
+src/scrapers/     HTTP and browser scrapers
+src/client/       The low-level HTTP Twitter client
+src/automation/   Browser console scripts (paste core.js first)
+src/a2a/          Agent-to-Agent protocol server
+skills/           49 Agent Skills, one directory each
+api/              Express backend (routes/, services/, middleware/)
+dashboard/        Static frontend
+scripts/          Build and maintenance scripts
+docs/             Documentation
+extension/        Browser extension
+prisma/           Database schema
+```
+
+Deeper map: [`docs/`](docs/), starting with
+[`docs/mcp-setup.md`](docs/mcp-setup.md) and [`docs/skills.md`](docs/skills.md).
+
+---
+
+## Things that will bite you
+
+- **Browser scripts run in the DevTools console on x.com**, not in Node. Paste
+  `src/automation/core.js` first; it provides the config, selectors, utilities
+  and rate limiting the others assume.
+- **X's DOM changes often.** Prefer `data-testid` selectors. Current ones:
+  [`docs/agents/selectors.md`](docs/agents/selectors.md).
+- **Rate limits are real.** Every automation path keeps delays between actions.
+  Do not remove them to go faster; the account pays for it.
+- **An empty result is an error, not a zero.** The read commands throw rather
+  than reporting "0 results", because a silent zero is indistinguishable from
+  an account that genuinely has nothing.
+- **GraphQL query IDs are refreshed from x.com's own bundles**, not pinned. If
+  every read breaks at once, `xactions doctor` reports the cache age.
+
+## House style
+
+- ES modules, `const` over `let`, async/await.
+- Errors handled at the boundaries: network, user input, and the CLI surface.
+- No mocks, no stubs, no placeholder data anywhere in committed work.
+- Every file carries `@author nich (@nichxbt)` and the Apache-2.0 notice.
+- Third-party code is attributed in
+  [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) before it is merged. Read
+  the licence table there before adapting anything from another project.

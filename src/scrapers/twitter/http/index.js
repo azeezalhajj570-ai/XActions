@@ -5,7 +5,7 @@
  * No browser required. 10x faster. Works in serverless/edge.
  * 
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // Core client & auth

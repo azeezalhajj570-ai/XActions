@@ -9,7 +9,7 @@
  * Use response.headers.getSetCookie() (Node 18.14+) or undici which does expose them.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

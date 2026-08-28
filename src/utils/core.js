@@ -24,7 +24,7 @@
  * @version 2.0.0
  * @date 2026-02-24
  * @repository https://github.com/nirholas/XActions
- * @license MIT
+ * @license Apache-2.0
  */
 
 window.XActionsUtils = (() => {

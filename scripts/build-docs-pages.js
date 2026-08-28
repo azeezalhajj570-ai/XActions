@@ -487,7 +487,7 @@ function generateHTML(slug, markdown) {
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© 2024-2026 XActions. MIT License. No API fees. No limits.</p>
+      <p>© 2024-2026 XActions. Apache-2.0 licensed. No API fees. No limits.</p>
     </div>
   </footer>
 </body>

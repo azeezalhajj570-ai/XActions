@@ -3,7 +3,7 @@
  * XActions Client — DM API
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { Message } from '../models/Message.js';

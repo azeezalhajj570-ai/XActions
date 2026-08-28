@@ -6,7 +6,7 @@
  * Optional LLM mode via OpenRouter API for nuanced analysis.
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

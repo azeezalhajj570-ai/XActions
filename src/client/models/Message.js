@@ -5,7 +5,7 @@
  * Represents a direct message from Twitter's DM API.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 /**

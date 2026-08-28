@@ -25,17 +25,26 @@ process.on('uncaughtException', (error) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Warn about missing environment variables — logged at startup, not a hard exit
-// (Exiting before httpServer.listen() would kill the process before Railway's health check can respond)
+// A missing JWT_SECRET is not a warning. Session tokens, OAuth state values and license
+// signatures are all derived from it, so serving without one means serving tokens anyone
+// can forge. Refuse to boot instead. A crash loop in the platform dashboard is a
+// configuration error an operator can see; a running server with a guessable signing key
+// is one nobody sees until it is used.
 if (process.env.NODE_ENV === 'production') {
   const required = ['DATABASE_URL', 'JWT_SECRET'];
   const missing = required.filter(key => !process.env[key]);
-  if (missing.length > 0) {
-    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
-    console.error('❌ Set these in the Railway dashboard under Variables.');
-  }
-  if (process.env.JWT_SECRET?.includes('change-this')) {
-    console.warn('⚠️  Warning: Using default JWT_SECRET - please set a secure value!');
+  const placeholder = process.env.JWT_SECRET?.includes('change-this');
+
+  if (missing.length > 0 || placeholder) {
+    if (missing.length > 0) {
+      console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+    }
+    if (placeholder) {
+      console.error('❌ JWT_SECRET is still the placeholder value from .env.example.');
+    }
+    console.error('❌ Generate one with `openssl rand -hex 32` and set it on the service.');
+    console.error('❌ Refusing to start: tokens signed with a default key can be forged.');
+    process.exit(1);
   }
 }
 

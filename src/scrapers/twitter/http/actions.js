@@ -7,7 +7,7 @@
  * authenticated session (cookies with auth_token + ct0).
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { GRAPHQL, GRAPHQL_BASE, DEFAULT_FEATURES } from './endpoints.js';

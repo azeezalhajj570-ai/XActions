@@ -7,7 +7,7 @@
  * GET  /api/thread/:tweetId  — Get a cached unrolled thread by tweet ID
  * 
  * @author nichxbt
- * @license MIT
+ * @license Apache-2.0
  */
 
 import express from 'express';

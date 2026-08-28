@@ -16,7 +16,7 @@
  * Rate limit: 10 generations/minute for free tier.
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import express from 'express';

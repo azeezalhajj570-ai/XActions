@@ -16,7 +16,7 @@
  *   POST   /api/workflows/webhook/:webhookId — Trigger workflow via webhook
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import express from 'express';

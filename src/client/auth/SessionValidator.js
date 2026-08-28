@@ -6,7 +6,7 @@
  * Detects expired, locked, and suspended sessions.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { AuthenticationError, ScraperError } from '../errors.js';

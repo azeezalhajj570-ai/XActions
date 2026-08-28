@@ -14,7 +14,7 @@
  *   const runs = await workflows.runs(workflow.id);
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { runWorkflow, validateWorkflow } from './engine.js';

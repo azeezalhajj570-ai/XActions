@@ -9,7 +9,7 @@
  * No browser binary required. 10x faster. Works in serverless/edge.
  * 
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { BaseAdapter } from './base.js';

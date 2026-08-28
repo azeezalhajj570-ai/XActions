@@ -6,7 +6,7 @@
  * Agent-to-Agent (A2A) protocol implementation (Google A2A spec).
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import crypto from 'crypto';

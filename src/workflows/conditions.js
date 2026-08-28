@@ -7,7 +7,7 @@
  * whether to continue, skip, or branch.
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

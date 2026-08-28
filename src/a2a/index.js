@@ -7,7 +7,7 @@
  * executed directly with `node src/a2a/index.js`.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ── Re-exports ──────────────────────────────────────────────────────────────

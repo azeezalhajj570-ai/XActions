@@ -29,7 +29,7 @@
  *
  * @module scrapers/twitter/http/playwright-session
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ---------------------------------------------------------------------------

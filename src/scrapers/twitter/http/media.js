@@ -8,7 +8,7 @@
  * Depends on: client.js (TwitterHttpClient), auth.js (TwitterAuth), endpoints.js
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { readFile, writeFile, stat } from 'node:fs/promises';

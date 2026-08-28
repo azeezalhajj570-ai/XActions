@@ -11,7 +11,7 @@
  * platform credentials and user confirmation.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { promises as fs } from 'fs';

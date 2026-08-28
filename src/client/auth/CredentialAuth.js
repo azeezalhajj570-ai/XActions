@@ -9,7 +9,7 @@
  * multiple "subtasks" — each step sends data and receives the next subtask to complete.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { BEARER_TOKEN } from '../api/graphqlQueries.js';

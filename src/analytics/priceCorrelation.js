@@ -9,7 +9,7 @@
  * Inspired by https://github.com/rohunvora/tweet-price-charts
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

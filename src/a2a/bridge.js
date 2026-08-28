@@ -6,7 +6,7 @@
  * and converts responses back to A2A artifact parts.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { getSkillById } from './skillRegistry.js';

@@ -11,6 +11,8 @@ them to use, in what order, for this task."
 - Location: [`skills/`](../skills/)
 - Machine-readable index: [`skills/index.json`](../skills/index.json)
 - Template for new ones: [`skills/TEMPLATE.md`](../skills/TEMPLATE.md)
+- Format: the [Agent Skills specification](https://agentskills.io/specification),
+  so any installer that follows it resolves this tree
 
 ---
 
@@ -56,6 +58,26 @@ the same report as JSON.
 
 `xactions doctor` reports how many skills are installed per target, and
 `xactions skills list` marks each skill with where it was found.
+
+### Install with any spec-compliant installer
+
+Every skill here follows the [Agent Skills
+specification](https://agentskills.io/specification): a `skills/<name>/`
+directory holding a `SKILL.md` whose frontmatter carries `name` and
+`description`. That is the layout third-party installers look for, so the
+cross-agent installer from vercel-labs resolves the catalogue straight from
+GitHub:
+
+```bash
+npx skills add nirholas/XActions            # pick from the list interactively
+npx skills add nirholas/XActions --list     # see what is there, install nothing
+npx skills add nirholas/XActions --all      # every skill, every detected agent
+```
+
+It walks `skills/`, reads each `SKILL.md` frontmatter, and links or copies the
+whole skill directory (`references/` included) into whichever agent directories
+it finds on the machine. `xactions skills install` above is unaffected and
+still the right tool when XActions is already installed.
 
 ### With Claude Code
 
@@ -122,6 +144,28 @@ The `description` is the load-bearing field. It is the only thing an assistant
 reads when deciding whether a skill is relevant, so it has to state both what
 the skill does *and* when to reach for it. A description that only says what it
 does will never get selected.
+
+### Frontmatter rules
+
+`name` and `description` are required. The [spec](https://agentskills.io/specification)
+allows four more keys and nothing else: `license`, `compatibility`, `metadata`,
+and the experimental `allowed-tools`. An installer that finds an unknown key or
+a missing required one skips the skill entirely, which is worse than a bad
+description because nothing tells the user it happened.
+
+| Field | Rule |
+|---|---|
+| `name` | Required. 1 to 64 characters, lowercase letters, digits and single hyphens. No leading, trailing or doubled hyphen. **Must match the directory name** |
+| `description` | Required. 1 to 1024 characters. What it does and when to use it |
+| `license` | Optional. `Apache-2.0` here |
+| `compatibility` | Optional, up to 500 characters. Only when the skill needs something specific from the environment |
+| `metadata` | Optional. String keys to string values. We use `author` and `version`, and `version` must be quoted so YAML keeps `"4.0"` a string |
+| `allowed-tools` | Optional, experimental. A space-separated list of pre-approved tools |
+
+One YAML trap worth naming, because it costs a skill its whole entry: an
+unquoted scalar cannot contain a colon followed by a space. `description: Runs
+the server: fast` is a parse error, not a long description. Rephrase, or quote
+the value.
 
 ---
 
@@ -195,6 +239,16 @@ _49 skills. Generated from [`skills/index.json`](../skills/index.json)._
 4. Lead with a selection table mapping goals to files, so the assistant picks
    correctly before it reads any detail.
 5. Add the entry to [`skills/index.json`](../skills/index.json).
+6. Check that an outside installer can still read the whole catalogue:
+
+   ```bash
+   npx skills add . --list        # from the repo root: should list every skill
+   xactions skills list           # our own installer, same count
+   ```
+
+   A skill with broken frontmatter is not reported as broken by either tool. It
+   is silently absent from the list, so compare the count against the number of
+   directories under `skills/`.
 
 Rules that keep a skill useful:
 
@@ -213,4 +267,4 @@ Rules that keep a skill useful:
 - [MCP Setup](mcp-setup.md) — the 150 tools skills drive
 - [Browser Scripts](browser-scripts.md) — what most skills reference
 - [Agents](agents.md) — the autonomous agent that consumes skills
-- [AGENTS.md](../AGENTS.md) — integration notes for AI coding assistants
+- [AGENTS.md](../AGENTS.md) — integration notes for AI coding assistants, and when to shell out to the CLI instead of loading the MCP server

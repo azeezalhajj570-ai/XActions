@@ -6,7 +6,7 @@
  * Kills: Apify (robust pagination, retries, dataset storage)
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import fs from 'fs';

@@ -17,8 +17,10 @@
  *
  * @module scrapers/twitter/http/guest
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
+
+import { getTransactionId } from './transactionId.js';
 
 // ============================================================================
 // Constants
@@ -218,6 +220,11 @@ export class GuestTokenManager {
    * POST https://api.x.com/1.1/guest/activate.json
    * Response: { guest_token: "1234567890" }
    *
+   * The User-Agent is not decoration: activate.json answers a request without
+   * one with `HTTP 404 {"message":"Sorry, that page does not exist"}`, which
+   * reads as a dead endpoint rather than a rejected client and sent every
+   * caller of this class looking for a stale URL.
+   *
    * @returns {Promise<GuestToken>} The newly acquired token
    * @throws {Error} If the activation request fails
    */
@@ -229,6 +236,7 @@ export class GuestTokenManager {
         headers: {
           authorization: `Bearer ${this.#bearerToken}`,
           'content-type': 'application/x-www-form-urlencoded',
+          'user-agent': randomUserAgent(),
         },
       },
     );
@@ -283,18 +291,45 @@ export class GuestTokenManager {
    *   - x-twitter-active-user: yes
    *   - x-twitter-client-language: en
    *   - User-Agent (rotated)
+   *   - x-client-transaction-id, when the request being signed is named
    *
+   * The transaction ID is derived from the method and path, so it can only be
+   * added when the caller says which request the headers are for. Callers that
+   * pass nothing get the same headers as before.
+   *
+   * @param {object} [request]
+   * @param {string} [request.method='GET'] HTTP method of the request being signed
+   * @param {string} [request.path] Request path or full URL to sign
+   * @param {boolean} [request.transactionId] Force signing on or off
    * @returns {Promise<Record<string, string>>}
+   *
+   * @example
+   * ```js
+   * const guest = new GuestTokenManager();
+   * const url = 'https://x.com/i/api/graphql/abc/UserByScreenName?variables=%7B%7D';
+   * const headers = await guest.getHeaders({ method: 'GET', path: url });
+   * const res = await fetch(url, { headers });
+   * ```
    */
-  async getHeaders() {
+  async getHeaders(request = {}) {
     const token = await this.getToken();
-    return {
+    const headers = {
       authorization: `Bearer ${this.#bearerToken}`,
       'x-guest-token': token,
       'x-twitter-active-user': 'yes',
       'x-twitter-client-language': 'en',
       'user-agent': randomUserAgent(),
     };
+
+    if (request.path) {
+      const transactionId = await getTransactionId(request.method ?? 'GET', request.path, {
+        enabled: request.transactionId,
+        fetch: this.#fetch,
+      });
+      if (transactionId) headers['x-client-transaction-id'] = transactionId;
+    }
+
+    return headers;
   }
 
   /**

@@ -5,7 +5,7 @@
  * Structured error hierarchy for all HTTP-based Twitter operations.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 /**

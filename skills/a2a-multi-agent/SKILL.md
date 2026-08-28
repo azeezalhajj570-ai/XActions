@@ -1,3 +1,13 @@
+---
+name: a2a-multi-agent
+description: Runs XActions as an A2A (Agent-to-Agent) compatible agent that serves an Agent Card, accepts JSON-RPC tasks, bridges them onto the 150 MCP tools, streams progress over SSE, and discovers and delegates to other agents. Use when connecting XActions to external AI agents, building multi-agent orchestration, serving or reading an agent card, running the A2A server, or debugging inter-agent auth, discovery, streaming, or task delegation.
+license: Apache-2.0
+compatibility: Requires Node.js 18+ and a free port for the A2A HTTP server (3100 by default).
+metadata:
+  author: nichxbt
+  version: "1.0"
+---
+
 # Skill: A2A Multi-Agent Orchestration
 
 > Turn XActions into an A2A-compatible agent that can discover, communicate with, and delegate tasks to other AI agents using Google's Agent-to-Agent protocol.

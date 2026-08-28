@@ -5,7 +5,7 @@
  * Re-exports all analytics modules for convenient importing.
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 export { analyzeSentiment, analyzeBatch, aggregateResults } from './sentiment.js';

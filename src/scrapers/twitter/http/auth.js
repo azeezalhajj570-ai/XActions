@@ -12,7 +12,7 @@
  * Uses native fetch — no Puppeteer dependency.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import fs from 'fs/promises';

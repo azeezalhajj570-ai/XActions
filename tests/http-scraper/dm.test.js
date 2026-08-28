@@ -6,7 +6,7 @@
  * All tests use mocked fetch — no real network requests.
  *
  * @author nichxbt
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

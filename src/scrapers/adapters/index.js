@@ -21,7 +21,7 @@
  *   registerAdapter('my-adapter', MyAdapterClass);
  * 
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { BaseAdapter } from './base.js';

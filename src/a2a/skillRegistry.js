@@ -7,7 +7,7 @@
  * can advertise to other A2A agents.
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 // ============================================================================

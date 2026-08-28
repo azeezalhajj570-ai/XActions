@@ -11,7 +11,7 @@
  * 
  * @author nich (@nichxbt) - https://github.com/nirholas
  * @see https://x402.org
- * @license MIT
+ * @license Apache-2.0
  */
 
 import crypto from 'crypto';

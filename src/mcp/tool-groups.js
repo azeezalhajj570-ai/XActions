@@ -87,7 +87,7 @@ export const GROUP_RULES = Object.freeze([
     names: [
       'x_auto_like', 'x_auto_follow', 'x_follow_engagers', 'x_unfollow_all',
       'x_smart_unfollow', 'x_auto_comment', 'x_auto_retweet',
-      'x_bulk_execute',
+      'x_bulk_execute', 'x_engage',
     ],
   },
   {
@@ -161,6 +161,7 @@ export const WRITE_TOOLS = Object.freeze(new Set([
   // Bulk automation
   'x_auto_like', 'x_auto_follow', 'x_follow_engagers', 'x_unfollow_all',
   'x_smart_unfollow', 'x_auto_comment', 'x_auto_retweet', 'x_bulk_execute',
+  'x_engage',
   // Scheduled and workflow execution
   'x_schedule_add', 'x_workflow_run', 'x_migrate_account',
   // Persona autopilot
@@ -225,14 +226,31 @@ export const UNCAPPED_WRITE_TOOLS = Object.freeze(new Set([
 /**
  * Resolve what a tool call should be charged: an action class and how many
  * actions. Returns null for read tools and uncapped write tools. Bulk tools
- * whose class depends on their arguments (x_bulk_execute) are resolved from
- * the arguments; a dry run costs nothing.
+ * whose class depends on their arguments (x_bulk_execute, x_engage) are
+ * resolved from the arguments; a dry run costs nothing.
+ *
+ * A tool that performs several classes of action in one call returns an
+ * array, one entry per class, so a sweep that likes and replies is charged
+ * against both budgets rather than only the first.
  *
  * @param {string} name tool name
  * @param {object} [args] tool arguments
- * @returns {{ actionClass: string, count: number } | null}
+ * @returns {{ actionClass: string, count: number } | Array<{ actionClass: string, count: number }> | null}
  */
 export function resolveActionCharge(name, args = {}) {
+  if (name === 'x_engage') {
+    // Charged for the whole limit before the sweep starts, the same way
+    // x_bulk_execute is charged for its whole username list: the ledger has
+    // to hold the budget before the first write, and the run is free to
+    // engage fewer. Keep `limit` to what you actually intend to spend.
+    if (args?.dryRun !== false) return null;
+    const count = Math.max(1, Math.min(Number(args?.limit) || 20, 200));
+    const charges = [];
+    if (args?.like !== false) charges.push({ actionClass: 'like', count });
+    if (args?.repost) charges.push({ actionClass: 'repost', count });
+    if (args?.comment) charges.push({ actionClass: 'reply', count });
+    return charges.length > 0 ? charges : null;
+  }
   if (name === 'x_bulk_execute') {
     if (args?.dryRun) return null;
     const action = String(args?.action || '').toLowerCase();

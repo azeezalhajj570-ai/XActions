@@ -4,7 +4,7 @@
  * Exports graph data for D3.js, Gephi (GEXF), and standalone HTML
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { computeInfluenceScores } from './analyzer.js';

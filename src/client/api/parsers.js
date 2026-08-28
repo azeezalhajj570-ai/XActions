@@ -6,7 +6,7 @@
  * Used by tweets, users, lists, and search API modules.
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { Tweet } from '../models/Tweet.js';

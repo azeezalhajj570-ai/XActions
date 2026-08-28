@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
 import crypto from 'crypto';
+import { requireJwtSecret } from '../utils/secrets.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -29,12 +30,12 @@ function getFrontendUrl() {
 // Stateless OAuth state — encode data as a signed JWT used as the `state` param.
 // Works across serverless instances (no shared memory needed).
 function createOAuthState(data) {
-  return jwt.sign(data, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '10m' });
+  return jwt.sign(data, requireJwtSecret(), { expiresIn: '10m' });
 }
 
 function parseOAuthState(state) {
   try {
-    return jwt.verify(state, process.env.JWT_SECRET || 'dev-secret');
+    return jwt.verify(state, requireJwtSecret());
   } catch {
     return null;
   }
@@ -183,7 +184,7 @@ router.get('/callback', async (req, res) => {
 
       const token = jwt.sign(
         { userId: user.id, username: user.username },
-        process.env.JWT_SECRET || 'dev-secret',
+        requireJwtSecret(),
         { expiresIn: '7d' }
       );
 

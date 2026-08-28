@@ -12,7 +12,7 @@
  * Depends on: errors.js
  *
  * @author nich (@nichxbt)
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { AuthError } from './errors.js';

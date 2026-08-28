@@ -6,7 +6,7 @@
  * Kills: Phantombuster (cloud scheduling), Apify (actors + schedules)
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import cron from 'node-cron';

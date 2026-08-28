@@ -10,7 +10,7 @@
  * - Handles follower count string parsing (1.2K, 100M, etc.)
  *
  * @author nich (@nichxbt) - https://github.com/nirholas
- * @license MIT
+ * @license Apache-2.0
  */
 
 import { scrapeProfile, scrapeFollowers } from '../scrapers/index.js';
