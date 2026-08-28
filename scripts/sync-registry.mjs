@@ -161,9 +161,48 @@ function checkEnvVarsAreRead() {
   return [...declared].filter((name) => !read.has(name));
 }
 
+
+/**
+ * Agent-facing docs each used to carry their own hand-typed skill count. They
+ * disagreed: 26, 31, 32 and 49 across four files, against 49 real directories.
+ * An agent reading the wrong number works from a stale map of the repository,
+ * so the count is checked against `skills/` rather than trusted.
+ *
+ * @returns {Array<{file: string, claimed: string, actual: number}>}
+ */
+function checkSkillCounts() {
+  const actual = readdirSync(join(ROOT, 'skills'), { withFileTypes: true }).filter(
+    (e) => e.isDirectory() && existsSync(join(ROOT, 'skills', e.name, 'SKILL.md'))
+  ).length;
+
+  const files = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.github/copilot-instructions.md', 'README.md'];
+  const wrong = [];
+  for (const file of files) {
+    const full = join(ROOT, file);
+    if (!existsSync(full)) continue;
+    const text = readFileSync(full, 'utf8');
+    for (const m of text.matchAll(/\b(\d+)\+?\s+(?:agent\s+)?skills\b/gi)) {
+      // "26, 31, 32 and 49 agent skills" in a sentence explaining the drift is
+      // prose about the bug, not a claim; only flag a number that is not current.
+      if (Number(m[1]) !== actual && !/simultaneously claimed/.test(text.slice(Math.max(0, m.index - 200), m.index))) {
+        wrong.push({ file, claimed: m[0], actual });
+      }
+    }
+  }
+  return wrong;
+}
+
+const staleSkillCounts = checkSkillCounts();
+
 const phantomEnv = checkEnvVarsAreRead();
 
 console.log(`Registry sync: version ${VERSION}, ${toolPhrase}`);
+
+if (staleSkillCounts.length) {
+  console.error('Stale skill counts (skills/ has ' + staleSkillCounts[0].actual + '):');
+  for (const w of staleSkillCounts) console.error(`  ${w.file}: "${w.claimed}"`);
+  process.exit(1);
+}
 
 if (phantomEnv.length) {
   console.error(

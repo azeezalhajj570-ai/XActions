@@ -240,6 +240,28 @@ by `.github/workflows/release-mcpb.yml`.
 
 ---
 
+## Straight to the file
+
+The requests that come up most, and what answers them. Every path is real; if one
+is not, that is a bug in this table.
+
+| Request | Answer |
+|---|---|
+| Unfollow everyone | `src/unfollowEveryone.js` |
+| Unfollow people who do not follow back | `src/unfollowback.js`, or `xactions non-followers` |
+| Who unfollowed me | `src/detectUnfollowers.js` |
+| Download a video | `scripts/videoDownloader.js` |
+| Like, repost and reply to every post on a profile | `scripts/engageProfile.js` (browser panel) or `xactions engage <user> --like --repost --comment --prompt "..."`. See [`docs/engage.md`](docs/engage.md) |
+| Act on every result of a search | `scripts/searchSweep.js`. See [`docs/search-sweep.md`](docs/search-sweep.md) |
+| Train the algorithm for a niche | `src/automation/algorithmBuilder.js`, or `xactions persona create` |
+| Grow an account over time | [`skills/algorithm-cultivation/SKILL.md`](skills/algorithm-cultivation/SKILL.md) |
+| Run a long-lived LLM-driven agent | `src/algorithmBuilder.js` with `src/personaEngine.js`, via `xactions persona run <id>` |
+| Read an account without logging in | `xactions profile <user>`, `xactions tweets <user>` |
+| Import an official X archive | `xactions archive <path-to-zip>` |
+| Hold agent writes for human approval | set `XACTIONS_MCP_REQUIRE_APPROVAL=1`, then `xactions drafts` |
+
+---
+
 ## Skills
 
 49 skills live in [`skills/`](skills/), one directory each, following the
@@ -285,6 +307,17 @@ docs/             Documentation
 extension/        Browser extension
 prisma/           Database schema
 ```
+
+The three runtime contexts, because code that is correct in one is broken in another:
+
+| Context | Runs in | Entry point | Hard constraint |
+|---|---|---|---|
+| Browser scripts | the DevTools console on x.com | an IIFE you paste | no Node APIs; DOM and `sessionStorage` only |
+| Library, CLI, MCP | your machine | `src/cli/index.js`, `src/mcp/server.js` | Node >= 18, ESM throughout |
+| API server | an Express process | `api/server.js` | PostgreSQL via Prisma, Redis for the queue |
+
+Stack: Node >= 18 ESM, Express with Helmet and rate limiting, Prisma, Bull on Redis,
+Puppeteer with the stealth plugin, Vitest, `@modelcontextprotocol/sdk`, Socket.io.
 
 Deeper map: [`docs/`](docs/), starting with
 [`docs/mcp-setup.md`](docs/mcp-setup.md) and [`docs/skills.md`](docs/skills.md).
