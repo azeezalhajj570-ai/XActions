@@ -29,12 +29,18 @@
 
 import { corsHeaders } from '../video/edgeHttp.js';
 import { loadApiModules } from './apiModules.js';
+import { getSupported, settleable } from './facilitator.js';
 
 /** Header pairs, newest first. Order matters only for which one we read first. */
 const PAYMENT_REQUEST_HEADERS = ['payment-signature', 'x-payment'];
 
 /** Default facilitator. Overridden with X402_FACILITATOR_URL. */
-export const DEFAULT_FACILITATOR = 'https://x402.org/facilitator';
+/**
+ * PayAI's facilitator: no key, and it settles Base and Solana mainnet, which the
+ * x402.org reference facilitator does not (that one is testnet-only). Override
+ * with X402_FACILITATOR_URL.
+ */
+export const DEFAULT_FACILITATOR = 'https://facilitator.payai.network';
 
 /**
  * base64 for a JSON value, without Buffer, so this runs unchanged on the edge.
@@ -94,14 +100,29 @@ export function readPayment(request) {
  * @param {string} [options.error] - Why payment is being asked for.
  * @returns {object|null} null when no chain is configured to receive.
  */
-export function buildPaymentRequired({ api, price, resource, description, error, method = 'POST' }) {
-  const accepts = api.buildAccepts({ price, resource, description });
+export function buildPaymentRequired({ api, price, resource, description, error, method = 'POST', supported }) {
+  const configured = api.buildAccepts({ price, resource, description });
+  const accepts = supported ? settleable(configured, supported, api.toV1Network) : configured;
   if (!accepts.length) return null;
   return {
     x402Version: 1,
     error: error || 'Payment required',
     resource: { url: resource, method, description, mimeType: 'application/json' },
-    accepts: accepts.map((entry) => ({ ...entry, maxAmountRequired: entry.amount })),
+    // v1 names a chain `base` or `solana`; CAIP-2 arrived with v2. A v1 client
+    // handed `eip155:8453` treats the whole challenge as unparseable, so the
+    // body speaks v1 and the PAYMENT-REQUIRED header speaks v2.
+    accepts: accepts.map((entry) => ({
+      ...entry,
+      network: api.toV1Network(entry.network),
+      amount: entry.amount,
+      maxAmountRequired: entry.amount,
+    })),
+    // The CAIP-2 view of the same terms, for a client that reads v2.
+    'x-x402-v2': {
+      x402Version: 2,
+      resource: { url: resource, method, description, mimeType: 'application/json' },
+      accepts,
+    },
   };
 }
 
@@ -112,12 +133,13 @@ export function buildPaymentRequired({ api, price, resource, description, error,
  * @returns {Response}
  */
 export function paymentRequiredResponse(request, paymentRequired) {
-  return new Response(JSON.stringify(paymentRequired), {
+  const { 'x-x402-v2': v2, ...v1 } = paymentRequired;
+  return new Response(JSON.stringify(v1), {
     status: 402,
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
-      'payment-required': encodeBase64Json(paymentRequired),
+      'payment-required': encodeBase64Json(v2 || v1),
       ...corsHeaders(request),
     },
   });
@@ -169,12 +191,14 @@ export async function settlePayment(facilitator, paymentPayload, paymentRequirem
  * @param {object} paymentPayload
  * @returns {object|null}
  */
-export function matchRequirements(accepts, paymentPayload) {
+export function matchRequirements(accepts, paymentPayload, sameNetwork) {
   const chosen = paymentPayload?.accepted || paymentPayload;
   const network = chosen?.network;
   const scheme = chosen?.scheme || 'exact';
   return (
-    accepts.find((entry) => entry.network === network && entry.scheme === scheme) || null
+    accepts.find(
+      (entry) => entry.scheme === scheme && sameNetwork(entry.network, network),
+    ) || null
   );
 }
 
@@ -207,19 +231,22 @@ export function withX402({ price, description }, handler) {
     // Query parameters are inputs, not part of the resource identity: an agent
     // that reads the terms for ?username=nasa must be able to reuse them.
     const resource = `${url.origin}${url.pathname}`;
+    const facilitator = env.X402_FACILITATOR_URL || api.FACILITATOR_URL || DEFAULT_FACILITATOR;
+    const supported = await getSupported(facilitator);
     const paymentRequired = buildPaymentRequired({
       api,
       price,
       resource,
       description,
       method: request.method,
+      supported,
     });
     if (!paymentRequired) return handler({ ...context, payment: null });
 
     const attached = readPayment(request);
     if (!attached) return paymentRequiredResponse(request, paymentRequired);
 
-    const requirements = matchRequirements(paymentRequired.accepts, attached.payload);
+    const requirements = matchRequirements(paymentRequired.accepts, attached.payload, api.sameNetwork);
     if (!requirements) {
       return paymentRequiredResponse(request, {
         ...paymentRequired,
@@ -227,7 +254,6 @@ export function withX402({ price, description }, handler) {
       });
     }
 
-    const facilitator = env.X402_FACILITATOR_URL || api.FACILITATOR_URL || DEFAULT_FACILITATOR;
     const verification = await verifyPayment(facilitator, attached.payload, requirements);
     if (!verification.isValid) {
       return paymentRequiredResponse(request, {

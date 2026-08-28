@@ -35,8 +35,15 @@ export const PAY_TO_ADDRESS_SOLANA = (process.env.X402_PAY_TO_ADDRESS_SOLANA || 
 export const SOLANA_MAINNET = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
 export const SOLANA_DEVNET = 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
 
-// Facilitator URL (testnet for development, mainnet for production)
-export const FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
+// Facilitator that verifies and broadcasts payments.
+//
+// The default is PayAI's, which needs no key and settles Base and Solana
+// mainnet. The reference facilitator at x402.org is deliberately not the
+// default: it only supports testnets, so a server pointed at it advertises
+// mainnet terms that no caller can actually pay, and the failure only shows up
+// when real money is on the line.
+export const FACILITATOR_URL =
+  process.env.X402_FACILITATOR_URL || 'https://facilitator.payai.network';
 
 // Network configuration (legacy - for backwards compatibility)
 // Development: eip155:84532 (Base Sepolia testnet)
@@ -1053,6 +1060,49 @@ export function getPayTo(network) {
     return isSolanaPayToConfigured() ? PAY_TO_ADDRESS_SOLANA : null;
   }
   return isEvmPayToConfigured() ? PAY_TO_ADDRESS : null;
+}
+
+/**
+ * x402 v1 network names, keyed by CAIP-2 id.
+ *
+ * v1 identifies a chain by a short name (`base`, `solana`); CAIP-2 arrived with
+ * v2. Clients and indexers built against v1 do not recognise `eip155:8453` and
+ * reject the challenge as unparseable, so the v1 body is rendered with these
+ * names while the v2 header keeps the CAIP-2 ids.
+ * @type {Record<string, string>}
+ */
+export const V1_NETWORK_NAMES = {
+  'eip155:8453': 'base',
+  'eip155:84532': 'base-sepolia',
+  'eip155:42161': 'arbitrum',
+  'eip155:10': 'optimism',
+  'eip155:137': 'polygon',
+  'eip155:1': 'ethereum',
+  'eip155:43114': 'avalanche',
+  'eip155:421614': 'arbitrum-sepolia',
+  [SOLANA_MAINNET]: 'solana',
+  [SOLANA_DEVNET]: 'solana-devnet',
+};
+
+/**
+ * The v1 spelling of a network id, falling back to the id itself for a chain
+ * with no v1 name.
+ * @param {string} network - CAIP-2 network id.
+ * @returns {string}
+ */
+export function toV1Network(network) {
+  return V1_NETWORK_NAMES[network] || network;
+}
+
+/**
+ * Whether two network identifiers name the same chain, in either spelling.
+ * @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
+export function sameNetwork(a, b) {
+  if (!a || !b) return false;
+  return a === b || toV1Network(a) === toV1Network(b);
 }
 
 /**
