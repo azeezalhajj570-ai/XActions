@@ -41,6 +41,13 @@ scanned post (60% weight) with the single worst post (40% weight), so one
 severe outlier still pulls the grade down even when the rest of the timeline
 is spotless. Grades: A+ (97+), A (90+), B (80+), C (65+), D (45+), F (below).
 
+Every dimension is reported twice, as an average and as a **peak**: the worst
+single post's score on that dimension. Averages alone hide exactly what the
+report exists to surface. One post at 92 among four clean ones averages to 18,
+which would draw a reassuring green bar directly underneath an F grade. The
+bars are coloured and labelled by the peak (`avg 35 · worst 88`), with the
+average as the solid fill and the peak as the faded extension behind it.
+
 You can narrow to a subset of dimensions, or add your own custom question
 ("does this reveal my employer or home city?") scored alongside the built-ins.
 

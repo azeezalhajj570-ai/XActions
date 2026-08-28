@@ -471,12 +471,13 @@
     const errors = scores.filter((s) => s && s.error).length;
 
     if (paired.length === 0) {
-      return { scanned: entries.length, scoredOk: 0, errors, reputationScore: 100, grade: 'A+', verdictCounts: { clean: 0, review: 0, flagged: 0 }, dimensionAverages: {}, worstPosts: [] };
+      return { scanned: entries.length, scoredOk: 0, errors, reputationScore: 100, grade: 'A+', verdictCounts: { clean: 0, review: 0, flagged: 0 }, dimensionAverages: {}, dimensionPeaks: {}, worstPosts: [] };
     }
 
     const verdictCounts = { clean: 0, review: 0, flagged: 0 };
     const dimensionTotals = {};
     const dimensionCounts = {};
+    const dimensionPeaks = {};
     let riskTotal = 0;
     for (const { score } of paired) {
       verdictCounts[score.verdict] = (verdictCounts[score.verdict] || 0) + 1;
@@ -484,8 +485,12 @@
       for (const [key, { score: dScore }] of Object.entries(score.dimensions)) {
         dimensionTotals[key] = (dimensionTotals[key] || 0) + dScore;
         dimensionCounts[key] = (dimensionCounts[key] || 0) + 1;
+        dimensionPeaks[key] = Math.max(dimensionPeaks[key] || 0, dScore);
       }
     }
+    // Averages alone hide what the report exists to surface: one post at 92
+    // among four clean ones averages to 18, which reads green next to an F.
+    // The peak is kept so the bars can be coloured by the worst single post.
     const dimensionAverages = {};
     for (const key of Object.keys(dimensionTotals)) dimensionAverages[key] = Math.round(dimensionTotals[key] / dimensionCounts[key]);
 
@@ -495,7 +500,7 @@
 
     const worstPosts = [...paired].sort((a, b) => b.score.overall - a.score.overall).filter((p) => p.score.overall >= REVIEW_THRESHOLD);
 
-    return { scanned: entries.length, scoredOk: paired.length, errors, reputationScore, grade: scoreToGrade(reputationScore), verdictCounts, dimensionAverages, worstPosts };
+    return { scanned: entries.length, scoredOk: paired.length, errors, reputationScore, grade: scoreToGrade(reputationScore), verdictCounts, dimensionAverages, dimensionPeaks, worstPosts };
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -519,6 +524,7 @@
   const drawGauge = (ctx, cx, cy, radius, score, color) => {
     const start = Math.PI * 0.75;
     const end = Math.PI * 2.25;
+    ctx.save();
     ctx.lineCap = 'round';
     ctx.lineWidth = 22;
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -534,6 +540,9 @@
     ctx.beginPath();
     ctx.arc(cx, cy, radius, start, sweep);
     ctx.stroke();
+    // Restore, or the 22px round cap leaks into the footer rule and draws it
+    // as a fat pill instead of a hairline.
+    ctx.restore();
   };
 
   /**
@@ -582,22 +591,30 @@
     ctx.fillText('RISK BREAKDOWN', barsX, barsY);
     barsY += 30;
 
+    // Colour by the PEAK, not the average. A single 92 among four clean posts
+    // averages to 18, and a green bar next to an F grade reads as a bug.
     const dims = Object.entries(report.dimensionAverages);
     const barW = 620;
     for (const [key, avg] of dims) {
       const meta = DIMENSION_META[key] || { label: key, emoji: '🔎' };
+      const peak = report.dimensionPeaks?.[key] ?? avg;
       ctx.fillStyle = '#e7e9ea';
       ctx.font = '500 16px -apple-system, sans-serif';
       ctx.fillText(`${meta.emoji} ${meta.label}`, barsX, barsY);
       ctx.fillStyle = '#8b98a5';
       ctx.textAlign = 'right';
-      ctx.fillText(`${avg}/100`, barsX + barW, barsY);
+      ctx.fillText(peak === avg ? `${avg}` : `avg ${avg} · worst ${peak}`, barsX + barW, barsY);
       ctx.textAlign = 'left';
       barsY += 12;
+      const riskColor = (n) => (n >= FLAG_THRESHOLD ? '#f4212e' : n >= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c');
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
       roundRect(ctx, barsX, barsY, barW, 12, 6);
       ctx.fill();
-      ctx.fillStyle = avg >= FLAG_THRESHOLD ? '#f4212e' : avg >= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c';
+      // Faint fill to the peak, solid fill to the average, so both read at once.
+      ctx.fillStyle = `${riskColor(peak)}55`;
+      roundRect(ctx, barsX, barsY, Math.max(12, barW * (peak / 100)), 12, 6);
+      ctx.fill();
+      ctx.fillStyle = riskColor(peak);
       roundRect(ctx, barsX, barsY, Math.max(12, barW * (avg / 100)), 12, 6);
       ctx.fill();
       barsY += 40;
@@ -836,8 +853,9 @@
     .xra-bars{display:flex;flex-direction:column;gap:8px}
     .xra-bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
     .xra-bar-row .xra-bar-label{width:120px;color:#8b98a5;flex-shrink:0}
-    .xra-bar-track{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
-    .xra-bar-fill{height:100%;border-radius:4px}
+    .xra-bar-track{position:relative;flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+    .xra-bar-fill,.xra-bar-peak{position:absolute;left:0;top:0;height:100%;border-radius:4px;transition:width .3s}
+    .xra-bar-peak{opacity:.33}
     .xra-flagged{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
     .xra-flagged::-webkit-scrollbar{width:4px}.xra-flagged::-webkit-scrollbar-thumb{background:#2f3336}
     .xra-flag-item{display:flex;gap:8px;padding:8px;border:1px solid #2f3336;border-radius:10px;align-items:flex-start}
@@ -995,8 +1013,11 @@
 
     el('xra-bars').innerHTML = Object.entries(report.dimensionAverages).map(([key, avg]) => {
       const meta = DIMENSION_META[key] || { label: key, emoji: '🔎' };
-      const barColor = avg >= FLAG_THRESHOLD ? '#f4212e' : avg >= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c';
-      return `<div class="xra-bar-row"><span class="xra-bar-label">${meta.emoji} ${esc(meta.label)}</span><div class="xra-bar-track"><div class="xra-bar-fill" style="width:${avg}%;background:${barColor}"></div></div><span>${avg}</span></div>`;
+      const peak = report.dimensionPeaks?.[key] ?? avg;
+      const barColor = peak >= FLAG_THRESHOLD ? '#f4212e' : peak >= REVIEW_THRESHOLD ? '#ffd166' : '#00ba7c';
+      const label = peak === avg ? `${avg}` : `${avg} / ${peak}`;
+      const title = peak === avg ? `${meta.label}: ${avg}` : `${meta.label}: ${avg} average, ${peak} on the worst post`;
+      return `<div class="xra-bar-row" title="${esc(title)}"><span class="xra-bar-label">${meta.emoji} ${esc(meta.label)}</span><div class="xra-bar-track"><div class="xra-bar-peak" style="width:${peak}%;background:${barColor}"></div><div class="xra-bar-fill" style="width:${avg}%;background:${barColor}"></div></div><span>${label}</span></div>`;
     }).join('');
 
     el('xra-verdict-line').textContent = `${report.verdictCounts.clean} clean · ${report.verdictCounts.review} worth a look · ${report.verdictCounts.flagged} flagged` + (report.errors ? ` · ${report.errors} failed to score` : '');

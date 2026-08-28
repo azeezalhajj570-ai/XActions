@@ -1224,7 +1224,10 @@ export interface ReputationReport {
   reputationScore: number;
   grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
   verdictCounts: { clean: number; review: number; flagged: number };
+  /** Mean score per dimension across every successfully scored post. */
   dimensionAverages: Record<string, number>;
+  /** Highest single-post score per dimension. Colour by this, not the average. */
+  dimensionPeaks: Record<string, number>;
   worstPosts: Array<{ post: ScorablePost; score: PostRiskResult }>;
 }
 

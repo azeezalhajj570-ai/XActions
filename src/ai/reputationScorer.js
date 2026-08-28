@@ -267,6 +267,7 @@ export function scoreToGrade(reputationScore) {
  *   reputationScore: number, grade: string,
  *   verdictCounts: { clean: number, review: number, flagged: number },
  *   dimensionAverages: Record<string, number>,
+ *   dimensionPeaks: Record<string, number>,
  *   worstPosts: Array<{ post: object, score: object }>,
  * }}
  */
@@ -280,6 +281,7 @@ export function summarizeReport(posts, scores, topN = 10) {
       reputationScore: 100, grade: 'A+',
       verdictCounts: { clean: 0, review: 0, flagged: 0 },
       dimensionAverages: {},
+      dimensionPeaks: {},
       worstPosts: [],
     };
   }
@@ -287,6 +289,7 @@ export function summarizeReport(posts, scores, topN = 10) {
   const verdictCounts = { clean: 0, review: 0, flagged: 0 };
   const dimensionTotals = {};
   const dimensionCounts = {};
+  const dimensionPeaks = {};
   let riskTotal = 0;
 
   for (const { score } of paired) {
@@ -295,9 +298,13 @@ export function summarizeReport(posts, scores, topN = 10) {
     for (const [key, { score: dScore }] of Object.entries(score.dimensions)) {
       dimensionTotals[key] = (dimensionTotals[key] || 0) + dScore;
       dimensionCounts[key] = (dimensionCounts[key] || 0) + 1;
+      dimensionPeaks[key] = Math.max(dimensionPeaks[key] || 0, dScore);
     }
   }
 
+  // Averages alone hide the thing the report exists to surface: one post at 92
+  // among four clean ones averages to 18, which reads green next to an F grade.
+  // Peaks are reported alongside so a caller can colour by the worst case.
   const dimensionAverages = {};
   for (const key of Object.keys(dimensionTotals)) {
     dimensionAverages[key] = Math.round(dimensionTotals[key] / dimensionCounts[key]);
@@ -324,6 +331,7 @@ export function summarizeReport(posts, scores, topN = 10) {
     grade: scoreToGrade(reputationScore),
     verdictCounts,
     dimensionAverages,
+    dimensionPeaks,
     worstPosts,
   };
 }

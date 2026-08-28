@@ -230,6 +230,24 @@ describe('reputationScorer', () => {
       expect(['B', 'C', 'D', 'F']).toContain(report.grade);
     });
 
+    it('reports the peak per dimension, not only the average, so one bad post cannot hide', () => {
+      const posts = [{ id: 'a', text: 'clean' }, { id: 'b', text: 'flagged' }];
+      const scores = [
+        { postId: 'a', ...parseRiskResponse(CLEAN_JSON, resolveDimensions()) },
+        { postId: 'b', ...parseRiskResponse(FLAGGED_JSON, resolveDimensions()) },
+      ];
+      const report = summarizeReport(posts, scores);
+      // professional: 5 and 92. The average alone reads as a low-risk green bar.
+      expect(report.dimensionAverages.professional).toBe(49);
+      expect(report.dimensionPeaks.professional).toBe(92);
+      expect(report.dimensionPeaks.hostile).toBe(88);
+      expect(report.dimensionPeaks.spam).toBe(10);
+      // Every averaged dimension has a peak, and no peak is below its average.
+      for (const [key, avg] of Object.entries(report.dimensionAverages)) {
+        expect(report.dimensionPeaks[key]).toBeGreaterThanOrEqual(avg);
+      }
+    });
+
     it('excludes errored posts from the averages but still counts them', () => {
       const posts = [{ id: 'a', text: 'x' }, { id: 'b', text: 'y' }];
       const scores = [
@@ -248,6 +266,7 @@ describe('reputationScorer', () => {
       expect(report.reputationScore).toBe(100);
       expect(report.grade).toBe('A+');
       expect(report.worstPosts).toEqual([]);
+      expect(report.dimensionPeaks).toEqual({});
     });
   });
 });

@@ -43,6 +43,11 @@ The account-level reputation score blends the average risk across all scanned
 posts (60%) with the single worst post (40%), so one severe outlier still pulls
 the grade down even when everything else is clean.
 
+The report carries `dimensionAverages` and `dimensionPeaks` side by side. Read
+and present the peak, not just the average: one post at 92 among four clean ones
+averages to 18, and reporting only that contradicts the grade the same report
+gives.
+
 ## Browser script (with the shareable score card)
 
 **File:** `scripts/reputationAudit.js` — full guide: `docs/reputation-audit.md`

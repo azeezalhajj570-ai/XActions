@@ -145,13 +145,21 @@ scripts/reputationAudit.js, pasted into DevTools on your own profile.
         out(grade.bold(`  ${report.reputationScore}/100  ·  ${report.grade}`) + chalk.gray(`   (${report.scoredOk}/${report.scanned} scored${report.errors ? `, ${report.errors} failed` : ''})`));
         out(chalk.gray(`  ${report.verdictCounts.clean} clean · ${report.verdictCounts.review} worth a look · ${report.verdictCounts.flagged} flagged`));
         out('');
+        // Coloured and filled by the peak as well as the average: one post at 92
+        // among four clean ones averages to 18, and a green bar under an F grade
+        // reads as a bug rather than as "most posts are fine, one is not".
         for (const [key, avg] of Object.entries(report.dimensionAverages)) {
           const meta = DIMENSIONS[key] || { label: key, emoji: '🔎' };
+          const peak = report.dimensionPeaks?.[key] ?? avg;
           const barLen = 24;
-          const filled = Math.round((avg / 100) * barLen);
-          const bar = '█'.repeat(filled) + '░'.repeat(barLen - filled);
-          const color = avg >= 70 ? chalk.red : avg >= 40 ? chalk.yellow : chalk.green;
-          out(`  ${meta.emoji} ${meta.label.padEnd(14)} ${color(bar)} ${avg}`);
+          const avgCells = Math.round((avg / 100) * barLen);
+          const peakCells = Math.round((peak / 100) * barLen);
+          const color = peak >= 70 ? chalk.red : peak >= 40 ? chalk.yellow : chalk.green;
+          const bar = color('█'.repeat(avgCells))
+            + color.dim('▒'.repeat(Math.max(0, peakCells - avgCells)))
+            + chalk.gray('░'.repeat(Math.max(0, barLen - Math.max(avgCells, peakCells))));
+          const label = peak === avg ? `${avg}` : `${avg} avg, ${peak} worst`;
+          out(`  ${meta.emoji} ${meta.label.padEnd(14)} ${bar} ${label}`);
         }
 
         if (report.worstPosts.length > 0) {
