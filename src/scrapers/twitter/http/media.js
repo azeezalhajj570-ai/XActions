@@ -276,7 +276,6 @@ export async function uploadChunked(client, buffer, mediaType, mediaCategory, op
 export async function pollProcessingStatus(client, mediaId, onProgress) {
   let waitMs = STATUS_POLL_INITIAL_MS;
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const resp = await client.rest(UPLOAD_BASE, {
       method: 'GET',

@@ -99,7 +99,6 @@ describe('help-groups', () => {
       const output = renderGroupedCommands(program);
 
       for (const line of output.split('\n')) {
-        // eslint-disable-next-line no-control-regex
         expect(line.replace(/\[[0-9;]*m/g, '').length).toBeLessThan(100);
       }
     });

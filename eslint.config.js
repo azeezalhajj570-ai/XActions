@@ -21,6 +21,11 @@ export default [
       'scripts/twitter/xactions-command-center.js',
       'pages-out/**',
       'dist/**',
+      'dist-cloudflare/**',
+      // Wrangler's dev and build scratch: bundled worker output, not source. Linting
+      // it reported 20 no-redeclare errors from a minified bundle and made a green
+      // lint run impossible for anyone who had run the site locally.
+      '.wrangler/**',
       'coverage/**',
       '**/*.min.js',
       // Captured X bundles used as parser fixtures; not our code.
