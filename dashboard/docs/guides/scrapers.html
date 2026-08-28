@@ -173,6 +173,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -265,6 +266,13 @@
     <article class="prose">
 <h1 id="scrapers">Scrapers</h1>
 <p>Multi-platform, multi-framework scraping system. Supports Twitter/X, Bluesky, Threads, and Mastodon with pluggable browser backends.</p>
+<blockquote>
+<p><strong>Reach for the HTTP client first.</strong> Everything on this page that says <code>page</code>
+drives Chromium and needs a logged-in session, because X serves a logged-out
+browser an empty page. <code>Scraper</code> from <code>xactions/client</code> reads profiles and
+public timelines over X&#39;s internal GraphQL API with no browser and no login.
+See <a href="/docs/guides/api-reference#http-client-no-browser">api-reference.md</a>.</p>
+</blockquote>
 <hr>
 <h2 id="quick-start">Quick Start</h2>
 <h3 id="nodejs">Node.js</h3>
@@ -286,52 +294,84 @@ await loginWithCookie(page, process.env.X_AUTH_TOKEN);
 const profile = await scrapeProfile(page, &#39;elonmusk&#39;);
 
 // Scrape followers (paginated)
-const followers = await scrapeFollowers(page, &#39;nichxbt&#39;, { max: 500 });
+const followers = await scrapeFollowers(page, &#39;nichxbt&#39;, { limit: 500 });
 
 // Scrape recent tweets
-const tweets = await scrapeTweets(page, &#39;nichxbt&#39;, { max: 100 });
+const tweets = await scrapeTweets(page, &#39;nichxbt&#39;, { limit: 100 });
 
 // Search tweets
-const results = await searchTweets(page, &#39;XActions&#39;, { max: 50 });
+const results = await searchTweets(page, &#39;XActions&#39;, { limit: 50 });
 
 await browser.close();
 </code></pre>
+<p>The option is <code>limit</code> everywhere. There is no <code>max</code>.</p>
 <h3 id="cli">CLI</h3>
 <pre><code class="language-bash">xactions scrape profile elonmusk
-xactions scrape followers nichxbt --max 500
-xactions scrape tweets nichxbt --max 100
-xactions search &quot;AI agents&quot; --max 50
+xactions scrape followers nichxbt --limit 500
+xactions scrape tweets nichxbt --limit 100
+xactions search &quot;AI agents&quot; --limit 50
 </code></pre>
 <h3 id="browser-script">Browser Script</h3>
-<pre><code class="language-js">// Paste in DevTools console on x.com
-// Scrape followers from the current page
-// See scripts/scrapeFollowers.js
-</code></pre>
+<p>Paste <a href="../scripts/scrapeFollowers.js"><code>scripts/scrapeFollowers.js</code></a> into the
+DevTools console while you are on <code>x.com/USERNAME/followers</code>. The full catalog,
+with the page each script expects, is in
+<a href="/docs/guides/browser-scripts">browser-scripts.md</a>.</p>
 <hr>
 <h2 id="platforms">Platforms</h2>
+<p>Each platform is its own package subpath, with a default export and named
+exports. <code>xactions/scrapers</code> re-exports the Twitter functions at the top level;
+the other platforms are only reachable through their own subpath.</p>
 <h3 id="twitterx-primary">Twitter/X (Primary)</h3>
 <p>Full support for all scraping operations via browser automation on x.com.</p>
-<pre><code class="language-js">import { twitter } from &#39;xactions/scrapers&#39;;
+<pre><code class="language-js">import twitter from &#39;xactions/scrapers/twitter&#39;;
 
 const profile = await twitter.scrapeProfile(page, &#39;elonmusk&#39;);
 const followers = await twitter.scrapeFollowers(page, &#39;nichxbt&#39;);
 const tweets = await twitter.scrapeTweets(page, &#39;nichxbt&#39;);
 </code></pre>
 <h3 id="bluesky">Bluesky</h3>
-<pre><code class="language-js">import { bluesky } from &#39;xactions/scrapers&#39;;
+<p>Bluesky and Mastodon speak public HTTP APIs, so they need a client rather than a
+Puppeteer page, and public reads need no credentials.</p>
+<pre><code class="language-js">import bluesky from &#39;xactions/scrapers/bluesky&#39;;
 
-const profile = await bluesky.scrapeProfile(&#39;user.bsky.social&#39;);
+const agent = await bluesky.createAgent();
+const profile = await bluesky.scrapeProfile(agent, &#39;bsky.app&#39;);
 </code></pre>
 <h3 id="threads">Threads</h3>
-<pre><code class="language-js">import { threads } from &#39;xactions/scrapers&#39;;
+<p>Threads is browser-driven like X, so it takes a <code>page</code>.</p>
+<pre><code class="language-js">import threads from &#39;xactions/scrapers/threads&#39;;
 
-const profile = await threads.scrapeProfile(&#39;zuck&#39;);
+const profile = await threads.scrapeProfile(page, &#39;zuck&#39;);
 </code></pre>
 <h3 id="mastodon">Mastodon</h3>
-<pre><code class="language-js">import { mastodon } from &#39;xactions/scrapers&#39;;
+<pre><code class="language-js">import mastodon from &#39;xactions/scrapers/mastodon&#39;;
 
-const profile = await mastodon.scrapeProfile(&#39;user@mastodon.social&#39;);
+const client = mastodon.createClient({ instance: &#39;https://mastodon.social&#39; });
+const profile = await mastodon.scrapeProfile(client, &#39;Gargron&#39;);
 </code></pre>
+<h3 id="one-call-for-any-of-them">One call for any of them</h3>
+<p><code>scrape(platform, action, options)</code> builds the page or client for you, runs the
+action, and tears down whatever it created. The third argument is always an
+options object.</p>
+<pre><code class="language-js">import { scrape } from &#39;xactions/scrapers&#39;;
+
+const bsky = await scrape(&#39;bluesky&#39;, &#39;profile&#39;, { username: &#39;bsky.app&#39; });
+const masto = await scrape(&#39;mastodon&#39;, &#39;profile&#39;, {
+  username: &#39;Gargron&#39;,
+  instance: &#39;https://mastodon.social&#39;,
+});
+const x = await scrape(&#39;twitter&#39;, &#39;tweets&#39;, {
+  username: &#39;nasa&#39;,
+  limit: 50,
+  authToken: process.env.X_AUTH_TOKEN,
+});
+</code></pre>
+<p>Actions: <code>profile</code>, <code>followers</code>, <code>following</code>, <code>tweets</code> (alias <code>posts</code>),
+<code>search</code>, <code>hashtag</code>, <code>trending</code>, <code>thread</code>, <code>likes</code>, <code>media</code>, <code>listMembers</code>,
+<code>bookmarks</code>, <code>notifications</code>, <code>communityMembers</code>, <code>spaces</code>, <code>feed</code>. Not every
+platform implements every action; an unsupported one throws with the list of
+what that platform does support. <code>xactions platforms</code> prints the same matrix
+from the CLI.</p>
 <hr>
 <h2 id="scraper-functions-twitterx">Scraper Functions (Twitter/X)</h2>
 <table>
@@ -399,13 +439,19 @@ const profile = await mastodon.scrapeProfile(&#39;user@mastodon.social&#39;);
 </tr>
 </tbody></table>
 <h3 id="options">Options</h3>
-<p>Most scraper functions accept an options object:</p>
+<p>Most scraper functions accept an options object. The one that matters is
+<code>limit</code>; the rest are per-function.</p>
 <pre><code class="language-js">const opts = {
-  max: 500,          // Maximum items to scrape
-  delay: 1500,       // Delay between scroll/pagination (ms)
-  format: &#39;json&#39;,    // Output format: &#39;json&#39; | &#39;csv&#39;
-  output: &#39;out.json&#39; // File to save results to
+  limit: 500,                       // Maximum items to scrape
+  onProgress: (n) =&gt; console.log(n), // Called as items accumulate
 };
+</code></pre>
+<p>Writing results out is a separate step, with <code>exportToJSON</code> and <code>exportToCSV</code>
+from the same module:</p>
+<pre><code class="language-js">import { exportToJSON, exportToCSV } from &#39;xactions/scrapers&#39;;
+
+await exportToJSON(followers, &#39;followers.json&#39;);
+await exportToCSV(followers, &#39;followers.csv&#39;);
 </code></pre>
 <hr>
 <h2 id="communities-notifications-trends-and-spaces-http-client">Communities, notifications, trends and Spaces (HTTP client)</h2>
@@ -416,12 +462,16 @@ needs a logged-in session (<code>xactions login</code>); trends by place are the
 and work on the guest tier.</p>
 <pre><code class="language-js">import { createHttpScraper } from &#39;xactions/scrapers/twitter/http&#39;;
 
-const x = await createHttpScraper({ cookie: process.env.X_COOKIE });
+// `cookies` is a cookie header string: &quot;auth_token=...; ct0=...&quot;.
+const x = await createHttpScraper({ cookies: process.env.X_COOKIES });
 
 const community = await x.scrapeCommunity(&#39;1493446837214187523&#39;);
 const posts = await x.scrapeCommunityTweets(community.id, { limit: 100 });
 const mine = await x.scrapeMyCommunities();
 </code></pre>
+<p><code>createHttpScraper</code> does not fall back to a guest token: with no <code>cookies</code> it
+authenticates as nobody and X answers <code>403</code>. For guest-tier reads use <code>Scraper</code>
+from <code>xactions/client</code>, which acquires a guest token on its own.</p>
 <h3 id="communities">Communities</h3>
 <table>
 <thead>
@@ -582,31 +632,50 @@ cached, so they keep working when X rotates them. See
 <td>crawlee</td>
 <td>Apify&#39;s crawling framework</td>
 </tr>
+<tr>
+<td><code>http</code></td>
+<td>none</td>
+<td>X&#39;s internal GraphQL API directly, no browser</td>
+</tr>
 </tbody></table>
+<p><code>listAdapters()</code> also returns the aliases <code>pptr</code>, <code>pw</code>, <code>got</code>, <code>jsdom</code> and
+<code>apify</code>, which resolve to the rows above.</p>
 <h3 id="switching-adapters">Switching Adapters</h3>
-<pre><code class="language-js">import { setDefaultAdapter, getAdapter, listAdapters } from &#39;xactions/scrapers&#39;;
+<pre><code class="language-js">import { setDefaultAdapter, getAdapter, listAdapters, checkAvailability } from &#39;xactions/scrapers&#39;;
 
-// List available adapters
-console.log(listAdapters());
+console.log(listAdapters());          // every registered name and alias
+console.log(await checkAvailability()); // which ones have their package installed
 
-// Switch to Playwright
-setDefaultAdapter(&#39;playwright&#39;);
-
-// Or use a specific adapter for one operation
-const adapter = getAdapter(&#39;cheerio&#39;);
+setDefaultAdapter(&#39;playwright&#39;);      // for the whole process
+const adapter = await getAdapter(&#39;cheerio&#39;);  // one adapter, right now
 </code></pre>
+<p><code>getAdapter</code> is async: it lazy-imports the backend so an uninstalled optional
+dependency costs nothing. <code>getAvailableAdapter(preferred)</code> walks a fallback
+chain (your choice, then the default, then puppeteer, playwright, crawlee,
+got-jsdom, selenium, cheerio) and returns the first one whose package is
+present. <code>XACTIONS_SCRAPER_ADAPTER</code> sets the default without a code change.</p>
 <h3 id="custom-adapters">Custom Adapters</h3>
-<pre><code class="language-js">import { BaseAdapter, registerAdapter } from &#39;xactions/scrapers&#39;;
+<p>An adapter extends <code>BaseAdapter</code> and overrides the methods it needs. The
+interface is <code>launch</code> / <code>newPage</code> / <code>goto</code> / <code>evaluate</code> / <code>closePage</code> /
+<code>closeBrowser</code>, plus the optional <code>queryAll</code>, <code>getContent</code>, <code>setCookie</code>,
+<code>scroll</code>, <code>screenshot</code>, <code>waitForSelector</code> and <code>checkDependencies</code>.</p>
+<pre><code class="language-js">import { BaseAdapter, registerAdapter, getAdapter } from &#39;xactions/scrapers&#39;;
 
 class MyAdapter extends BaseAdapter {
-  async createBrowser(options) { /* ... */ }
-  async createPage(browser) { /* ... */ }
-  async goto(page, url) { /* ... */ }
-  async evaluate(page, fn) { /* ... */ }
-  async close(browser) { /* ... */ }
+  name = &#39;my-adapter&#39;;
+  requiresBrowser = true;
+  supportsJavaScript = true;
+
+  async launch(options = {}) { /* return a browser handle */ }
+  async newPage(browser, options = {}) { /* return a page handle */ }
+  async goto(page, url, options = {}) { /* navigate */ }
+  async evaluate(page, fn, ...args) { /* run fn in the page */ }
+  async closePage(page) { /* ... */ }
+  async closeBrowser(browser) { /* ... */ }
 }
 
 registerAdapter(&#39;my-adapter&#39;, MyAdapter);
+const mine = await getAdapter(&#39;my-adapter&#39;);
 </code></pre>
 <hr>
 <h2 id="browser-scripts">Browser Scripts</h2>
@@ -699,15 +768,21 @@ registerAdapter(&#39;my-adapter&#39;, MyAdapter);
 <td>Download Twitter/X videos</td>
 </tr>
 </tbody></table>
+<p>These are a sample. The full catalog of 95 console scripts, each with the page
+it expects, is <a href="/docs/guides/browser-scripts">browser-scripts.md</a>.</p>
 <h3 id="output-formats">Output Formats</h3>
 <p>Browser scripts export data as:</p>
 <ul>
-<li><strong>JSON</strong> — downloaded as <code>.json</code> file</li>
-<li><strong>CSV</strong> — downloadable spreadsheet</li>
-<li><strong>Console</strong> — printed to DevTools console as a table</li>
+<li><strong>JSON</strong>: downloaded as a <code>.json</code> file</li>
+<li><strong>CSV</strong>: downloadable spreadsheet</li>
+<li><strong>Console</strong>: printed to the DevTools console as a table</li>
 </ul>
 <hr>
 <h2 id="api-endpoints">API Endpoints</h2>
+<p>These belong to the self-hosted API server (<code>api/server.js</code>), not to the
+library. Everything under <code>/api/profile</code>, <code>/api/discovery</code> and
+<code>/api/unfollowers</code> requires a logged-in XActions account (<code>Authorization: Bearer &lt;jwt&gt;</code> from <code>/api/auth/login</code>). <code>/api/twitter/*</code> is the X OAuth
+connect flow, not a scraping surface.</p>
 <table>
 <thead>
 <tr>
@@ -717,75 +792,110 @@ registerAdapter(&#39;my-adapter&#39;, MyAdapter);
 </tr>
 </thead>
 <tbody><tr>
-<td><code>/api/twitter/profile/:username</code></td>
+<td><code>/api/profile/:username</code></td>
 <td>GET</td>
-<td>Scrape profile</td>
+<td>Queue a profile scrape; returns an operation id</td>
 </tr>
 <tr>
-<td><code>/api/twitter/followers/:username</code></td>
+<td><code>/api/discovery/search</code></td>
 <td>GET</td>
-<td>Scrape followers</td>
+<td>Search posts (<code>?q=query</code>)</td>
 </tr>
 <tr>
-<td><code>/api/twitter/following/:username</code></td>
+<td><code>/api/discovery/trends</code></td>
 <td>GET</td>
-<td>Scrape following</td>
+<td>Current trends</td>
 </tr>
 <tr>
-<td><code>/api/twitter/tweets/:username</code></td>
+<td><code>/api/discovery/explore</code></td>
 <td>GET</td>
-<td>Scrape tweets</td>
+<td>The Explore tab</td>
 </tr>
 <tr>
-<td><code>/api/twitter/search</code></td>
+<td><code>/api/unfollowers/scan</code></td>
+<td>POST</td>
+<td>Snapshot followers and diff against the last one</td>
+</tr>
+<tr>
+<td><code>/api/unfollowers/changes</code></td>
 <td>GET</td>
-<td>Search tweets (<code>?q=query</code>)</td>
+<td>Follow and unfollow events since a date</td>
+</tr>
+<tr>
+<td><code>/api/operations/status/:operationId</code></td>
+<td>GET</td>
+<td>Poll a queued scrape</td>
 </tr>
 </tbody></table>
+<p>The scraping routes are queue-backed: they return an operation id immediately
+and you poll <code>/api/operations/status/:operationId</code> for the result. Full list:
+<a href="/docs/guides/rest-api">rest-api.md</a>.</p>
 <hr>
 <h2 id="rate-limits-amp-best-practices">Rate Limits &amp; Best Practices</h2>
 <p>X enforces aggressive rate limits. Follow these guidelines:</p>
 <ol>
-<li><strong>Add delays</strong> — minimum 1-3 seconds between actions</li>
-<li><strong>Batch operations</strong> — scrape in chunks of 100-500, pause between batches</li>
-<li><strong>Respect pagination</strong> — don&#39;t skip the built-in scroll delays</li>
-<li><strong>Rotate sessions</strong> — if scraping at scale, use multiple auth tokens</li>
-<li><strong>Use proxies</strong> — the <code>proxyManager</code> in <code>src/scraping/</code> handles rotation</li>
+<li><strong>Add delays.</strong> Minimum 1-3 seconds between actions.</li>
+<li><strong>Batch operations.</strong> Scrape in chunks of 100-500, pause between batches.</li>
+<li><strong>Respect pagination.</strong> Do not skip the built-in scroll delays.</li>
+<li><strong>Rotate sessions.</strong> At scale, use an account pool rather than one token.</li>
+<li><strong>Use proxies.</strong> <code>ProxyManager</code> handles rotation and health tracking.</li>
 </ol>
-<pre><code class="language-js">import { ProxyManager } from &#39;xactions/scraping/proxyManager&#39;;
+<p>The modules under <code>src/scraping/</code> are internal: <code>package.json</code> does not publish
+them as subpaths, so they are imported by relative path from a clone of the
+repo, not as <code>xactions/scraping/...</code>.</p>
+<pre><code class="language-js">import { ProxyManager } from &#39;./src/scraping/proxyManager.js&#39;;
 
-const proxy = new ProxyManager({
-  proxies: [&#39;http://proxy1:8080&#39;, &#39;http://proxy2:8080&#39;],
-  rotateEvery: 50,  // Rotate after 50 requests
-});
+// The constructor takes an array of proxy URLs.
+const proxies = new ProxyManager([&#39;http://proxy1:8080&#39;, &#39;http://proxy2:8080&#39;]);
+proxies.loadFromEnv();               // or XACTIONS_PROXIES / XACTIONS_PROXY_FILE
+const proxy = proxies.getNext();     // round-robin over the healthy ones
+proxies.markSuccess(proxy.url, 240); // url, response time in ms
+proxies.markFailed(proxy.url);       // three strikes and it is blacklisted
 </code></pre>
+<p>For X specifically, the account pool is the better answer than proxies alone:
+it tracks each session&#39;s rate-limit window per GraphQL operation and rotates on
+a 429. See
+<a href="/docs/guides/scraping-infrastructure#account-pool-and-resumable-scrapes-http-scraper">scraping-infrastructure.md</a>.</p>
 <hr>
 <h2 id="pagination-engine">Pagination Engine</h2>
-<p>For large-scale scraping, use the pagination engine:</p>
-<pre><code class="language-js">import { PaginationEngine } from &#39;xactions/scraping/paginationEngine&#39;;
+<p>For large scroll-based scrapes, <code>PaginationEngine</code> handles the scroll loop,
+deduplication, and error recovery.</p>
+<pre><code class="language-js">import { PaginationEngine } from &#39;./src/scraping/paginationEngine.js&#39;;
 
 const engine = new PaginationEngine({
   maxPages: 100,
-  delay: 2000,
-  onPage: (items) =&gt; { /* process batch */ },
+  maxItems: 5000,
+  scrollDelay: 2000,
+  deduplicateBy: &#39;id&#39;,
+  onProgress: (stats) =&gt; console.log(`${stats.total} items`),
 });
+
+const { items, stats } = await engine.scrapeWithPagination(page, async (p) =&gt;
+  p.evaluate(() =&gt; [...document.querySelectorAll(&#39;[data-testid=&quot;UserCell&quot;]&#39;)].map(/* ... */)),
+);
+
+await engine.saveCheckpoint(&#39;followers-nasa&#39;); // resume later with { checkpoint: &lt;path&gt; }
 </code></pre>
+<p>Full options and the checkpoint contract:
+<a href="/docs/guides/scraping-infrastructure#pagination-engine">scraping-infrastructure.md</a>.</p>
 <hr>
 <h2 id="stealth-mode">Stealth Mode</h2>
-<p>Avoid detection with the stealth browser:</p>
-<pre><code class="language-js">import { StealthBrowser } from &#39;xactions/scraping/stealthBrowser&#39;;
+<p>The stealth browser is a function, not a class, and it falls back to vanilla
+Puppeteer when <code>puppeteer-extra</code> is not installed.</p>
+<pre><code class="language-js">import { launchStealthBrowser, createStealthPage } from &#39;./src/scraping/stealthBrowser.js&#39;;
 
-const browser = new StealthBrowser({
-  headless: true,
-  fingerprint: &#39;randomize&#39;,
-  userAgent: &#39;rotate&#39;,
-});
+const browser = await launchStealthBrowser({ headless: true });
+const page = await createStealthPage(browser);
 </code></pre>
+<p>It randomises the User-Agent, viewport and fingerprint surface on each launch.
+For the request-level identity the HTTP client sends (one browser profile held
+for the life of the process, with matching client hints), see
+<a href="/docs/guides/scraping-infrastructure#browser-identity">scraping-infrastructure.md</a>.</p>
 
     </article>
 
     <div class="page-meta">
-      <span>5 min read</span>
+      <span>7 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scrapers.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scrapers" target="_blank" rel="noopener">Report a problem</a>
     </div>

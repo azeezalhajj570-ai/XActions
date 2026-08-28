@@ -103,6 +103,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json" aria-current="page">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -360,7 +361,9 @@ xactions doctor &gt; /dev/null || { echo &quot;xactions unhealthy&quot;; exit 1;
     echo
 
     # `timestamp` is milliseconds, so the cutoff is compared in milliseconds too.
-    xactions tweets &quot;$handle&quot; --limit 50 --json 2&gt;/dev/null \
+    # jq exits 0 on an empty result, so test the output rather than the status:
+    # &quot;no posts today&quot; is a normal day, not a failure.
+    posts=$(xactions tweets &quot;$handle&quot; --limit 50 --json 2&gt;/dev/null \
       | jq -r --argjson since &quot;$((SINCE * 1000))&quot; &#39;
           [ .[]
             | select(.timestamp != null and .timestamp &gt; $since)
@@ -369,7 +372,9 @@ xactions doctor &gt; /dev/null || { echo &quot;xactions unhealthy&quot;; exit 1;
           | sort_by(-(.likes // 0))
           | .[:3][]
           | &quot;- **\(.likes // 0) likes** \(.text | gsub(&quot;\n&quot;; &quot; &quot;) | .[0:160])\n  https://x.com/i/web/status/\(.id)&quot;
-        &#39; || echo &quot;_no posts in the last 24h_&quot;
+        &#39;)
+
+    if [ -n &quot;$posts&quot; ]; then echo &quot;$posts&quot;; else echo &quot;_no posts in the last 24h_&quot;; fi
 
     echo
   done
@@ -378,6 +383,19 @@ xactions doctor &gt; /dev/null || { echo &quot;xactions unhealthy&quot;; exit 1;
 echo &quot;wrote $OUT&quot;
 </code></pre>
 <pre><code class="language-bash">chmod +x digest.sh &amp;&amp; ./digest.sh
+</code></pre>
+<pre><code>wrote digest-2026-08-28.md
+</code></pre>
+<pre><code class="language-markdown"># Digest for 2026-08-28
+
+## @NASA
+
+- **1691 likes** Join us tomorrow at 11am ET (1500 UTC) as the Artemis II crew receives the Congressional Space Medal of Honor! We&#39;ll be streaming the ceremony here, on our YouT
+  https://x.com/i/web/status/2093063226351136958
+
+## @SpaceX
+
+_no posts in the last 24h_
 </code></pre>
 <p>Then put it in cron:</p>
 <pre><code class="language-cron">0 8 * * * cd /home/you/digests &amp;&amp; ./digest.sh &gt;&gt; digest.log 2&gt;&amp;1
@@ -431,7 +449,7 @@ console.log(`${tweets.length} posts`);
 
     <nav class="page-nav" aria-label="Previous and next">
       <a class="page-nav__link" href="/docs/learn/competitive-intelligence"><span class="page-nav__dir">← Previous</span><span class="page-nav__title">05: Read any account like an analyst</span></a>
-      <a class="page-nav__link page-nav__link--next" href="/docs/learn/readme"><span class="page-nav__dir">Next →</span><span class="page-nav__title">Tutorials</span></a>
+      <a class="page-nav__link page-nav__link--next" href="/docs/learn/your-x-archive"><span class="page-nav__dir">Next →</span><span class="page-nav__title">07: Read your own X archive</span></a>
     </nav>
 
     <div class="callout">

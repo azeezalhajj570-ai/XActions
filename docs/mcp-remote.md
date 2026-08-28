@@ -8,7 +8,9 @@ https://xactions.app/mcp
 
 That is the whole setup. Paste it into Claude Code, Claude Desktop, Cursor, VS Code or Windsurf and your agent can read profiles, posts, threads and videos from X, and search the entire XActions documentation while it writes automation code.
 
-There is nothing to sign up for. X's own API costs $200 a month for the tier that reads a timeline. This reads the same public data through the rails x.com serves to logged-out browsers, from a Cloudflare edge worker, and gives it away.
+There is nothing to sign up for. X's own API costs $200 a month for the tier that reads a timeline. This reads the same public data through the rails x.com serves to logged-out browsers, from a Cloudflare edge worker.
+
+Four of the six tools are free. The two that mirror the site's paid REST endpoints, `x_profile` and `x_posts`, cost a fraction of a cent per call, paid in USDC over [x402](x402.md) at the moment you call them. There is still no account, no key and no invoice: the payment is the identity.
 
 ## Add it to your client
 
@@ -92,18 +94,54 @@ Discovery lives at [`/.well-known/mcp.json`](https://xactions.app/.well-known/mc
 
 ## Tools
 
-| Tool | What it does |
-|---|---|
-| `x_profile` | Public profile for an account: bio, counts, links, join date, verification, pinned post |
-| `x_posts` | Recent posts for an account, newest first, with text, timestamps, metrics and media |
-| `x_post` | One post in full, including long-form text, every public metric, media URLs, entities and the quoted post |
-| `x_thread` | The conversation around a post: up to the root, and down through the author's continuation |
-| `x_video` | Every downloadable MP4 for a post, best quality first, with a ready download link |
-| `xactions_docs` | Search the XActions guides, tutorials, CLI and API reference, 50 skills and every browser script |
+| Tool | What it does | Price |
+|---|---|---|
+| `x_post` | One post in full, including long-form text, every public metric, media URLs, entities and the quoted post | free |
+| `x_thread` | The conversation around a post: up to the root, and down through the author's continuation | free |
+| `x_video` | Every downloadable MP4 for a post, best quality first, with a ready download link | free |
+| `xactions_docs` | Search the XActions guides, tutorials, CLI and API reference, 50 skills and every browser script | free |
+| `x_profile` | Public profile for an account: bio, counts, links, join date, verification, pinned post | $0.001 |
+| `x_posts` | Recent posts for an account, newest first, with text, timestamps, metrics and media | $0.005 |
+
+Prices are per call, in USDC, and there is still no account: see
+[Paying for the priced tools](#paying-for-the-priced-tools). Read the live price
+list from the server rather than from this table, which can rot:
+
+```bash
+curl -s https://xactions.app/mcp -H 'accept: application/json' | jq '.tools[] | {name, price}'
+```
 
 Every tool is read-only. Nothing in this server can post, follow, like, delete, or touch an account.
 
 `x_post` returns `views` and `bookmarks` from the richer rail. When x.com throttles it, the server falls back to the public embed endpoint, `source` reads `syndication` instead of `graphql`, and those two fields read `0`. Everything else is identical.
+
+## Paying for the priced tools
+
+An unpaid call to `x_profile` or `x_posts` comes back as a tool error whose text
+is the x402 payment terms: the price, and the chains and addresses that settle
+it (USDC on Solana or Base). Pay, then call again.
+
+Agents that already speak x402 handle this on their own. From JavaScript, the
+SDK turns it into a typed error with the terms attached:
+
+```js
+import { createClient, PaymentRequiredError } from 'xactions-edge';
+
+try {
+  await createClient().profile('nasa');
+} catch (error) {
+  if (error instanceof PaymentRequiredError) {
+    error.price;    // '$0.001'
+    error.chains;   // ['Solana', 'Base']
+    error.accepts;  // the raw x402 terms to sign against
+  }
+}
+```
+
+`await client.prices()` returns the current price of every tool, so a caller can
+budget before it starts. Free tools report `null`.
+
+Full protocol details: [x402 payments](x402.md).
 
 ## Resources
 
@@ -179,6 +217,7 @@ Successful reads are cached at the Cloudflare edge, so the second person to ask 
 - **Reads only.** Writing to X needs your own session. That is what the [local MCP server](mcp-setup.md) is for, with 152 tools including posting, following and scheduling.
 - **`x_thread` continues downward only as far as the author's recent timeline reaches.** It always walks up to the root, at any age. When the tail is out of reach it returns `truncated: true` rather than implying the thread ended.
 - **Anonymous rate limits are x.com's, not ours.** When they bite, calls fail with a message saying to wait about a minute. They recover on their own.
+- **Two tools are priced.** `x_profile` and `x_posts` answer an unpaid call with x402 terms rather than data. The other four are free.
 - **Do not point a bulk crawler at a shared free endpoint.** The whole server is Apache-2.0. Deploy your own copy and point your client at it: `functions/mcp.js` plus `src/mcp/` is the entire thing.
 
 ## Run your own

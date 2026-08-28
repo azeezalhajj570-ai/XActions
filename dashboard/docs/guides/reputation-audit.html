@@ -173,6 +173,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -334,6 +335,12 @@ about it. Verdict: <code>flagged</code> at 70+, <code>review</code> at 40-69, <c
 scanned post (60% weight) with the single worst post (40% weight), so one
 severe outlier still pulls the grade down even when the rest of the timeline
 is spotless. Grades: A+ (97+), A (90+), B (80+), C (65+), D (45+), F (below).</p>
+<p>Every dimension is reported twice, as an average and as a <strong>peak</strong>: the worst
+single post&#39;s score on that dimension. Averages alone hide exactly what the
+report exists to surface. One post at 92 among four clean ones averages to 18,
+which would draw a reassuring green bar directly underneath an F grade. The
+bars are coloured and labelled by the peak (<code>avg 35 · worst 88</code>), with the
+average as the solid fill and the peak as the faded extension behind it.</p>
 <p>You can narrow to a subset of dimensions, or add your own custom question
 (&quot;does this reveal my employer or home city?&quot;) scored alongside the built-ins.</p>
 <hr>
@@ -418,7 +425,7 @@ have no CSP to work around and take any of them directly.</p>
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/reputation-audit.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Reputation%20audit%3A%20AI-score%20your%20own%20timeline%2C%20get%20a%20shareable%20card" target="_blank" rel="noopener">Report a problem</a>
     </div>

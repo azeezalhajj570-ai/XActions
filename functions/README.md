@@ -58,7 +58,8 @@ The page file is `dashboard/mcp-docs.html`, not `mcp.html`, on purpose: a file
 named `mcp.html` makes the asset handler canonicalise `/mcp` back to itself, and
 a browser follows that redirect into this function again.
 
-Six read-only tools, roughly 700 documentation resources, five prompts. The
+Six read-only tools (four free, `x_profile` and `x_posts` priced per call in
+USDC over x402), roughly 700 documentation resources, five prompts. The
 protocol core and tool definitions live in [`src/mcp/`](../src/mcp); the full
 guide is [docs/mcp-remote.md](../docs/mcp-remote.md).
 

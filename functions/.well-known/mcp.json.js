@@ -32,10 +32,11 @@ export async function onRequestGet({ request }) {
       protocolVersion: LATEST_PROTOCOL_VERSION,
       supportedProtocolVersions: SUPPORTED_PROTOCOL_VERSIONS,
       authentication: 'none',
+      payment: { protocol: 'x402', currency: 'USDC', note: 'Most tools are free. Priced tools answer an unpaid call with x402 terms; GET /mcp with Accept: application/json lists the current price of each.' },
     }],
     capabilities: { tools: true, resources: true, prompts: true },
     toolNames: EDGE_TOOLS.map((tool) => tool.name),
-    documentation: `${origin}/docs/mcp-remote`,
+    documentation: `${origin}/docs/guides/mcp-remote`,
     source: 'https://github.com/nirholas/XActions',
   }, null, 2), {
     headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300', ...CORS },

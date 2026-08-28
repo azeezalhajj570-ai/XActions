@@ -537,7 +537,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/mcp-remote.md",
-    "minutes": 4
+    "minutes": 5
   },
   {
     "slug": "mcp-setup",
@@ -621,7 +621,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/reputation-audit.md",
-    "minutes": 4
+    "minutes": 5
   },
   {
     "slug": "rest-api",
@@ -681,19 +681,19 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/scrapers.md",
-    "minutes": 5
+    "minutes": 7
   },
   {
     "slug": "scraping-infrastructure",
     "title": "Scraping Infrastructure",
-    "description": "Enterprise-grade scraping toolkit: proxy rotation, stealth browser, pagination engine, retry policies, and dataset storage — replaces Phantombuster, Apify, and si…",
+    "description": "Everything that keeps a no-API X client working: query-ID discovery, request",
     "section": "Guides & Reference",
     "icon": "📖",
     "urlPath": "/docs/guides/scraping-infrastructure",
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/scraping-infrastructure.md",
-    "minutes": 15
+    "minutes": 17
   },
   {
     "slug": "scraping",
@@ -705,7 +705,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/scraping.md",
-    "minutes": 2
+    "minutes": 3
   },
   {
     "slug": "search-sweep",
@@ -873,7 +873,7 @@
     "outSubdir": "guides",
     "priority": 0.8,
     "sourcePath": "docs/workflows.md",
-    "minutes": 3
+    "minutes": 7
   },
   {
     "slug": "x-developer-api-crypto-guide-2026",
@@ -982,6 +982,18 @@
     "priority": 0.8,
     "sourcePath": "tutorials/06-everything-is-json.md",
     "minutes": 3
+  },
+  {
+    "slug": "your-x-archive",
+    "title": "07: Read your own X archive",
+    "description": "Everything else in these tutorials reads X over the network. This one reads the file X gives you, which is the one copy of your account that nobody can rate limit…",
+    "section": "Tutorials",
+    "icon": "🎓",
+    "urlPath": "/docs/learn/your-x-archive",
+    "outSubdir": "learn",
+    "priority": 0.8,
+    "sourcePath": "tutorials/07-your-x-archive.md",
+    "minutes": 4
   },
   {
     "slug": "readme",
@@ -2037,7 +2049,7 @@
     "outSubdir": "prompts",
     "priority": 0.7,
     "sourcePath": "tutorials/claude-prompts/15-cli-mastery-guide.md",
-    "minutes": 2
+    "minutes": 7
   },
   {
     "slug": "browser-automation-framework",
@@ -2145,7 +2157,7 @@
     "outSubdir": "prompts",
     "priority": 0.7,
     "sourcePath": "tutorials/claude-prompts/README.md",
-    "minutes": 4
+    "minutes": 5
   },
   {
     "slug": "contributing",
@@ -2169,7 +2181,7 @@
     "outSubdir": "project",
     "priority": 0.5,
     "sourcePath": "CHANGELOG.md",
-    "minutes": 39
+    "minutes": 41
   },
   {
     "slug": "roadmap",

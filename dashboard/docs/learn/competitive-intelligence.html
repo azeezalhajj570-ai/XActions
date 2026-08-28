@@ -103,6 +103,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence" aria-current="page">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -354,6 +355,12 @@ done | sort -k4 -rn | awk -F&#39;\t&#39; &#39;{ printf &quot;%-20s %12s %10s %12
 <pre><code class="language-bash">chmod +x compare.sh
 ./compare.sh NASA SpaceX
 </code></pre>
+<pre><code>ACCOUNT                 FOLLOWERS  POSTS/DAY   MED_ENGAGE  BEST_HR
+SpaceX                   41896750       2.96        10377       21
+NASA                     92356691       2.44       4088.5       17
+</code></pre>
+<p>Twice the followers, half the engagement per post, and a different peak hour.
+That row is the whole point of the exercise.</p>
 <p>Run it against your own account and the five accounts you compete with. The row that surprises you is the one worth investigating.</p>
 <hr>
 <h2 id="what-you-learned">What you learned</h2>

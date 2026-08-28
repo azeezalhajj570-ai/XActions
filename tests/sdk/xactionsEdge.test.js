@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createClient, McpClient, XActionsError, DEFAULT_ENDPOINT } from '../../packages/xactions-edge/index.js';
+import { createClient, McpClient, PaymentRequiredError, XActionsError, DEFAULT_ENDPOINT } from '../../packages/xactions-edge/index.js';
 import { handlePayload, buildResourceIndex } from '../../src/mcp/edgeServer.js';
 
 const POST_ID = '2092648130856571283';
@@ -164,6 +164,78 @@ describe('errors', () => {
     const error = await createClient({ retries: 3 }).info().catch((e) => e);
     expect(error.status).toBe(400);
     expect(error.retryable).toBe(false);
+  });
+});
+
+describe('priced tools', () => {
+  /** The exact body the live server answers a priced tool with. */
+  const X402_BODY = JSON.stringify({
+    x402Version: 1,
+    error: 'Payment required: x_profile costs $0.001000',
+    resource: { url: 'https://xactions.app/mcp#x_profile', method: 'POST' },
+    accepts: [
+      { scheme: 'exact', network: 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp', maxAmountRequired: '1000', asset: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', payTo: '2DdJ6AxTpdaSsZcbJ9AJV113oBNPBP5WM8L4HTBFnFv6', resource: 'https://xactions.app/mcp#x_profile' },
+      { scheme: 'exact', network: 'eip155:8453', maxAmountRequired: '1000', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', payTo: '0xB4C61215E4a42A36E7344Bc512273F00372360CF', resource: 'https://xactions.app/mcp#x_profile' },
+    ],
+  });
+
+  /** A server that gates one tool behind payment, the way production does. */
+  function servePriced() {
+    vi.stubGlobal('fetch', async (input, init = {}) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (!url.endsWith('/mcp')) return new Response('', { status: 503 });
+      if (!init.body) {
+        return new Response(JSON.stringify({
+          tools: [{ name: 'x_profile', price: '$0.001000' }, { name: 'x_post', price: null }],
+        }), { status: 200 });
+      }
+      const message = JSON.parse(init.body);
+      if (message.method === 'tools/call' && message.params.name === 'x_profile') {
+        return new Response(JSON.stringify({
+          jsonrpc: '2.0',
+          id: message.id,
+          result: { content: [{ type: 'text', text: X402_BODY }], isError: true },
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify(await handlePayload(message, ctx)), { status: 200 });
+    });
+  }
+
+  it('raises a typed payment error carrying the terms to settle', async () => {
+    servePriced();
+    const error = await createClient().profile('nasa').catch((e) => e);
+
+    expect(error).toBeInstanceOf(PaymentRequiredError);
+    expect(error).toBeInstanceOf(XActionsError);
+    expect(error.status).toBe(402);
+    expect(error.price).toBe('$0.001');
+    expect(error.amount).toBeCloseTo(0.001);
+    expect(error.chains).toEqual(['Solana', 'Base']);
+    expect(error.accepts).toHaveLength(2);
+    expect(error.resource).toBe('https://xactions.app/mcp#x_profile');
+    expect(error.retryable).toBe(false);
+  });
+
+  it('says what it costs and where to pay, in the message', async () => {
+    servePriced();
+    const error = await createClient().profile('nasa').catch((e) => e);
+    expect(error.message).toContain('x_profile costs $0.001 in USDC');
+    expect(error.message).toContain('Solana or Base');
+    expect(error.message).toContain('/docs/guides/x402');
+  });
+
+  it('reads the price list so a caller can budget before it starts', async () => {
+    servePriced();
+    expect(await createClient().prices()).toEqual({ x_profile: '$0.001000', x_post: null });
+  });
+
+  it('never asks for payment on a free tool', async () => {
+    servePriced();
+    // Both rails are down in this stub, so the call fails. The point is which
+    // failure: an unpriced tool must never come back as a payment demand.
+    const post = await createClient().post(POST_ID).catch((e) => e);
+    expect(post).toBeInstanceOf(XActionsError);
+    expect(post).not.toBeInstanceOf(PaymentRequiredError);
   });
 });
 

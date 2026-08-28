@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Scraping Infrastructure — XActions Docs</title>
-<meta name="description" content="Enterprise-grade scraping toolkit: proxy rotation, stealth browser, pagination engine, retry policies, and dataset storage — replaces Phantombuster, Apify, an">
+<meta name="description" content="Everything that keeps a no-API X client working: query-ID discovery, request">
 <meta name="keywords" content="xactions, twitter automation, x automation, free, open source, scraping, infrastructure, guides &amp; reference">
 <meta name="author" content="nich (@nichxbt)">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="Scraping Infrastructure — XActions">
-<meta property="og:description" content="Enterprise-grade scraping toolkit: proxy rotation, stealth browser, pagination engine, retry policies, and dataset storage — replaces Phantombuster, Apify, an">
+<meta property="og:description" content="Everything that keeps a no-API X client working: query-ID discovery, request">
 <meta property="og:url" content="https://xactions.app/docs/guides/scraping-infrastructure">
 <meta property="og:image" content="https://xactions.app/og-docs.png">
 <meta property="og:site_name" content="XActions">
@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@nichxbt">
 <meta name="twitter:title" content="Scraping Infrastructure — XActions">
-<meta name="twitter:description" content="Enterprise-grade scraping toolkit: proxy rotation, stealth browser, pagination engine, retry policies, and dataset storage — replaces Phantombuster, Apify, an">
+<meta name="twitter:description" content="Everything that keeps a no-API X client working: query-ID discovery, request">
 <meta name="twitter:image" content="https://xactions.app/og-docs.png">
 
 <link rel="canonical" href="https://xactions.app/docs/guides/scraping-infrastructure">
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Scraping Infrastructure — XActions Docs",
-  "description": "Enterprise-grade scraping toolkit: proxy rotation, stealth browser, pagination engine, retry policies, and dataset storage — replaces Phantombuster, Apify, an",
+  "description": "Everything that keeps a no-API X client working: query-ID discovery, request",
   "url": "https://xactions.app/docs/guides/scraping-infrastructure",
   "image": "https://xactions.app/og-docs.png",
   "author": { "@type": "Person", "name": "nich", "url": "https://x.com/nichxbt" },
@@ -173,6 +173,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -265,16 +266,37 @@
     <article class="prose">
 <h1 id="scraping-infrastructure">Scraping Infrastructure</h1>
 <blockquote>
-<p>Enterprise-grade scraping toolkit: proxy rotation, stealth browser, pagination engine, retry policies, and dataset storage — replaces Phantombuster, Apify, and similar SaaS tools.</p>
+<p>Everything that keeps a no-API X client working: query-ID discovery, request
+signing, browser identity, a multi-account pool with resumable scrapes, plus
+the standalone proxy, stealth-browser and pagination building blocks.</p>
 </blockquote>
 <h2 id="overview">Overview</h2>
-<p>The scraping infrastructure (<code>src/scraping/</code>) provides three production-grade modules that work together to make scraping reliable at scale:</p>
+<p>Two groups of things live here, and it is worth knowing which is which.</p>
+<p><strong>On the live request path.</strong> These run on every call the CLI, the MCP server
+and the library make, with no configuration from you:</p>
 <ul>
-<li><strong>ProxyManager</strong> — Proxy rotation with health tracking and auto-blacklisting</li>
-<li><strong>StealthBrowser</strong> — Anti-detection Puppeteer wrapper with fingerprint randomization</li>
-<li><strong>PaginationEngine</strong> — Smart scroll-based pagination with deduplication, checkpointing, and retry</li>
+<li><strong>GraphQL query-ID discovery</strong> reads x.com&#39;s own bundles so a rotated ID does not break a scrape.</li>
+<li><strong>Request signing</strong> attaches the <code>x-client-transaction-id</code> header the web client sends.</li>
+<li><strong>Browser identity</strong> gives the HTTP client one consistent User-Agent and client-hint profile per process.</li>
+<li><strong>The account pool and checkpoints</strong> spread work over several sessions and resume an interrupted scrape.</li>
 </ul>
-<p>These modules power all XActions scrapers internally and are also available as standalone imports.</p>
+<p><strong>Building blocks for scrapers you write.</strong> These are exported and documented,
+but nothing in the tree imports them, so changing their settings does not change
+what <code>xactions followers</code> does:</p>
+<ul>
+<li><strong>ProxyManager</strong>: proxy rotation with health tracking and auto-blacklisting.</li>
+<li><strong>launchStealthBrowser</strong>: anti-detection Puppeteer wrapper with fingerprint randomization.</li>
+<li><strong>PaginationEngine</strong>: scroll-based pagination with deduplication and checkpointing.</li>
+</ul>
+<p>The one exception in that second group is <code>DatasetStore</code> (defined in
+<code>paginationEngine.js</code>), which backs <code>xactions dataset</code>, the <code>x_dataset_*</code> MCP
+tools, and <code>/api/datasets</code>.</p>
+<h3 id="import-paths">Import paths</h3>
+<p><code>package.json</code> publishes <code>xactions/scrapers/twitter/http</code> (the index) but not the
+individual modules inside it, and does not publish <code>src/scraping/</code> at all.
+<code>import ... from &#39;xactions/src/...&#39;</code> throws <code>ERR_PACKAGE_PATH_NOT_EXPORTED</code>.
+Paths below that start with <code>./src/</code> are relative to the root of a clone; where a
+published subpath exists, the example uses it.</p>
 <hr>
 <h2 id="architecture">Architecture</h2>
 <pre><code>src/scraping/
@@ -284,18 +306,21 @@
 </code></pre>
 <p>Data directories:</p>
 <ul>
-<li><code>~/.xactions/datasets/</code> — Stored scraping datasets</li>
-<li><code>~/.xactions/scrape-checkpoints/</code> — Pagination checkpoints for resume</li>
+<li><code>~/.xactions/datasets/</code>: stored scraping datasets</li>
+<li><code>~/.xactions/scrape-checkpoints/</code>: <code>PaginationEngine</code> checkpoints, written by <code>saveCheckpoint()</code></li>
+<li><code>~/.xactions/checkpoints/</code>: HTTP-scraper cursor checkpoints, written automatically by <code>createCheckpoint()</code></li>
+<li><code>~/.xactions/query-ids.json</code>: the discovered GraphQL query-ID cache</li>
+<li><code>~/.xactions/transaction-keys.json</code>: the request-signing keys</li>
+<li><code>~/.xactions/accounts.db</code>: the account pool</li>
 </ul>
 <hr>
 <h2 id="quick-start">Quick Start</h2>
-<pre><code class="language-javascript">import { ProxyManager } from &#39;xactions/src/scraping/proxyManager.js&#39;;
-import { launchStealthBrowser, createStealthPage } from &#39;xactions/src/scraping/stealthBrowser.js&#39;;
-import { PaginationEngine, RetryPolicy } from &#39;xactions/src/scraping/paginationEngine.js&#39;;
+<pre><code class="language-javascript">import { ProxyManager } from &#39;./src/scraping/proxyManager.js&#39;;
+import { launchStealthBrowser, createStealthPage } from &#39;./src/scraping/stealthBrowser.js&#39;;
+import { PaginationEngine, RetryPolicy } from &#39;./src/scraping/paginationEngine.js&#39;;
 
 // 1. Set up proxies (optional)
 const proxies = new ProxyManager([&#39;http://proxy1:8080&#39;, &#39;http://proxy2:8080&#39;]);
-await proxies.testAll();
 
 // 2. Launch stealth browser
 const proxy = proxies.getNext();
@@ -327,7 +352,7 @@ await browser.close();
 <hr>
 <h2 id="proxy-manager">Proxy Manager</h2>
 <h3 id="creating">Creating</h3>
-<pre><code class="language-javascript">import { ProxyManager } from &#39;xactions/src/scraping/proxyManager.js&#39;;
+<pre><code class="language-javascript">import { ProxyManager } from &#39;./src/scraping/proxyManager.js&#39;;
 
 // From array
 const pm = new ProxyManager([
@@ -370,9 +395,16 @@ const healthy = pm.getHealthy();
 </code></pre>
 <h3 id="testing">Testing</h3>
 <pre><code class="language-javascript">const results = await pm.testAll();
-// Tests all proxies concurrently against httpbin.org
 // Returns: [{ proxy, status: &#39;ok&#39;|&#39;failed&#39;, time }]
 </code></pre>
+<p><strong>Read this before you trust the result.</strong> <code>testAll()</code> requests
+<code>https://httpbin.org/ip</code> with the global <code>fetch</code>, which has no proxy support, so
+the request does not go through the proxy under test. What it measures is
+whether this machine can reach the internet, and it marks every proxy healthy or
+failed on that one answer. Treat it as a connectivity smoke test, not as proxy
+validation. To actually validate a proxy, drive a request through an agent that
+honours it, for example undici&#39;s <code>ProxyAgent</code>, the same mechanism the account
+pool uses for per-account proxies.</p>
 <h3 id="supported-formats">Supported Formats</h3>
 <table>
 <thead>
@@ -420,7 +452,7 @@ const healthy = pm.getHealthy();
 <li>No-sandbox mode for Docker/CI</li>
 </ul>
 <h3 id="launch-browser">Launch Browser</h3>
-<pre><code class="language-javascript">import { launchStealthBrowser, createStealthPage } from &#39;xactions/src/scraping/stealthBrowser.js&#39;;
+<pre><code class="language-javascript">import { launchStealthBrowser, createStealthPage } from &#39;./src/scraping/stealthBrowser.js&#39;;
 
 const browser = await launchStealthBrowser({
   proxy: &#39;http://proxy:8080&#39;,   // Optional
@@ -473,7 +505,7 @@ const page = await createStealthPage(browser, {
 <h2 id="pagination-engine">Pagination Engine</h2>
 <p>Handles infinite-scroll pages with deduplication, error recovery, and checkpointing.</p>
 <h3 id="basic-usage">Basic Usage</h3>
-<pre><code class="language-javascript">import { PaginationEngine } from &#39;xactions/src/scraping/paginationEngine.js&#39;;
+<pre><code class="language-javascript">import { PaginationEngine } from &#39;./src/scraping/paginationEngine.js&#39;;
 
 const engine = new PaginationEngine({
   maxPages: 100,        // Max scroll iterations
@@ -510,9 +542,9 @@ const { items } = await engine2.scrapeWithPagination(page, extractFn);
 <h3 id="error-recovery">Error Recovery</h3>
 <p>The engine automatically handles:</p>
 <ul>
-<li><strong>Stuck detection</strong> — Stops after 3 consecutive empty scrolls</li>
-<li><strong>Error page detection</strong> — Pauses 60s on &quot;Rate limit&quot; or &quot;Something went wrong&quot;</li>
-<li><strong>Scroll errors</strong> — Retries with 5s delay</li>
+<li><strong>Stuck detection.</strong> Stops after 3 consecutive empty scrolls.</li>
+<li><strong>Error page detection.</strong> Pauses 60s on &quot;Rate limit&quot; or &quot;Something went wrong&quot;.</li>
+<li><strong>Scroll errors.</strong> Retries with a 5s delay.</li>
 </ul>
 <h3 id="stats">Stats</h3>
 <pre><code class="language-javascript">const { items, stats } = await engine.scrapeWithPagination(page, extractFn);
@@ -529,7 +561,7 @@ console.log(stats);
 <hr>
 <h2 id="retry-policy">Retry Policy</h2>
 <p>Standalone retry utility with exponential backoff.</p>
-<pre><code class="language-javascript">import { RetryPolicy } from &#39;xactions/src/scraping/paginationEngine.js&#39;;
+<pre><code class="language-javascript">import { RetryPolicy } from &#39;./src/scraping/paginationEngine.js&#39;;
 
 const retry = new RetryPolicy({
   maxRetries: 3,
@@ -614,7 +646,7 @@ DELETE /api/datasets/:name
 <tbody><tr>
 <td><code>puppeteer</code></td>
 <td>Puppeteer + stealth</td>
-<td>Default — full JavaScript rendering</td>
+<td>Default. Full JavaScript rendering</td>
 </tr>
 <tr>
 <td><code>playwright</code></td>
@@ -643,13 +675,20 @@ DELETE /api/datasets/:name
 </tr>
 </tbody></table>
 <p>All adapters implement the same <code>BaseScraper</code> interface:</p>
-<pre><code class="language-javascript">import { createScraper } from &#39;xactions/src/scrapers/adapters/index.js&#39;;
+<pre><code class="language-javascript">import { getAdapter, getAvailableAdapter, listAdapters } from &#39;xactions/scrapers&#39;;
 
-const scraper = createScraper(&#39;puppeteer&#39;); // or &#39;playwright&#39;, &#39;cheerio&#39;, etc.
-await scraper.init();
-const data = await scraper.scrape(url, options);
-await scraper.close();
+const adapter = await getAdapter(&#39;puppeteer&#39;);  // or &#39;playwright&#39;, &#39;cheerio&#39;, ...
+const browser = await adapter.launch({ headless: true });
+const page = await adapter.newPage(browser);
+await adapter.goto(page, &#39;https://x.com/nasa&#39;);
+const html = await adapter.getContent(page);
+await adapter.closePage(page);
+await adapter.closeBrowser(browser);
 </code></pre>
+<p><code>getAdapter</code> is async because it lazy-imports the backend, so an uninstalled
+optional dependency costs nothing until you ask for it. <code>getAvailableAdapter()</code>
+walks a fallback chain and returns the first backend whose package is actually
+present. <code>XACTIONS_SCRAPER_ADAPTER</code> sets the process default.</p>
 <hr>
 <h2 id="cross-platform-scrapers">Cross-Platform Scrapers</h2>
 <p>XActions scrapers support multiple social platforms:</p>
@@ -683,18 +722,24 @@ await scraper.close();
 </tr>
 </tbody></table>
 <pre><code class="language-javascript">import scrapers from &#39;xactions/scrapers&#39;;
+import bluesky from &#39;xactions/scrapers/bluesky&#39;;
+import mastodon from &#39;xactions/scrapers/mastodon&#39;;
 
-// Twitter (default)
+// Twitter: Puppeteer page first, and the page must be logged in.
 const profile = await scrapers.scrapeProfile(page, &#39;nichxbt&#39;);
 
-// Bluesky
-import bluesky from &#39;xactions/scrapers/bluesky&#39;;
-const bskyProfile = await bluesky.getProfile(&#39;nichxbt.bsky.social&#39;);
+// Bluesky: an AT Protocol agent first. Public reads need no credentials.
+const agent = await bluesky.createAgent();
+const bskyProfile = await bluesky.scrapeProfile(agent, &#39;bsky.app&#39;);
 
-// Mastodon
-import mastodon from &#39;xactions/scrapers/mastodon&#39;;
-const mastoProfile = await mastodon.getProfile(&#39;user&#39;, &#39;https://mastodon.social&#39;);
+// Mastodon: a client bound to an instance.
+const client = mastodon.createClient({ instance: &#39;https://mastodon.social&#39; });
+const mastoProfile = await mastodon.scrapeProfile(client, &#39;Gargron&#39;);
 </code></pre>
+<p>Every platform module names its read functions <code>scrapeProfile</code>,
+<code>scrapeFollowers</code>, <code>scrapeFollowing</code>, <code>scrapeTweets</code> and <code>searchTweets</code>, so one
+<code>scrape(platform, action, options)</code> call dispatches across all of them. See
+<a href="/docs/guides/scrapers#one-call-for-any-of-them">scrapers.md</a>.</p>
 <hr>
 <h2 id="graphql-query-id-discovery">GraphQL Query ID Discovery</h2>
 <p>Every GraphQL call to x.com is addressed by a persisted query ID
@@ -745,7 +790,7 @@ the default is off, so unit tests never reach the network unless they opt in.</p
   getQueryId,
   resolveOperation,
   queryIdStatus,
-} from &#39;xactions/scrapers/twitter/http/queryIds.js&#39;;
+} from &#39;./src/scrapers/twitter/http/queryIds.js&#39;;
 
 // Probe x.com now and persist the result
 const { count, source, cachePath } = await discoverQueryIds();
@@ -973,9 +1018,9 @@ in one profile rather than being picked separately.</p>
 <hr>
 <h2 id="account-pool-and-resumable-scrapes-http-scraper">Account Pool and Resumable Scrapes (HTTP scraper)</h2>
 <p>One X session gets roughly 50 GraphQL calls per operation per 15-minute window, which caps a single-account follower scrape at about 1,000 users before it stalls. The HTTP scraper solves this the way <a target="_blank" rel="noopener noreferrer" href="https://github.com/vladkens/twscrape">twscrape</a> does: a pool of accounts in SQLite, per-account per-operation rate-limit tracking from the <code>x-rate-limit-*</code> headers, and automatic rotation. Interrupted scrapes resume from a saved cursor, the idea behind <a target="_blank" rel="noopener noreferrer" href="https://github.com/Altimis/Scweet">Scweet</a>&#39;s resume mode.</p>
-<p>Both live in <code>src/scrapers/twitter/http/</code> and are exported from <code>xactions/src/scrapers/twitter/http/index.js</code>.</p>
+<p>Both live in <code>src/scrapers/twitter/http/</code> and are published on the package subpath <code>xactions/scrapers/twitter/http</code>.</p>
 <h3 id="account-pool">Account pool</h3>
-<pre><code class="language-javascript">import { createAccountPool, createPooledClient, createCheckpoint, scrapeFollowers } from &#39;xactions/src/scrapers/twitter/http/index.js&#39;;
+<pre><code class="language-javascript">import { createAccountPool, createPooledClient, createCheckpoint, scrapeFollowers } from &#39;xactions/scrapers/twitter/http&#39;;
 import fs from &#39;node:fs&#39;;
 
 // Accounts persist in $XACTIONS_HOME/accounts.db (default ~/.xactions/accounts.db).
@@ -1058,12 +1103,12 @@ checkpoint.clear();               // start over
 <hr>
 <h2 id="tips">Tips</h2>
 <ul>
-<li><strong>Start without proxies</strong> — Most use cases don&#39;t need them for moderate volumes</li>
-<li><strong>Use checkpointing</strong> for large scrapes (&gt;1000 items) — resume if interrupted</li>
+<li><strong>Start without proxies.</strong> Most use cases don&#39;t need them for moderate volumes.</li>
+<li><strong>Use checkpointing</strong> for large scrapes (&gt;1000 items), so an interruption resumes.</li>
 <li><strong>Set <code>deduplicateBy</code></strong> to avoid counting the same item twice during scrolling</li>
-<li><strong>Monitor <code>stats.errorsRecovered</code></strong> — high values indicate rate limiting</li>
+<li><strong>Monitor <code>stats.errorsRecovered</code>.</strong> High values indicate rate limiting.</li>
 <li><strong>Rotate user data dirs</strong> for multi-account scraping to maintain separate cookies</li>
-<li><strong>Use the stealth browser</strong> even without proxies — the anti-detection patches alone reduce block rates significantly</li>
+<li><strong>Use the stealth browser</strong> even without proxies. The anti-detection patches alone reduce block rates.</li>
 </ul>
 <hr>
 <h2 id="request-signing-x-client-transaction-id">Request Signing (<code>x-client-transaction-id</code>)</h2>
@@ -1187,7 +1232,7 @@ console.log(&quot;signed GET &quot;, await generateTransactionId({ ...keys, meth
     </article>
 
     <div class="page-meta">
-      <span>15 min read</span>
+      <span>17 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scraping-infrastructure.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scraping%20Infrastructure" target="_blank" rel="noopener">Report a problem</a>
     </div>

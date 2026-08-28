@@ -2,6 +2,8 @@
 
 Public X/Twitter reads from any JavaScript runtime. **No API key. No account. No install on a server somewhere.**
 
+Four of the six reads are free. Two (`profile` and `posts`) cost a fraction of a cent per call, settled in USDC over x402 with no signup: see [Priced reads](#priced-reads).
+
 ```bash
 npm install xactions-edge
 ```
@@ -80,6 +82,39 @@ await x.docs('how do I schedule a thread', { limit: 6 });
 
 `metrics.views` and `metrics.bookmarks` come from the richer rail; when x.com throttles it and the client falls back, `source` says `'syndication'` and those two read `0`. Everything else is identical on both rails.
 
+### Priced reads
+
+`profile()` and `posts()` cost money: $0.001 and $0.005 per call, in USDC on
+Solana or Base. Everything else is free. An unpaid call raises a
+`PaymentRequiredError` carrying the terms, so a payment client has everything it
+needs to settle and retry.
+
+```js
+import { createClient, PaymentRequiredError } from 'xactions-edge';
+
+const x = createClient();
+
+await x.prices();
+// { x_profile: '$0.001000', x_posts: '$0.005000',
+//   x_post: null, x_thread: null, x_video: null, xactions_docs: null }
+
+try {
+  await x.profile('nasa');
+} catch (error) {
+  if (error instanceof PaymentRequiredError) {
+    error.price;    // '$0.001'
+    error.amount;   // 0.001
+    error.chains;   // ['Solana', 'Base']
+    error.networks; // CAIP-2 ids
+    error.accepts;  // the raw x402 terms to sign against
+    error.resource; // 'https://xactions.app/mcp#x_profile'
+  }
+}
+```
+
+`prices()` reads the live list from the server, so it is never out of date with
+this README. Protocol details: [x402 payments](https://xactions.app/docs/guides/x402).
+
 ### Errors
 
 Every failure is an `XActionsError`:
@@ -153,7 +188,7 @@ You do not need this package for that. Point the agent at the URL:
 claude mcp add --transport http xactions https://xactions.app/mcp
 ```
 
-See [the hosted MCP guide](https://xactions.app/docs/mcp-remote) for Claude Desktop, Cursor, VS Code and Windsurf.
+See [the hosted MCP guide](https://xactions.app/docs/guides/mcp-remote) for Claude Desktop, Cursor, VS Code and Windsurf.
 
 ## Rate limits and fair use
 

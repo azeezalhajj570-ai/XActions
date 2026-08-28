@@ -45,6 +45,9 @@
     .hosted-card{min-width:0}
     .hosted-card pre{margin:0;overflow-x:auto;max-width:100%}
     .hosted-note{color:#8b98a5;font-size:.92rem;line-height:1.6;max-width:75ch}
+    .price{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:.68rem;font-weight:700;letter-spacing:.02em;vertical-align:middle}
+    .price.free{background:rgba(0,186,124,.16);color:#00ba7c}
+    .price.paid{background:rgba(255,212,59,.14);color:#ffd43b}
     .hosted-cta{display:inline-block;margin-top:8px;font-weight:600;color:#1d9bf0}
     .hosted-cta:hover{text-decoration:underline}
     @media (max-width:600px){.hosted-mcp{padding:24px 18px}.hosted-url code{font-size:.95rem}}
@@ -134,7 +137,7 @@
         <section class="hosted-mcp" aria-labelledby="hosted-heading">
           <div class="hosted-badge">New</div>
           <h2 id="hosted-heading">Hosted. One URL. No API key.</h2>
-          <p class="hosted-lead">Give any AI agent live access to public X/Twitter without an account, an API bill, or anything installed on a server. The endpoint runs at the Cloudflare edge and reads the same public data x.com serves a logged-out browser.</p>
+          <p class="hosted-lead">Give any AI agent live access to public X/Twitter without an account, an API bill, or anything installed on a server. The endpoint runs at the Cloudflare edge and reads the same public data x.com serves a logged-out browser. Four of the six tools are free; two cost a fraction of a cent per call, settled in USDC over x402 with no signup.</p>
 
           <div class="hosted-url">
             <code id="mcp-url">https://xactions.app/mcp</code>
@@ -163,14 +166,14 @@
 
           <h3>What your agent can do with it</h3>
           <div class="tool-grid">
-            <div class="tool-card"><h4>x_profile</h4><p>Bio, follower and following counts, links, join date, verification, pinned post</p></div>
-            <div class="tool-card"><h4>x_posts</h4><p>Recent posts for an account, newest first, with metrics and media</p></div>
-            <div class="tool-card"><h4>x_post</h4><p>One post in full: long-form text, every public metric, media URLs, entities</p></div>
-            <div class="tool-card"><h4>x_thread</h4><p>The whole conversation, up to the root and down through the author's replies</p></div>
-            <div class="tool-card"><h4>x_video</h4><p>Every downloadable MP4 for a post, best quality first, with a download link</p></div>
-            <div class="tool-card"><h4>xactions_docs</h4><p>Search every XActions guide, skill and browser script while it writes code</p></div>
+            <div class="tool-card"><h4>x_post <span class="price free">free</span></h4><p>One post in full: long-form text, every public metric, media URLs, entities</p></div>
+            <div class="tool-card"><h4>x_thread <span class="price free">free</span></h4><p>The whole conversation, up to the root and down through the author's replies</p></div>
+            <div class="tool-card"><h4>x_video <span class="price free">free</span></h4><p>Every downloadable MP4 for a post, best quality first, with a download link</p></div>
+            <div class="tool-card"><h4>xactions_docs <span class="price free">free</span></h4><p>Search every XActions guide, skill and browser script while it writes code</p></div>
+            <div class="tool-card"><h4>x_profile <span class="price paid">$0.001</span></h4><p>Bio, follower and following counts, links, join date, verification, pinned post</p></div>
+            <div class="tool-card"><h4>x_posts <span class="price paid">$0.005</span></h4><p>Recent posts for an account, newest first, with metrics and media</p></div>
           </div>
-          <p class="hosted-note">Read-only by design: nothing in the hosted server can post, follow, like or delete. It also publishes ~700 documentation resources and five prompt templates. For write access, run the <a href="#local">local server</a> with your own session.</p>
+          <p class="hosted-note">Read-only by design: nothing in the hosted server can post, follow, like or delete. It also publishes ~700 documentation resources and five prompt templates. Priced tools answer an unpaid call with <a href="/docs/guides/x402">x402</a> terms instead of data, so an agent can pay and retry without ever creating an account. For write access, run the <a href="#local">local server</a> with your own session.</p>
 
           <h3>Or use it as a plain SDK</h3>
           <pre><code>npx xactions-edge profile nasa</code></pre>
@@ -181,7 +184,7 @@ const nasa = await x.profile('nasa');
 const mp4  = await x.videoUrl('https://x.com/SpaceX/status/2092648130856571283');</code></pre>
           <p class="hosted-note">Zero dependencies. Node, browsers, Cloudflare Workers, Deno and Bun.</p>
 
-          <p><a class="hosted-cta" href="/docs/mcp-remote">Full guide: every client, every tool, and how it works &rarr;</a></p>
+          <p><a class="hosted-cta" href="/docs/guides/mcp-remote">Full guide: every client, every tool, and how it works &rarr;</a></p>
         </section>
 
         <h2 id="local">🤖 What is MCP?</h2>

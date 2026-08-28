@@ -186,6 +186,40 @@ export declare class XActionsError extends Error {
   );
 }
 
+export interface PaymentTerms {
+  scheme: string;
+  network: string;
+  amount?: string;
+  maxAmountRequired?: string;
+  asset: string;
+  payTo: string;
+  resource: string;
+  description?: string;
+  maxTimeoutSeconds?: number;
+  extra?: Record<string, unknown>;
+}
+
+/**
+ * Thrown by a tool that costs money. Everything needed to settle over x402 is
+ * on the error.
+ */
+export declare class PaymentRequiredError extends XActionsError {
+  readonly name: 'PaymentRequiredError';
+  /** Display price, e.g. `"$0.001"`. */
+  readonly price: string;
+  /** Price as a number, in `currency` units. */
+  readonly amount: number;
+  readonly currency: 'USDC';
+  /** CAIP-2 network identifiers the server accepts. */
+  readonly networks: string[];
+  /** Human names for those networks, e.g. `["Solana", "Base"]`. */
+  readonly chains: string[];
+  /** The raw x402 `accepts` array, for a payment client to sign against. */
+  readonly accepts: PaymentTerms[];
+  readonly resource: string | null;
+  constructor(tool: string, payload: Record<string, unknown>);
+}
+
 export declare class McpClient {
   constructor(options?: ClientOptions);
   readonly endpoint: string;
@@ -217,6 +251,8 @@ export declare class XActions {
   docs(query: string, params?: { limit?: number }, options?: CallOptions): Promise<DocResult[]>;
   tools(options?: CallOptions): Promise<ToolDescriptor[]>;
   info(): Promise<ServerInfo>;
+  /** What each tool costs. Free tools report `null`. */
+  prices(): Promise<Record<string, string | null>>;
 }
 
 export declare function createClient(options?: ClientOptions): XActions;

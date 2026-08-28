@@ -103,6 +103,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -283,6 +284,10 @@ Verdict: <code>flagged</code> at 70+, <code>review</code> at 40-69, <code>clean<
 <p>The account-level reputation score blends the average risk across all scanned
 posts (60%) with the single worst post (40%), so one severe outlier still pulls
 the grade down even when everything else is clean.</p>
+<p>The report carries <code>dimensionAverages</code> and <code>dimensionPeaks</code> side by side. Read
+and present the peak, not just the average: one post at 92 among four clean ones
+averages to 18, and reporting only that contradicts the grade the same report
+gives.</p>
 <h2 id="browser-script-with-the-shareable-score-card">Browser script (with the shareable score card)</h2>
 <p><strong>File:</strong> <code>scripts/reputationAudit.js</code> — full guide: <code>docs/reputation-audit.md</code></p>
 <p>The only surface that renders the downloadable/copyable PNG score card.</p>

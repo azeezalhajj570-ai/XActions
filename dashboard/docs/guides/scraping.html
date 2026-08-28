@@ -173,6 +173,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -264,7 +265,20 @@
 
     <article class="prose">
 <h1 id="scraping-infrastructure">Scraping Infrastructure</h1>
-<p>Low-level scraping modules for anti-detection browsing, smart pagination with resume, and proxy rotation. These power all XActions scrapers and automation behind the scenes.</p>
+<p>Low-level scraping modules for anti-detection browsing, smart pagination with
+resume, and proxy rotation. They are building blocks for scrapers you write, not
+a layer the built-in scrapers sit on: the CLI, the MCP server and the library
+read X over the HTTP client, which needs no browser at all. The one piece of
+this file that is wired into the product is <code>DatasetStore</code>, which backs
+<code>xactions dataset</code> and <code>/api/datasets</code>.</p>
+<blockquote>
+<p><strong>Import paths.</strong> <code>package.json</code> does not publish <code>src/scraping/</code> as a package
+subpath, so <code>import ... from &#39;xactions/scraping/...&#39;</code> throws
+<code>ERR_PACKAGE_PATH_NOT_EXPORTED</code>. Every path below is relative to the root of a
+clone of the repository. For a deeper treatment of the same modules, plus the
+account pool and query-ID discovery, see
+<a href="/docs/guides/scraping-infrastructure">scraping-infrastructure.md</a>.</p>
+</blockquote>
 <h2 id="architecture">Architecture</h2>
 <pre><code>src/scraping/
 ├── stealthBrowser.js     # Anti-detection Puppeteer with fingerprint randomization
@@ -273,7 +287,7 @@
 </code></pre>
 <h2 id="stealth-browser">Stealth Browser</h2>
 <p>Anti-detection Puppeteer wrapper. Tries <code>puppeteer-extra</code> + stealth plugin first, falls back to vanilla Puppeteer.</p>
-<pre><code class="language-javascript">import { launchStealthBrowser } from &#39;xactions/src/scraping/stealthBrowser.js&#39;;
+<pre><code class="language-javascript">import { launchStealthBrowser, createStealthPage } from &#39;./src/scraping/stealthBrowser.js&#39;;
 
 const browser = await launchStealthBrowser({
   proxy: &#39;http://user:pass@proxy.example.com:8080&#39;,
@@ -282,7 +296,11 @@ const browser = await launchStealthBrowser({
   viewport: { width: 1920, height: 1080 },
   userAgent: &#39;custom-ua-string&#39;  // or omit for random selection
 });
+
+const page = await createStealthPage(browser);
 </code></pre>
+<p><code>stealthClick(page, selector)</code> and <code>stealthType(page, selector, text)</code> are
+exported alongside them, for interactions that should not look scripted.</p>
 <h3 id="anti-detection-features">Anti-Detection Features</h3>
 <ul>
 <li>Randomized user-agent from a pool of 20 realistic strings (Chrome, Firefox, Safari on Win/Mac/Linux)</li>
@@ -293,23 +311,23 @@ const browser = await launchStealthBrowser({
 </ul>
 <h2 id="pagination-engine">Pagination Engine</h2>
 <p>Smart scroll-and-extract loop with deduplication, retries, checkpoint/resume, and progress tracking.</p>
-<pre><code class="language-javascript">import { PaginationEngine } from &#39;xactions/src/scraping/paginationEngine.js&#39;;
+<pre><code class="language-javascript">import { PaginationEngine } from &#39;./src/scraping/paginationEngine.js&#39;;
 
 const engine = new PaginationEngine({
   maxPages: 50,
   maxItems: 1000,
-  pageTimeout: 30000,    // 30s per page
   scrollDelay: 1500,     // 1.5s between scrolls
-  retries: 3,
-  deduplicateBy: &#39;id&#39;,   // Field to deduplicate on
+  deduplicateBy: &#39;id&#39;,   // Field, or a function, to deduplicate on
   onProgress: (stats) =&gt; console.log(`${stats.total} items scraped`)
 });
 
-const results = await engine.scrapeWithPagination(page, extractFn, {
-  checkpointFile: &#39;/tmp/checkpoint.json&#39;  // Resume from last position
+const { items, stats } = await engine.scrapeWithPagination(page, extractFn, {
+  checkpoint: &#39;/tmp/checkpoint.json&#39;  // Resume from a file saved earlier
 });
 </code></pre>
+<p><code>scrapeWithPagination</code> resolves to <code>{ items, stats }</code>.</p>
 <h3 id="options">Options</h3>
+<p>Constructor options:</p>
 <table>
 <thead>
 <tr>
@@ -320,7 +338,7 @@ const results = await engine.scrapeWithPagination(page, extractFn, {
 </thead>
 <tbody><tr>
 <td><code>maxPages</code></td>
-<td><code>100</code></td>
+<td><code>Infinity</code></td>
 <td>Maximum scroll pages</td>
 </tr>
 <tr>
@@ -329,29 +347,34 @@ const results = await engine.scrapeWithPagination(page, extractFn, {
 <td>Stop after N items collected</td>
 </tr>
 <tr>
-<td><code>pageTimeout</code></td>
-<td><code>30000</code></td>
-<td>Timeout per scroll page (ms)</td>
-</tr>
-<tr>
 <td><code>scrollDelay</code></td>
-<td><code>1000</code></td>
+<td><code>1500</code></td>
 <td>Delay between scroll actions (ms)</td>
 </tr>
 <tr>
-<td><code>retries</code></td>
-<td><code>3</code></td>
-<td>Retry failed pages</td>
-</tr>
-<tr>
 <td><code>deduplicateBy</code></td>
-<td>—</td>
-<td>Field name for dedup (e.g., &#39;id&#39;, &#39;username&#39;)</td>
+<td>none</td>
+<td>Field name, or a function, for dedup (e.g. <code>&#39;id&#39;</code>, <code>&#39;username&#39;</code>)</td>
 </tr>
 <tr>
-<td><code>checkpointFile</code></td>
-<td>—</td>
-<td>File path for checkpoint/resume</td>
+<td><code>onProgress</code></td>
+<td>none</td>
+<td>Called with <code>stats</code> as items accumulate</td>
+</tr>
+</tbody></table>
+<p>At least one of <code>maxPages</code> and <code>maxItems</code> must be set, or the loop only ends
+when the page stops producing new items.</p>
+<p>Per-call options, the second argument to <code>scrapeWithPagination</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>checkpoint</code></td>
+<td>Path to a checkpoint file written earlier by <code>saveCheckpoint()</code>. Its seen-keys set and page count are loaded before the scroll loop starts.</td>
 </tr>
 </tbody></table>
 <h3 id="stats">Stats</h3>
@@ -365,30 +388,50 @@ const results = await engine.scrapeWithPagination(page, extractFn, {
 }
 </code></pre>
 <h3 id="checkpoint--resume">Checkpoint / Resume</h3>
-<p>If a <code>checkpointFile</code> is provided, the engine saves progress periodically. If the scrape is interrupted, re-running with the same checkpoint file resumes from the last saved position.</p>
+<p>Checkpointing is explicit, not automatic: call <code>engine.saveCheckpoint(id)</code>
+yourself, from <code>onProgress</code> or after each batch. It writes
+<code>~/.xactions/scrape-checkpoints/&lt;id&gt;.json</code> and returns the path. Passing that
+path back as <code>checkpoint</code> on the next run restores the seen-keys set, so already
+collected items are skipped.</p>
+<pre><code class="language-javascript">const engine = new PaginationEngine({
+  deduplicateBy: &#39;username&#39;,
+  onProgress: async () =&gt; { await engine.saveCheckpoint(&#39;followers-nasa&#39;); },
+});
+
+await engine.scrapeWithPagination(page, extractFn, {
+  checkpoint: `${process.env.HOME}/.xactions/scrape-checkpoints/followers-nasa.json`,
+});
+</code></pre>
+<p><code>engine.resume(path)</code> does the same load without starting a scrape.</p>
+<p>For the HTTP scraper there is a separate, fully automatic cursor checkpoint
+(<code>createCheckpoint</code>), which writes after every page and needs no callback. That
+is the one to use for follower and timeline scrapes:
+<a href="/docs/guides/scraping-infrastructure#resumable-scrapes">scraping-infrastructure.md</a>.</p>
 <h2 id="proxy-manager">Proxy Manager</h2>
 <p>Proxy rotation with health tracking, auto-blacklisting of failing proxies, and load balancing.</p>
-<pre><code class="language-javascript">import { ProxyManager } from &#39;xactions/src/scraping/proxyManager.js&#39;;
+<pre><code class="language-javascript">import { ProxyManager } from &#39;./src/scraping/proxyManager.js&#39;;
 
-const manager = new ProxyManager();
+// The constructor takes an array of proxy URLs.
+const manager = new ProxyManager([&#39;http://user:pass@proxy1.example.com:8080&#39;]);
 
-// Load proxies from different sources
-manager.loadFromEnv();  // XACTIONS_PROXIES or XACTIONS_PROXY_FILE
-// or
+// Or load them from elsewhere
+manager.loadFromEnv();                            // XACTIONS_PROXIES or XACTIONS_PROXY_FILE
 await manager.loadFromFile(&#39;/path/to/proxies.txt&#39;);
-// or
-manager.addProxy(&#39;http://user:pass@proxy1.example.com:8080&#39;);
 
-// Get a healthy proxy (auto-rotating)
-const proxy = manager.getProxy();
+// Get a healthy proxy. getNext() is round-robin, getRandom() is not.
+const proxy = manager.getNext();
+console.log(proxy.url);
 
-// Report success/failure (updates health tracking)
-manager.reportSuccess(proxy);
-manager.reportFailure(proxy);
+// Report the outcome so health tracking works
+manager.markSuccess(proxy.url, 240);   // url, response time in ms
+manager.markFailed(proxy.url);
 
-// Get pool status
-const stats = manager.getStats();
+// Inspect the pool
+manager.getHealthy();   // proxies not currently blacklisted
+manager.getStats();     // per-proxy counters, see below
 </code></pre>
+<p><code>getNext()</code> returns <code>null</code> when every proxy is blacklisted, so check the result
+before using it.</p>
 <h3 id="proxy-format">Proxy Format</h3>
 <p>One proxy per line in text files:</p>
 <pre><code>http://user:pass@proxy1.example.com:8080
@@ -413,15 +456,19 @@ http://proxy3.example.com:3128
 </tr>
 </tbody></table>
 <h3 id="health-tracking">Health Tracking</h3>
-<p>Each proxy tracks:</p>
+<p><code>getStats()</code> returns one row per proxy:</p>
 <table>
 <thead>
 <tr>
-<th>Metric</th>
+<th>Field</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody><tr>
+<td><code>url</code></td>
+<td>The normalised proxy URL</td>
+</tr>
+<tr>
 <td><code>successes</code></td>
 <td>Total successful requests</td>
 </tr>
@@ -430,35 +477,52 @@ http://proxy3.example.com:3128
 <td>Total failed requests</td>
 </tr>
 <tr>
-<td><code>consecutiveFailures</code></td>
-<td>Current failure streak</td>
+<td><code>avgResponseTime</code></td>
+<td>Mean response time in ms, over the calls you reported</td>
 </tr>
 <tr>
-<td><code>blacklistedUntil</code></td>
-<td>Timestamp when proxy re-enters rotation</td>
-</tr>
-<tr>
-<td><code>totalTime</code></td>
-<td>Cumulative request time</td>
-</tr>
-<tr>
-<td><code>requests</code></td>
-<td>Total request count</td>
+<td><code>blacklisted</code></td>
+<td>Whether it is out of rotation right now</td>
 </tr>
 </tbody></table>
-<p>Proxies with too many consecutive failures are automatically blacklisted for a cooldown period.</p>
-<h2 id="usage-with-other-modules">Usage with Other Modules</h2>
-<p>These modules are used internally by all XActions scrapers:</p>
-<pre><code class="language-javascript">// src/scrapers/ uses stealthBrowser + paginationEngine
-// src/streaming/ uses browserPool (which wraps stealthBrowser)
-// src/mcp/local-tools.js uses stealthBrowser for MCP operations
-</code></pre>
-<p>You typically don&#39;t need to use these directly unless building custom scrapers.</p>
+<p>Three consecutive <code>markFailed</code> calls blacklist a proxy for 10 minutes;
+<code>markSuccess</code> resets the streak. Blacklisted proxies are skipped by <code>getNext()</code>
+and <code>getRandom()</code>, and excluded from <code>getHealthy()</code>.</p>
+<h2 id="what-uses-what">What uses what</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DatasetStore</code>, <code>listDatasets</code> (in <code>paginationEngine.js</code>)</td>
+<td><code>xactions dataset</code>, the <code>x_dataset_*</code> MCP tools, <code>/api/datasets</code>, the job queue</td>
+</tr>
+<tr>
+<td><code>PaginationEngine</code>, <code>RetryPolicy</code></td>
+<td>Nothing in the tree. They exist for scrapers you write.</td>
+</tr>
+<tr>
+<td><code>ProxyManager</code></td>
+<td>Nothing in the tree. Wire it into your own launch options.</td>
+</tr>
+<tr>
+<td><code>launchStealthBrowser</code>, <code>createStealthPage</code></td>
+<td>Nothing in the tree. <code>src/streaming/browserPool.js</code> builds its pages with <code>createBrowser</code> / <code>createPage</code> from <code>src/scrapers/</code>.</td>
+</tr>
+</tbody></table>
+<p>That is the honest picture, and it is worth knowing before you assume a setting
+here changes what <code>xactions followers</code> does. It does not. For the anti-detection
+work that <em>is</em> on the live request path (per-session browser identity, request
+signing, query-ID discovery, the account pool), see
+<a href="/docs/guides/scraping-infrastructure">scraping-infrastructure.md</a>.</p>
 
     </article>
 
     <div class="page-meta">
-      <span>2 min read</span>
+      <span>3 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/scraping.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20Scraping%20Infrastructure" target="_blank" rel="noopener">Report a problem</a>
     </div>

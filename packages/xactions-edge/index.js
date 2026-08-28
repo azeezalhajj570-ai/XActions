@@ -16,7 +16,7 @@
  *
  * @module xactions-edge
  * @author nichxbt
- * @see https://xactions.app/docs/mcp-remote
+ * @see https://xactions.app/docs/guides/mcp-remote
  */
 
 export const DEFAULT_ENDPOINT = 'https://xactions.app/mcp';
@@ -44,10 +44,66 @@ export class XActionsError extends Error {
   }
 }
 
+/**
+ * A tool that costs money. Four of the hosted server's tools are free; the two
+ * that mirror its paid REST endpoints answer with x402 terms instead of data.
+ *
+ * Everything needed to settle is on the error: the price, the chains that are
+ * accepted, and the raw `accepts` array an x402 client signs against.
+ */
+export class PaymentRequiredError extends XActionsError {
+  /**
+   * @param {string} tool
+   * @param {object} payload The server's x402 body.
+   */
+  constructor(tool, payload) {
+    const accepts = payload?.accepts || [];
+    const first = accepts[0] || {};
+    const decimals = 6; // USDC on both supported chains
+    const amount = Number(first.maxAmountRequired ?? first.amount ?? 0) / 10 ** decimals;
+    const price = amount ? `$${amount.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')}` : 'a fee';
+    const chains = accepts.map((entry) => NETWORK_NAMES[entry.network] || entry.network);
+    super(
+      `${tool} costs ${price} in USDC (${chains.join(' or ') || 'x402'}). `
+      + 'Pay with an x402 client and retry: https://xactions.app/docs/guides/x402',
+      { tool, status: 402 },
+    );
+    this.name = 'PaymentRequiredError';
+    this.price = price;
+    this.amount = amount;
+    this.currency = 'USDC';
+    this.networks = accepts.map((entry) => entry.network);
+    this.chains = chains;
+    this.accepts = accepts;
+    this.resource = payload?.resource?.url || first.resource || null;
+  }
+}
+
+const NETWORK_NAMES = {
+  'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp': 'Solana',
+  'eip155:8453': 'Base',
+};
+
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 const RATE_LIMIT_HINT = /rate.?limit|\b429\b/i;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A priced tool reports its terms as the error text, because MCP has no status
+ * code to carry a 402. Recognise that body and hand back the parsed terms.
+ * @param {string} message
+ * @returns {object|null}
+ */
+function parsePaymentRequired(message) {
+  if (!message.includes('x402Version')) return null;
+  try {
+    const payload = JSON.parse(message);
+    return payload?.x402Version ? payload : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Low-level Streamable HTTP client for an MCP server.
@@ -195,6 +251,8 @@ export class McpClient {
     if (options.raw) return result;
     if (result?.isError) {
       const message = result.content?.map((part) => part.text).filter(Boolean).join('\n') || `${name} failed`;
+      const payment = parsePaymentRequired(message);
+      if (payment) throw new PaymentRequiredError(name, payment);
       throw new XActionsError(message, { tool: name, retryable: RATE_LIMIT_HINT.test(message) });
     }
     return result?.structuredContent ?? result?.content?.map((part) => part.text).join('\n') ?? null;
@@ -332,6 +390,18 @@ export class XActions {
   /** @returns {Promise<object>} The server's identity and instructions. */
   async info() {
     return this.mcp.initialize();
+  }
+
+  /**
+   * What each tool costs, read from the server rather than assumed. Free tools
+   * report `null`, so a caller can budget before it starts.
+   * @returns {Promise<Record<string, string|null>>}
+   */
+  async prices() {
+    const response = await this.mcp.fetch(this.mcp.endpoint, { headers: { accept: 'application/json' } });
+    if (!response.ok) throw new XActionsError(`Could not read pricing: HTTP ${response.status}`, { status: response.status });
+    const descriptor = await response.json();
+    return Object.fromEntries((descriptor.tools || []).map((tool) => [tool.name, tool.price ?? null]));
   }
 }
 

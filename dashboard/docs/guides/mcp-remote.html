@@ -173,6 +173,7 @@
       <a class="sidebar__link" href="/docs/learn/build-a-brand-monitor">Tutorial 04 — Build a brand monitor</a>
       <a class="sidebar__link" href="/docs/learn/competitive-intelligence">05: Read any account like an analyst</a>
       <a class="sidebar__link" href="/docs/learn/everything-is-json">06: Everything is JSON</a>
+      <a class="sidebar__link" href="/docs/learn/your-x-archive">07: Read your own X archive</a>
       <a class="sidebar__link" href="/docs/learn/readme">Tutorials</a>
     </div>
     <div class="sidebar__group">
@@ -270,7 +271,8 @@
 <pre><code>https://xactions.app/mcp
 </code></pre>
 <p>That is the whole setup. Paste it into Claude Code, Claude Desktop, Cursor, VS Code or Windsurf and your agent can read profiles, posts, threads and videos from X, and search the entire XActions documentation while it writes automation code.</p>
-<p>There is nothing to sign up for. X&#39;s own API costs $200 a month for the tier that reads a timeline. This reads the same public data through the rails x.com serves to logged-out browsers, from a Cloudflare edge worker, and gives it away.</p>
+<p>There is nothing to sign up for. X&#39;s own API costs $200 a month for the tier that reads a timeline. This reads the same public data through the rails x.com serves to logged-out browsers, from a Cloudflare edge worker.</p>
+<p>Four of the six tools are free. The two that mirror the site&#39;s paid REST endpoints, <code>x_profile</code> and <code>x_posts</code>, cost a fraction of a cent per call, paid in USDC over <a href="/docs/guides/x402">x402</a> at the moment you call them. There is still no account, no key and no invoice: the payment is the identity.</p>
 <h2 id="add-it-to-your-client">Add it to your client</h2>
 <h3 id="claude-code">Claude Code</h3>
 <pre><code class="language-bash">claude mcp add --transport http xactions https://xactions.app/mcp
@@ -331,35 +333,68 @@
 <tr>
 <th>Tool</th>
 <th>What it does</th>
+<th>Price</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>x_profile</code></td>
-<td>Public profile for an account: bio, counts, links, join date, verification, pinned post</td>
-</tr>
-<tr>
-<td><code>x_posts</code></td>
-<td>Recent posts for an account, newest first, with text, timestamps, metrics and media</td>
-</tr>
-<tr>
 <td><code>x_post</code></td>
 <td>One post in full, including long-form text, every public metric, media URLs, entities and the quoted post</td>
+<td>free</td>
 </tr>
 <tr>
 <td><code>x_thread</code></td>
 <td>The conversation around a post: up to the root, and down through the author&#39;s continuation</td>
+<td>free</td>
 </tr>
 <tr>
 <td><code>x_video</code></td>
 <td>Every downloadable MP4 for a post, best quality first, with a ready download link</td>
+<td>free</td>
 </tr>
 <tr>
 <td><code>xactions_docs</code></td>
 <td>Search the XActions guides, tutorials, CLI and API reference, 50 skills and every browser script</td>
+<td>free</td>
+</tr>
+<tr>
+<td><code>x_profile</code></td>
+<td>Public profile for an account: bio, counts, links, join date, verification, pinned post</td>
+<td>$0.001</td>
+</tr>
+<tr>
+<td><code>x_posts</code></td>
+<td>Recent posts for an account, newest first, with text, timestamps, metrics and media</td>
+<td>$0.005</td>
 </tr>
 </tbody></table>
+<p>Prices are per call, in USDC, and there is still no account: see
+<a href="#paying-for-the-priced-tools">Paying for the priced tools</a>. Read the live price
+list from the server rather than from this table, which can rot:</p>
+<pre><code class="language-bash">curl -s https://xactions.app/mcp -H &#39;accept: application/json&#39; | jq &#39;.tools[] | {name, price}&#39;
+</code></pre>
 <p>Every tool is read-only. Nothing in this server can post, follow, like, delete, or touch an account.</p>
 <p><code>x_post</code> returns <code>views</code> and <code>bookmarks</code> from the richer rail. When x.com throttles it, the server falls back to the public embed endpoint, <code>source</code> reads <code>syndication</code> instead of <code>graphql</code>, and those two fields read <code>0</code>. Everything else is identical.</p>
+<h2 id="paying-for-the-priced-tools">Paying for the priced tools</h2>
+<p>An unpaid call to <code>x_profile</code> or <code>x_posts</code> comes back as a tool error whose text
+is the x402 payment terms: the price, and the chains and addresses that settle
+it (USDC on Solana or Base). Pay, then call again.</p>
+<p>Agents that already speak x402 handle this on their own. From JavaScript, the
+SDK turns it into a typed error with the terms attached:</p>
+<pre><code class="language-js">import { createClient, PaymentRequiredError } from &#39;xactions-edge&#39;;
+
+try {
+  await createClient().profile(&#39;nasa&#39;);
+} catch (error) {
+  if (error instanceof PaymentRequiredError) {
+    error.price;    // &#39;$0.001&#39;
+    error.chains;   // [&#39;Solana&#39;, &#39;Base&#39;]
+    error.accepts;  // the raw x402 terms to sign against
+  }
+}
+</code></pre>
+<p><code>await client.prices()</code> returns the current price of every tool, so a caller can
+budget before it starts. Free tools report <code>null</code>.</p>
+<p>Full protocol details: <a href="/docs/guides/x402">x402 payments</a>.</p>
 <h2 id="resources">Resources</h2>
 <p>The server publishes the whole XActions corpus as MCP resources, roughly 700 of them: one per documentation page, agent skill, and browser script.</p>
 <pre><code>xactions://doc/docs/video-downloader.md
@@ -437,6 +472,7 @@ xactions.app/mcp            Cloudflare Pages Function, runs at the edge
 <li><strong>Reads only.</strong> Writing to X needs your own session. That is what the <a href="/docs/guides/mcp-setup">local MCP server</a> is for, with 152 tools including posting, following and scheduling.</li>
 <li><strong><code>x_thread</code> continues downward only as far as the author&#39;s recent timeline reaches.</strong> It always walks up to the root, at any age. When the tail is out of reach it returns <code>truncated: true</code> rather than implying the thread ended.</li>
 <li><strong>Anonymous rate limits are x.com&#39;s, not ours.</strong> When they bite, calls fail with a message saying to wait about a minute. They recover on their own.</li>
+<li><strong>Two tools are priced.</strong> <code>x_profile</code> and <code>x_posts</code> answer an unpaid call with x402 terms rather than data. The other four are free.</li>
 <li><strong>Do not point a bulk crawler at a shared free endpoint.</strong> The whole server is Apache-2.0. Deploy your own copy and point your client at it: <code>functions/mcp.js</code> plus <code>src/mcp/</code> is the entire thing.</li>
 </ul>
 <h2 id="run-your-own">Run your own</h2>
@@ -457,7 +493,7 @@ npx wrangler pages dev dashboard
     </article>
 
     <div class="page-meta">
-      <span>4 min read</span>
+      <span>5 min read</span>
       <a href="https://github.com/nirholas/XActions/edit/main/docs/mcp-remote.md" target="_blank" rel="noopener">Edit this page</a>
       <a href="https://github.com/nirholas/XActions/issues/new?title=Docs%3A%20The%20hosted%20MCP%20server" target="_blank" rel="noopener">Report a problem</a>
     </div>
