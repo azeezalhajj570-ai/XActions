@@ -19,6 +19,25 @@ errors, failed subresources, per-feature API calls and their response bodies) an
 fails, so it can gate a deploy. Chromium comes from `playwright`; point `NODE_PATH`
 at a tree that has it if this repo's `node_modules` does not.
 
+## What shipped (2026-08-28)
+
+The site was redeployed and the API surface is live. Against xactions.app now:
+
+| | Before | After |
+|---|---:|---:|
+| Routes answering 200 | 521 / 719 | 719 / 719 |
+| API endpoints answering | 0 / 27 | 11 |
+| Features working for an anonymous visitor | 1 / 6 | video, ask, analytics |
+
+Live and answering: `GET /api/health`, `POST /api/video/extract`,
+`POST /api/video/extract-form`, `GET /api/video/download`, `POST /api/ask`,
+`GET /api/ask/health`, `GET /api/ai/health`, `GET /api/ai/pricing`,
+`GET /openapi.json`, `GET /.well-known/x402`. Everything else answers a JSON 503
+naming what it needs, instead of the site's HTML 404 page.
+
+Sections 1 and 2 below describe the state that was found; they are kept as the
+record of what was wrong. Section 4 lists what is still open.
+
 ## Result of the first run
 
 | Sweep | Checked | Failing |
@@ -111,12 +130,19 @@ turns the badge green.
 
 ## 4. Still open
 
-- **Deploy the Worker.** Needs a Cloudflare API token. Until then every fix above
-  is correct in the repo and invisible on the site.
+- **Read-only features that could run at the edge but do not yet.** `/graph`,
+  `/playground`, `/analytics`'s profile report and `/thread`'s unroll are all
+  public reads that need no database and no session. The scrapers behind them
+  work again (section 3), but they cannot be imported into a Pages Function yet:
+  `endpoints.js` imports `queryIds.js`, which imports `node:fs`, `node:path` and
+  `node:os` at module scope. Making the query-ID cache lazy would unlock all four
+  without a backend.
 - **Thread unroll for guests.** `TweetDetail` answers 404 to a guest token, so
   `scrapeThread` cannot reconstruct a conversation without a session. The focal
   tweet reads fine through `TweetResultByRestId`; the reply chain needs either a
   session cookie or the syndication lane.
 - **Heavy routes.** Auth, billing, admin, teams, operations and the job queue need
-  the Node backend and a database. With `API_ORIGIN` unset the Worker answers 503
-  with setup instructions, which is honest but is still a dead feature on the page.
+  the Node backend and a database. Point `XACTIONS_API_ORIGIN` at a deployment to
+  turn them on; until then they answer a JSON 503 that says so.
+- **The `/a2a` page calls the wrong paths.** It requests `/a2a/health`,
+  `/a2a/skills` and `/a2a/agents`; the server mounts them under `/api/a2a/`.

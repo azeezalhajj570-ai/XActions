@@ -108,59 +108,74 @@ const APP_PAGES = [
 ];
 
 /**
- * One entry per user-facing feature: fill the inputs, click the trigger, then
- * wait for either the success region or an error message to appear.
+ * One entry per user-facing feature: fill the inputs with real values, click the
+ * real trigger, then wait for the result region or an error message.
+ *
+ * `needs` records what a feature depends on, so the report can separate a
+ * regression from a capability the deployment does not have:
+ *   'edge'    answers from the site itself and must work
+ *   'backend' needs the Node origin (XACTIONS_API_ORIGIN); failing is expected
+ *             until one is deployed
  */
 const FEATURES = [
   {
     page: '/video',
-    name: 'Video downloader: extract from a tweet URL',
-    input: 'input[type="url"], input[type="text"]',
-    value: 'https://x.com/XActionsApp/status/1',
-    trigger: 'button[type="submit"], button',
-    settle: 12000,
+    name: 'Video downloader: extract every mp4 variant from a tweet',
+    needs: 'edge',
+    input: '#url-input',
+    value: 'https://x.com/SpaceX/status/1732824684683784516',
+    trigger: '#download-btn',
+    settle: 15000,
   },
   {
     page: '/thread',
-    name: 'Thread reader: unroll a thread URL',
-    input: 'input[type="url"], input[type="text"]',
+    name: 'Thread reader: unroll a thread',
+    needs: 'backend',
+    input: '#thread-url',
     value: 'https://x.com/naval/status/1002103360646823936',
-    trigger: 'button[type="submit"], button',
+    trigger: '#read-btn',
     settle: 15000,
   },
   {
     page: '/ask',
-    name: 'Ask XActions: answer a docs question',
-    input: 'textarea, input[type="text"]',
+    name: 'Ask XActions: sourced answer from the docs',
+    needs: 'edge',
+    input: '#question',
     value: 'How do I unfollow everyone?',
-    trigger: 'button[type="submit"], button',
-    settle: 20000,
-  },
-  {
-    page: '/analytics',
-    name: 'Analytics: run a profile report',
-    input: 'input[type="text"], input[type="search"]',
-    value: 'nasa',
-    trigger: 'button[type="submit"], button',
-    settle: 20000,
+    trigger: '#send',
+    settle: 25000,
   },
   {
     page: '/graph',
     name: 'Graph: build a network graph for a handle',
-    input: 'input[type="text"], input[type="search"]',
+    needs: 'backend',
+    input: '#seedUser',
     value: 'nasa',
-    trigger: 'button[type="submit"], button',
+    trigger: '#buildBtn',
     settle: 20000,
   },
   {
     page: '/playground',
     name: 'Playground: fetch a live profile',
-    input: 'input[type="text"], input[type="search"]',
+    needs: 'backend',
+    input: '#pg-target',
     value: 'nasa',
-    trigger: 'button[type="submit"], button',
+    trigger: '#pg-run',
     settle: 20000,
   },
+  {
+    page: '/analytics',
+    name: 'Analytics: sentiment analysis of pasted text',
+    needs: 'edge',
+    input: '#sentimentInput',
+    value: 'XActions ships fast and the docs are excellent.',
+    trigger: '#analyzeBtn',
+    settle: 12000,
+  },
 ];
+
+/** A public tweet that still carries video, used by the downloader probes. */
+const VIDEO_TWEET = 'https://x.com/SpaceX/status/1732824684683784516';
 
 /** Endpoints the dashboard calls, plus the edge API and discovery surface. */
 const ENDPOINTS = [
@@ -171,8 +186,8 @@ const ENDPOINTS = [
   { m: 'GET', p: '/openapi.json' },
   { m: 'GET', p: '/.well-known/x402' },
   { m: 'POST', p: '/api/ask', body: { question: 'what is xactions' }, stream: true },
-  { m: 'POST', p: '/api/video/extract', body: { url: 'https://x.com/XActionsApp/status/1' } },
-  { m: 'POST', p: '/api/video/download', body: { url: 'https://x.com/XActionsApp/status/1' } },
+  { m: 'POST', p: '/api/video/extract', body: { url: VIDEO_TWEET } },
+  { m: 'POST', p: '/api/video/extract-form', body: { url: VIDEO_TWEET } },
   { m: 'POST', p: '/api/thread/unroll', body: { url: 'https://x.com/naval/status/1002103360646823936' } },
   { m: 'POST', p: '/api/thread/summarize', body: { url: 'https://x.com/naval/status/1002103360646823936' } },
   { m: 'GET', p: '/api/thread/1002103360646823936' },
@@ -313,7 +328,7 @@ async function sweepFeatures(chromium) {
         }
         apiCalls.push({ url: u.replace(BASE, ''), status: res.status(), snippet });
       });
-      const record = { page: feature.page, name: feature.name, ok: false, detail: '', apiCalls: [] };
+      const record = { page: feature.page, name: feature.name, needs: feature.needs, ok: false, detail: '', apiCalls: [] };
       try {
         await page.goto(`${BASE}${feature.page}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(1500);
@@ -396,7 +411,15 @@ function writeReports(report) {
   lines.push('|---|---:|---:|');
   lines.push(`| Routes | ${report.routes.length} | ${brokenRoutes.length} |`);
   lines.push(`| Pages (browser) | ${report.pages.length} | ${brokenPages.length} |`);
-  lines.push(`| Features | ${report.features.length} | ${brokenFeatures.length} |`);
+  const edgeFeatures = report.features.filter((f) => f.needs !== 'backend');
+  lines.push(
+    `| Features (edge) | ${edgeFeatures.length} | ${edgeFeatures.filter((f) => !f.ok).length} |`
+  );
+  lines.push(
+    `| Features (need backend) | ${report.features.length - edgeFeatures.length} | ${
+      brokenFeatures.length - edgeFeatures.filter((f) => !f.ok).length
+    } |`
+  );
   lines.push(`| API endpoints | ${report.api.length} | ${brokenApi.length} |`);
   lines.push('');
 
@@ -409,10 +432,22 @@ function writeReports(report) {
     lines.push('');
   }
 
-  if (brokenFeatures.length) {
-    lines.push('## Failing features');
+  const brokenEdge = brokenFeatures.filter((f) => f.needs !== 'backend');
+  const brokenBackend = brokenFeatures.filter((f) => f.needs === 'backend');
+
+  if (brokenEdge.length) {
+    lines.push('## Failing features (should work without a backend)');
     lines.push('');
-    for (const f of brokenFeatures) lines.push(`- **${f.name}** (\`${f.page}\`): ${f.detail}`);
+    for (const f of brokenEdge) lines.push(`- **${f.name}** (\`${f.page}\`): ${f.detail}`);
+    lines.push('');
+  }
+
+  if (brokenBackend.length) {
+    lines.push('## Features waiting on the Node backend');
+    lines.push('');
+    lines.push('These need `XACTIONS_API_ORIGIN` pointed at a deployed Node API.');
+    lines.push('');
+    for (const f of brokenBackend) lines.push(`- **${f.name}** (\`${f.page}\`): ${f.detail}`);
     lines.push('');
   }
 

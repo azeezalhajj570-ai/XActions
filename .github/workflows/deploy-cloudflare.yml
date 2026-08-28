@@ -16,8 +16,14 @@ on:
     paths:
       - 'dashboard/**'
       - 'public/**'
+      - 'site/**'
       - 'functions/**'
       - 'src/video/**'
+      - 'src/ask/**'
+      - 'src/edge/**'
+      - 'deploy/cloudflare/**'
+      - 'llms.txt'
+      - 'llms-full.txt'
       - '.github/workflows/deploy-cloudflare.yml'
   workflow_dispatch:
 
@@ -40,9 +46,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # dashboard/ alone is not the site: the root page comes from site/, the og
+      # images, icons, robots.txt and sitemap.xml come from public/, and the two
+      # llms*.txt files sit at the root. build.sh assembles all of them into
+      # pages-out/ the way the route table expects, so deploying dashboard/
+      # directly would serve the app shell at / and drop every public asset.
+      - name: Assemble pages-out/
+        run: bash deploy/cloudflare/build.sh
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dashboard --project-name=xactions
+          command: pages deploy pages-out --project-name=xactions --branch=main

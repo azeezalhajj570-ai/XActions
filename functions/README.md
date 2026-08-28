@@ -7,8 +7,17 @@ no database, and no browser automation**.
 
 ```
 functions/
+  openapi.json.js      GET  /openapi.json
+  .well-known/
+    x402.js            GET  /.well-known/x402
   api/
     health.js          GET  /api/health
+    ask.js             POST /api/ask
+    ask/
+      health.js        GET  /api/ask/health
+    ai/
+      health.js        GET  /api/ai/health
+      pricing.js       GET  /api/ai/pricing
     [[path]].js        catch-all for every other /api/* route
     video/
       extract.js       POST /api/video/extract
@@ -70,6 +79,41 @@ The no-JavaScript path: the page's `<form>` posts here natively and gets a `303`
 to the download proxy for the best quality. Failures redirect to
 `/video?error=invalid|novideo|failed`, which the page renders inline.
 
+### `POST /api/ask`
+
+Ask XActions. Body: `{ "question": "...", "history": [], "byok": {} }`. Streams
+Server-Sent Events: a `sources` event with the documentation and repo chunks the
+answer is grounded in, then `token` events, then `done`.
+
+The retrieval index is the static asset `/data/ask-index.json`
+(`npm run ask:index` builds it) and the LLM lanes are plain `fetch` calls, so
+this needs no key: three lanes in the chain are keyless. Keyed lanes join
+automatically when their variable is set on the Pages project.
+
+```bash
+curl -N -X POST https://xactions.app/api/ask \
+  -H 'content-type: application/json' \
+  -d '{"question":"How do I unfollow everyone?"}'
+```
+
+### `GET /api/ask/health`
+
+Whether the index loaded, how many chunks it holds, and which lanes are in the
+chain for this deployment.
+
+### `GET /openapi.json` and `GET /.well-known/x402`
+
+The OpenAPI 3.1 description of the AI API, and the x402 discovery document that
+lets an agent find the paid endpoints and their prices without a human. Both are
+generated from `api/openapi.js` and `api/config/x402-config.js`, the same
+modules the Node server uses, so the published prices cannot drift from the
+charged ones.
+
+### `GET /api/ai/health` and `GET /api/ai/pricing`
+
+Service status with the x402 facilitator and pay-to address, and the
+per-operation price table.
+
 ### `/api/*` (catch-all)
 
 Every other route in `api/routes/` needs Postgres, Redis, and Puppeteer. Set
@@ -98,11 +142,16 @@ Both are optional, set on the Pages project (Settings, then Variables):
 Run the site and these functions together, from the repo root:
 
 ```bash
-npx wrangler pages dev dashboard --port 8788
+bash deploy/cloudflare/build.sh
+npx wrangler pages dev pages-out --port 8788
 ```
 
 Wrangler picks up `functions/` from the repo root automatically and compiles it
 into the Pages Worker. Then open `http://127.0.0.1:8788/video`.
+
+Serve `pages-out/`, not `dashboard/`: the root page comes from `site/`, and the
+og images, icons, `robots.txt` and `sitemap.xml` come from `public/`. Pointing
+wrangler at `dashboard/` puts the app shell at `/` and drops every public asset.
 
 ```bash
 curl -X POST http://127.0.0.1:8788/api/video/extract \
@@ -119,9 +168,9 @@ npx vitest run tests/video/edgeExtractor.test.js
 ## Deployment
 
 These functions ship with the site. `.github/workflows/deploy-cloudflare.yml`
-runs `wrangler pages deploy dashboard --project-name=xactions` from the repo
-root on every push to `main` that touches `dashboard/`, `public/`, `functions/`,
-or `src/video/`.
+assembles `pages-out/` with `deploy/cloudflare/build.sh` and then runs
+`wrangler pages deploy pages-out --project-name=xactions --branch=main` on every
+push to `main` that touches the site or the code behind these functions.
 
 That workflow needs two repository secrets, `CLOUDFLARE_API_TOKEN` (Account,
 then Cloudflare Pages, then Edit) and `CLOUDFLARE_ACCOUNT_ID`. Without them
@@ -133,7 +182,7 @@ To deploy by hand:
 ```bash
 export CLOUDFLARE_API_TOKEN=...
 export CLOUDFLARE_ACCOUNT_ID=...
-npx wrangler pages deploy dashboard --project-name=xactions
+npm run deploy:pages
 ```
 
 by nichxbt
