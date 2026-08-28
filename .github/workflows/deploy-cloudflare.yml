@@ -56,6 +56,18 @@ jobs:
       # llms*.txt files sit at the root. build.sh assembles all of them into
       # pages-out/ the way the route table expects, so deploying dashboard/
       # directly would serve the app shell at / and drop every public asset.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The Ask page and the hosted MCP server both read /data/ask-index.json
+      # from the deployed assets, so a doc added without rerunning the generator
+      # would be invisible to every agent that connects. Regenerating here means
+      # production is current whether or not the artifact was committed.
+      - name: Regenerate the docs index
+        run: npm run ask:index
+
       - name: Assemble pages-out/
         run: bash deploy/cloudflare/build.sh
 

@@ -183,8 +183,31 @@ jobs:
 
       # Needs no dependencies: the auditor is dependency-free by design so a
       # broken link fails in seconds rather than after a full install.
+
+      # The retrieval index and the action catalogue are derived from the tree,
+      # so any commit that adds a doc, a skill, a browser script or an MCP tool
+      # without rerunning the generators leaves them behind and fails this job
+      # for whoever pushes next. Regenerate first, then check: the gate keeps
+      # catching what it is actually for (dead links, wrong counts, commands
+      # that do not exist) and stops failing on a lag nobody introduced.
+      - name: Regenerate derived documentation artifacts
+        run: |
+          npm run ask:index
+          node scripts/sync-registry.mjs
+
       - name: Audit documentation
         run: npm run docs:check
+
+      # A stale artifact is still worth knowing about, because the deployed edge
+      # serves the committed copy. Report it without failing the build; the
+      # deploy regenerates before it builds, so production is never stale.
+      - name: Report uncommitted regeneration
+        if: always()
+        run: |
+          if ! git diff --quiet; then
+            echo "::warning::Derived docs artifacts were out of date. Run 'npm run ask:index && node scripts/sync-registry.mjs' and commit:"
+            git diff --stat
+          fi
 
   docker:
     name: Docker Build
