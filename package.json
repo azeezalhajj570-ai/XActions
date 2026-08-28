@@ -28,7 +28,8 @@
     "./cli": "./src/cli/index.js",
     "./client": "./src/client/index.js",
     "./spaces": "./src/spaces/agent.js",
-    "./portability": "./src/portability/index.js"
+    "./portability": "./src/portability/index.js",
+    "./media": "./src/media/index.js"
   },
   "bin": {
     "xactions": "./src/cli/index.js",

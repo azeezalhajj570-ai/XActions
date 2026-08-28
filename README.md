@@ -28,7 +28,7 @@ Scrapers &nbsp;·&nbsp; MCP Server for AI Agents &nbsp;·&nbsp; CLI &nbsp;·&nbs
 </p>
 
 <p>
-  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-152-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="152 MCP Tools"></a>&nbsp;
+  <a href="docs/mcp-setup.md"><img src="https://img.shields.io/badge/MCP_Tools-152-8B5CF6?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="153 MCP Tools"></a>&nbsp;
   <a href="https://smithery.ai/server/xactions"><img src="https://smithery.ai/badge/xactions" alt="Smithery"></a>&nbsp;
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP_Registry-deployed-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="MCP Registry"></a>&nbsp;
   <a href="Dockerfile"><img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>&nbsp;
@@ -104,7 +104,7 @@ npx xactions search "your brand" --limit 50               # what people are sayi
 | Feature | **XActions** | twikit | twscrape | x-use | xmcp (official) | bird | twitter-cli | Agent-Reach |
 |---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **No API Key Required** | ✅ | ✅ Cookies | ✅ Account pool | ✅ Browser | ❌ X API keys | ✅ Cookies | ❌ X API keys | ✅ |
-| **MCP Server (AI agents)** | ✅ **152 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
+| **MCP Server (AI agents)** | ✅ **153 tools** | ❌ | ❌ | ✅ (33-tool server) | ✅ (140-tool, metered) | ❌ | ❌ | ❌ Skills, not MCP |
 | **Browser Console Scripts** | ✅ 95 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **AI Voice Agent in Spaces** | ✅ Join, listen, speak | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **CLI** | ✅ 56 commands | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
@@ -147,6 +147,7 @@ Competitor columns come from the [competitive audit](docs/audits/2026-08-27-comp
 | **`--json` everywhere** | Every read command accepts `--json` and puts data on stdout and nothing else. It outranks `--output`, so a pipe is never silently turned into a file write. |
 | **Reliability** | Public reads no longer need a browser at all. Profiles and timelines come from the internal GraphQL API in about a second, with no Chromium download. |
 | **Honest failures** | Nothing reports empty results as success anymore. A read that cannot complete says why, and says what to do about it. |
+| **Archive every photo and video** | `xactions download @nichxbt:all --archive` saves a profile's media, avatar and banner with gallery-dl-style filename templates, then re-runs incrementally. Resumes interrupted files with `Range`, retries rate limits, and hard-links the same photo reached through a retweet instead of storing it twice. Also `xactions/media` and the `x_download_media` MCP tool. [Docs](docs/media-archive.md). |
 | **Ask XActions** | [xactions.app/ask](https://xactions.app/ask) answers "how do I..." in plain language from these docs, the skills, the scripts and the repo, and ends every answer with the thing to run: the console script (copied from source), the terminal command, or the MCP tool. Also `xactions ask "how do I unfollow everyone?"` in a terminal, and `x_ask` so an agent can read the manual before it acts. Free LLM lanes, three of which need no key. [Docs](docs/ask.md). |
 | **Examples** | [`examples/`](examples/): 9 runnable programs, from a first profile lookup to the MCP draft-approval gate. Each one runs as written. |
 | **Tutorials** | [`tutorials/`](tutorials/): six guided walkthroughs, from a first scrape with no account to scripting XActions inside your own pipelines. |
@@ -1480,7 +1481,7 @@ No console, no code, no setup!
 stdio is the default transport and is what a local client wants. For a remote
 or hosted client, the same server speaks
 [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http)
-on `/mcp`, with the same 152 tools and the same tool-group filtering:
+on `/mcp`, with the same 153 tools and the same tool-group filtering:
 
 ```bash
 npx xactions-mcp --http --port 3000

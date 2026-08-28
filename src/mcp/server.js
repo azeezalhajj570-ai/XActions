@@ -1325,6 +1325,32 @@ const TOOLS = [
       required: ['url'],
     },
   },
+  // ====== Media archive ======
+  {
+    name: 'x_download_media',
+    description:
+      'Download every photo, video and GIF from a profile, a single tweet, a ' +
+      'search or a community to local files. Handles the media tab, avatars and ' +
+      'banners at original resolution, filename templates, and an archive file ' +
+      'so re-runs only fetch what is new. Use this to build or sync a local ' +
+      'media archive; use x_get_media to only list media without saving it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: {
+          type: 'string',
+          description: 'What to download: "@user", "@user:avatar", "@user:banner", "@user:all", a tweet id or URL, "search:<query>", or "community:<id>".',
+        },
+        outputDir: { type: 'string', description: 'Directory to write into (default: ./media).' },
+        template: { type: 'string', description: 'Filename template, e.g. "{username}/{date}_{media_filename}.{ext}".' },
+        archive: { type: 'boolean', description: 'Record downloads so later runs skip what is already saved (default: true).' },
+        limit: { type: 'number', description: 'How many source items to walk (default: 100).' },
+        types: { type: 'array', items: { type: 'string', enum: ['photo', 'video', 'gif'] }, description: 'Only download these media types.' },
+        dryRun: { type: 'boolean', description: 'List what would be downloaded without writing files.' },
+      },
+      required: ['target'],
+    },
+  },
   // ====== Ask XActions ======
   {
     name: 'x_ask',
@@ -2465,6 +2491,50 @@ async function executeAskTool(args) {
   };
 }
 
+/**
+ * x_download_media: build or sync a local media archive.
+ *
+ * The write here is to the caller's own disk, never to their X account, so it
+ * needs no approval gate. The summary counts every outcome, including
+ * failures, because an agent reporting "done" over six 404s is worse than one
+ * reporting the truth.
+ */
+async function executeDownloadMediaTool(args) {
+  const target = String(args.target || '').trim();
+  if (!target) throw new Error('x_download_media: "target" is required');
+
+  const [{ downloadMediaFor, DEFAULT_ARCHIVE }, { createHttpScraper }, path] = await Promise.all([
+    import('../media/index.js'),
+    import('../scrapers/twitter/http/index.js'),
+    import('node:path'),
+  ]);
+  // The HTTP scraper, not Puppeteer: media resolution is a few GraphQL reads
+  // and the download itself is plain fetch, so a browser would be pure cost.
+  const scrapers = await createHttpScraper(SESSION_COOKIE ? { cookies: SESSION_COOKIE } : {});
+  const outputDir = args.outputDir || './media';
+
+  const { items, results, summary } = await downloadMediaFor(target, {
+    scrapers,
+    outputDir,
+    template: args.template,
+    archivePath: args.archive === false ? null : path.join(outputDir, DEFAULT_ARCHIVE),
+    limit: Number(args.limit) || 100,
+    types: Array.isArray(args.types) && args.types.length ? args.types : undefined,
+    dryRun: Boolean(args.dryRun),
+  });
+
+  return {
+    target,
+    outputDir,
+    found: items.length,
+    summary,
+    failures: results.filter((r) => r.outcome === 'failed').map((r) => ({ url: r.url, reason: r.reason })),
+    files: results
+      .filter((r) => r.outcome === 'downloaded' || r.outcome === 'deduped' || r.outcome === 'planned')
+      .map((r) => ({ path: r.relativePath, type: r.mediaType, bytes: r.bytes ?? 0, outcome: r.outcome })),
+  };
+}
+
 async function executeTool(name, args, options = {}) {
   // Add session cookie to args if provided globally
   if (SESSION_COOKIE && !args.cookie && name === 'x_login') {
@@ -2489,6 +2559,10 @@ async function executeTool(name, args, options = {}) {
   // Ask XActions: reads the shipped documentation index, needs no browser
   if (name === 'x_ask') {
     return await executeAskTool(args);
+  }
+
+  if (name === 'x_download_media') {
+    return await executeDownloadMediaTool(args);
   }
 
   // Handle Space agent tools (xspace-agent integration)

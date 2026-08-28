@@ -133,7 +133,7 @@ export const GROUP_RULES = Object.freeze([
   },
   {
     group: 'read',
-    names: ['x_list_platforms', 'x_download_video', 'x_get_settings', 'x_action_budget', 'x_ask'],
+    names: ['x_list_platforms', 'x_download_video', 'x_get_settings', 'x_action_budget', 'x_ask', 'x_download_media'],
     prefixes: ['x_get_', 'x_search_', 'x_client_'],
   },
 ]);
