@@ -31,6 +31,8 @@
       likeButton: '[data-testid="like"]',
       unlikeButton: '[data-testid="unlike"]',
       retweetButton: '[data-testid="retweet"]',
+      unretweetButton: '[data-testid="unretweet"]',
+      retweetConfirm: '[data-testid="retweetConfirm"]',
       replyButton: '[data-testid="reply"]',
       confirmButton: '[data-testid="confirmationSheetConfirm"]',
       tweet: '[data-testid="tweet"]',
@@ -44,6 +46,7 @@
       searchInput: '[data-testid="SearchBox_Search_Input"]',
       primaryColumn: '[data-testid="primaryColumn"]',
       timeline: 'section[role="region"]',
+      media: '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"]',
     };
 
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -540,6 +543,283 @@
 
     log(`✅ Auto-Commenter done! Posted ${commentCount} comments.`, 'success');
     window.postMessage({ source: 'xactions-page', type: 'AUTOMATION_COMPLETE', automationId: 'autoCommenter', summary: `${commentCount} comments posted` }, '*');
+  });
+
+  // ============================================
+  // AUTO-REPOST (retweet matching posts as you scroll)
+  // Ported from scripts/twitter/auto-repost.js
+  // ============================================
+  registerAutomation('autoRepost', async (settings) => {
+    const { log, sleep, randomDelay, scrollBy, clickElement, SELECTORS } = window.XActions.Core;
+    const opts = {
+      MAX_REPOSTS: settings.maxActions || 10,
+      SKIP_ADS: settings.skipAds !== false,
+      SKIP_REPLIES: settings.skipReplies !== false,
+      ONLY_WITH_MEDIA: !!settings.onlyWithMedia,
+      KEYWORDS: settings.keywords || [],
+      MIN_DELAY: settings.minDelay || 1500,
+      MAX_DELAY: settings.maxDelay || 4000,
+      MAX_SCROLL_ATTEMPTS: 25,
+      NO_NEW_POSTS_THRESHOLD: 5,
+    };
+
+    const isReply = (tweet) => {
+      if (tweet.querySelector('[data-testid="in-reply-to"]') !== null) return true;
+      return Array.from(tweet.querySelectorAll('div[dir]')).some(el =>
+        el.innerText.startsWith('Replying to'));
+    };
+
+    const isAd = (tweet) => {
+      if (tweet.querySelector('[data-testid="placementTracking"]') !== null) return true;
+      return Array.from(tweet.querySelectorAll('span')).some(el => {
+        const t = el.textContent.trim();
+        return t === 'Ad' || t === 'Promoted';
+      });
+    };
+
+    const hasMedia = (tweet) => tweet.querySelector(SELECTORS.media) !== null;
+
+    const matchesKeywords = (text) => {
+      if (opts.KEYWORDS.length === 0) return true;
+      const lower = text.toLowerCase();
+      return opts.KEYWORDS.some(kw => lower.includes(kw.toLowerCase()));
+    };
+
+    const getTweetIdentifier = (tweet) => {
+      const timeAnchor = tweet.querySelector('time')?.closest('a[href*="/status/"]');
+      if (timeAnchor) {
+        const match = timeAnchor.href.match(/\/status\/(\d+)/);
+        if (match) return match[1];
+      }
+      const links = tweet.querySelectorAll('a[href*="/status/"]');
+      for (const link of links) {
+        const match = link.href.match(/\/status\/(\d+)/);
+        if (match) return match[1];
+      }
+      return (tweet.querySelector(SELECTORS.tweetText)?.textContent || '').substring(0, 100);
+    };
+
+    let reposted = 0;
+    const processedTweets = new Set();
+    let scrollAttempts = 0;
+    let noNewPostsCount = 0;
+
+    log(`🔄 Auto Repost started (max: ${opts.MAX_REPOSTS}, keywords: ${opts.KEYWORDS.length ? opts.KEYWORDS.join(', ') : 'any'})`, 'info');
+
+    // Page guard: warn (do not redirect) if there is no post feed on screen.
+    if (!/x\.com|twitter\.com/.test(window.location.href)) {
+      log('⚠️ Open x.com on a search, hashtag, or profile page first', 'warning');
+      window.postMessage({ source: 'xactions-page', type: 'AUTOMATION_ERROR', automationId: 'autoRepost', error: 'Open x.com on a search, hashtag, or profile page first' }, '*');
+      return;
+    }
+    if (document.querySelector(SELECTORS.tweet) === null) {
+      log('⚠️ No posts visible yet. Wait for posts to load, then re-run.', 'warning');
+      window.postMessage({ source: 'xactions-page', type: 'AUTOMATION_ERROR', automationId: 'autoRepost', error: 'No posts visible yet. Go to a search/hashtag results page or a profile.' }, '*');
+      return;
+    }
+
+    while (!automationStopFlags['autoRepost'] && reposted < opts.MAX_REPOSTS && scrollAttempts < opts.MAX_SCROLL_ATTEMPTS) {
+      const tweets = document.querySelectorAll(SELECTORS.tweet);
+      let foundNewPost = false;
+
+      for (const tweet of tweets) {
+        if (automationStopFlags['autoRepost'] || reposted >= opts.MAX_REPOSTS) break;
+
+        const tweetId = getTweetIdentifier(tweet);
+        if (processedTweets.has(tweetId)) continue;
+        processedTweets.add(tweetId);
+        foundNewPost = true;
+
+        try {
+          if (opts.SKIP_ADS && isAd(tweet)) continue;
+          if (opts.SKIP_REPLIES && isReply(tweet)) continue;
+          if (opts.ONLY_WITH_MEDIA && !hasMedia(tweet)) continue;
+
+          const text = tweet.querySelector(SELECTORS.tweetText)?.textContent || '';
+          if (!matchesKeywords(text)) continue;
+
+          // Already reposted? The button flips to unretweet.
+          if (tweet.querySelector(SELECTORS.unretweetButton)) continue;
+
+          const retweetButton = tweet.querySelector(SELECTORS.retweetButton);
+          if (!retweetButton) continue;
+
+          await clickElement(retweetButton);
+          await sleep(800);
+
+          const confirm = document.querySelector(SELECTORS.retweetConfirm);
+          if (confirm) {
+            await clickElement(confirm);
+            reposted++;
+            const preview = text.substring(0, 50).replace(/\n/g, ' ') || '(no text)';
+            window.postMessage({ source: 'xactions-page', type: 'ACTION_PERFORMED', automationId: 'autoRepost', action: `🔄 Reposted: "${preview}..." (${reposted}/${opts.MAX_REPOSTS})` }, '*');
+            log(`🔄 Reposted #${reposted}: "${preview}..."`, 'success');
+            await randomDelay(opts.MIN_DELAY, opts.MAX_DELAY);
+          } else {
+            // Menu did not open as expected (e.g. quote-only). Close it.
+            document.body.click();
+            await sleep(400);
+          }
+        } catch (error) {
+          log(`❌ Error processing post: ${error.message}`, 'error');
+          document.body.click();
+          await sleep(600);
+        }
+      }
+
+      if (!foundNewPost) {
+        noNewPostsCount++;
+        if (noNewPostsCount >= opts.NO_NEW_POSTS_THRESHOLD) {
+          log('⚠️ No new posts found after multiple scrolls. Stopping.', 'warning');
+          break;
+        }
+      } else {
+        noNewPostsCount = 0;
+      }
+
+      scrollBy(700);
+      scrollAttempts++;
+      await sleep(1500);
+    }
+
+    log(`✅ Auto Repost done! Reposted ${reposted} posts.`, 'success');
+    window.postMessage({ source: 'xactions-page', type: 'AUTOMATION_COMPLETE', automationId: 'autoRepost', summary: `${reposted} posts reposted` }, '*');
+  });
+
+  // ============================================
+  // PROFILE AUTO-COMMENTER
+  // Ported from scripts/twitter/auto-commenter.js — targets one profile,
+  // filters by post age, and skips replies/media per settings.
+  // ============================================
+  registerAutomation('profileCommenter', async (settings) => {
+    const { log, sleep, randomDelay, scrollBy, clickElement, waitForElement, storage, SELECTORS } = window.XActions.Core;
+    const opts = {
+      COMMENTS: settings.comments || ['🔥', 'Great point!', 'This is so true 👏', 'Interesting perspective!', '💯'],
+      MAX_COMMENTS: settings.maxActions || 5,
+      MAX_POST_AGE_MINUTES: settings.maxPostAgeMinutes || 60,
+      MIN_POST_AGE_SECONDS: settings.minPostAgeSeconds || 30,
+      ONLY_ORIGINAL_TWEETS: settings.onlyOriginalTweets !== false,
+      ONLY_WITH_MEDIA: !!settings.onlyWithMedia,
+      MIN_DELAY: settings.minDelay || 30000,
+      MAX_DELAY: settings.maxDelay || 60000,
+      SCROLL_DELAY: settings.scrollDelay || 2000,
+    };
+
+    const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
+    const targetUser = pathMatch ? pathMatch[1] : null;
+
+    if (!targetUser || ['home', 'explore', 'search', 'notifications', 'messages', 'i'].includes(targetUser)) {
+      log('⚠️ Must be on a user\'s profile page (x.com/TARGET_USERNAME)', 'warning');
+      window.postMessage({ source: 'xactions-page', type: 'AUTOMATION_ERROR', automationId: 'profileCommenter', error: 'Navigate to a user profile page first' }, '*');
+      return;
+    }
+
+    const getTweetId = (tweetEl) => {
+      const timeEl = tweetEl.querySelector('time');
+      const link = (timeEl && timeEl.closest('a[href*="/status/"]')) || tweetEl.querySelector('a[href*="/status/"]');
+      if (link) {
+        const match = link.href.match(/\/status\/(\d+)/);
+        return match ? match[1] : null;
+      }
+      return null;
+    };
+
+    const getTweetAge = (tweetEl) => {
+      const timeEl = tweetEl.querySelector('time');
+      const datetime = timeEl?.getAttribute('datetime');
+      if (!datetime) return null;
+      return (Date.now() - new Date(datetime).getTime()) / 1000;
+    };
+
+    const matchesCriteria = (tweetEl) => {
+      const age = getTweetAge(tweetEl);
+      if (!age) return false;
+      if (age < opts.MIN_POST_AGE_SECONDS) return false;
+      if (age > opts.MAX_POST_AGE_MINUTES * 60) return false;
+
+      if (opts.ONLY_ORIGINAL_TWEETS) {
+        const isReply = tweetEl.querySelector('[data-testid="in-reply-to"]') !== null ||
+          Array.from(tweetEl.querySelectorAll('div[dir]')).some(el => el.innerText.startsWith('Replying to'));
+        if (isReply) return false;
+      }
+
+      if (opts.ONLY_WITH_MEDIA) {
+        const hasMedia = tweetEl.querySelector('[data-testid="tweetPhoto"]') ||
+          tweetEl.querySelector('[data-testid="videoPlayer"], [data-testid="videoComponent"]');
+        if (!hasMedia) return false;
+      }
+
+      return true;
+    };
+
+    const commentedTweets = new Set();
+    const STORAGE_KEY = `xactions_commented_${targetUser}`;
+    const saved = storage.get(STORAGE_KEY);
+    if (saved) {
+      try { JSON.parse(saved).forEach(id => commentedTweets.add(id)); } catch { /* ignore */ }
+    }
+
+    let totalCommented = 0;
+    let scrolls = 0;
+    const maxScrolls = 20;
+
+    log(`💬 Profile Auto-Commenter targeting @${targetUser} (max: ${opts.MAX_COMMENTS})`, 'info');
+
+    while (totalCommented < opts.MAX_COMMENTS && scrolls < maxScrolls && !automationStopFlags['profileCommenter']) {
+      const tweets = document.querySelectorAll(SELECTORS.tweet);
+
+      for (const tweet of tweets) {
+        if (automationStopFlags['profileCommenter'] || totalCommented >= opts.MAX_COMMENTS) break;
+
+        const tweetId = getTweetId(tweet);
+        if (!tweetId || commentedTweets.has(tweetId)) continue;
+        if (!matchesCriteria(tweet)) continue;
+
+        const replyBtn = tweet.querySelector(SELECTORS.replyButton);
+        if (!replyBtn) continue;
+
+        try {
+          await clickElement(replyBtn);
+          await sleep(1000);
+
+          const textarea = await waitForElement(SELECTORS.tweetInput, 5000);
+          if (!textarea) continue;
+
+          const comment = opts.COMMENTS[Math.floor(Math.random() * opts.COMMENTS.length)];
+          textarea.focus();
+          document.execCommand('insertText', false, comment);
+          await sleep(500);
+
+          const tweetBtn = document.querySelector('[data-testid="tweetButton"]');
+          if (tweetBtn && !tweetBtn.disabled) {
+            await clickElement(tweetBtn);
+            commentedTweets.add(tweetId);
+            totalCommented++;
+            storage.set(STORAGE_KEY, JSON.stringify([...commentedTweets]));
+
+            window.postMessage({ source: 'xactions-page', type: 'ACTION_PERFORMED', automationId: 'profileCommenter', action: `💬 Commented "${comment}" on @${targetUser}'s tweet (${totalCommented}/${opts.MAX_COMMENTS})` }, '*');
+            log(`💬 Posted: "${comment}" (${totalCommented}/${opts.MAX_COMMENTS})`, 'success');
+            await randomDelay(opts.MIN_DELAY, opts.MAX_DELAY);
+          } else {
+            const closeBtn = document.querySelector('[data-testid="app-bar-close"]');
+            if (closeBtn) closeBtn.click();
+          }
+        } catch (e) {
+          log(`⚠️ Error: ${e.message}`, 'warning');
+          const closeBtn = document.querySelector('[data-testid="app-bar-close"]');
+          if (closeBtn) closeBtn.click();
+        }
+      }
+
+      if (totalCommented >= opts.MAX_COMMENTS) break;
+
+      window.scrollTo(0, document.body.scrollHeight);
+      await sleep(opts.SCROLL_DELAY);
+      scrolls++;
+    }
+
+    log(`✅ Profile Auto-Commenter done! ${totalCommented} comments posted.`, 'success');
+    window.postMessage({ source: 'xactions-page', type: 'AUTOMATION_COMPLETE', automationId: 'profileCommenter', summary: `${totalCommented} comments posted to @${targetUser}` }, '*');
   });
 
   // ============================================

@@ -352,6 +352,55 @@
       </div>
     </div>
 
+    <!-- Auto Repost -->
+    <div class="automation-card" data-automation="autoRepost" data-category="growth" data-searchable="auto repost retweet repost matching posts share">
+      <div class="card-header">
+        <div class="card-icon">🔄</div>
+        <div class="card-info">
+          <div class="card-title">Auto Repost</div>
+          <div class="card-desc">Repost matching posts as you scroll a search, hashtag, or profile</div>
+        </div>
+        <div class="card-status">
+          <span class="status-badge stopped">Stopped</span>
+        </div>
+      </div>
+      <div class="card-progress hidden"><div class="progress-bar"></div><span class="progress-text"></span></div>
+      <div class="card-actions">
+        <span class="action-count">0 actions</span>
+        <span class="session-timer hidden"></span>
+        <button class="btn-settings" title="Settings">⚙️</button>
+        <button class="btn-toggle" title="Start">▶️</button>
+      </div>
+      <div class="card-settings hidden">
+        <label>Keywords <small>(comma-separated, empty = repost all)</small>
+          <input type="text" data-setting="keywords" placeholder="launch, shipped">
+        </label>
+        <label>Max reposts per session
+          <input type="number" data-setting="maxActions" value="10" min="1" max="100">
+        </label>
+        <div class="speed-preset-row">
+          <span class="speed-label">Speed</span>
+          <div class="speed-presets">
+            <button class="speed-btn" data-speed="safe" data-min="3000" data-max="6000">Safe</button>
+            <button class="speed-btn active" data-speed="normal" data-min="1500" data-max="4000">Normal</button>
+            <button class="speed-btn" data-speed="fast" data-min="800" data-max="2000">Fast</button>
+          </div>
+        </div>
+        <label>Delay between reposts <small class="delay-display">1.5s — 4s</small>
+          <input type="range" data-setting="minDelay" min="500" max="10000" step="500" value="1500" class="delay-slider">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" data-setting="onlyWithMedia"> Only repost posts with media
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" data-setting="skipAds" checked> Skip promoted posts
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" data-setting="skipReplies" checked> Skip replies
+        </label>
+      </div>
+    </div>
+
     <!-- Follow Engagers -->
     <div class="automation-card" data-automation="followEngagers" data-category="growth" data-searchable="follow engagers likers retweeters tweet">
       <div class="card-header">
@@ -392,6 +441,50 @@
             <button class="speed-btn" data-speed="fast" data-min="1000" data-max="2500">Fast</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Profile Commenter -->
+    <div class="automation-card" data-automation="profileCommenter" data-category="growth" data-searchable="profile commenter comment on profile posts target user">
+      <div class="card-header">
+        <div class="card-icon">🗣️</div>
+        <div class="card-info">
+          <div class="card-title">Profile Commenter</div>
+          <div class="card-desc">Comment on recent posts from a specific user's profile</div>
+        </div>
+        <div class="card-status">
+          <span class="status-badge stopped">Stopped</span>
+        </div>
+      </div>
+      <div class="card-progress hidden"><div class="progress-bar"></div><span class="progress-text"></span></div>
+      <div class="card-actions">
+        <span class="action-count">0 actions</span>
+        <span class="session-timer hidden"></span>
+        <button class="btn-settings" title="Settings">⚙️</button>
+        <button class="btn-toggle" title="Start">▶️</button>
+      </div>
+      <div class="card-settings hidden">
+        <label>Comments <small>(comma-separated)</small>
+          <input type="text" data-setting="comments" placeholder="🔥, Great point!, Interesting!">
+        </label>
+        <label>Max comments per session
+          <input type="number" data-setting="maxActions" value="5" min="1" max="50">
+        </label>
+        <label>Max post age (minutes)
+          <input type="number" data-setting="maxPostAgeMinutes" value="60" min="1" max="1440">
+        </label>
+        <label>Min post age (seconds)
+          <input type="number" data-setting="minPostAgeSeconds" value="30" min="0" max="3600">
+        </label>
+        <label>Delay between comments (ms)
+          <input type="number" data-setting="minDelay" value="30000" min="5000" max="300000" step="5000">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" data-setting="onlyOriginalTweets" checked> Only original posts (skip replies)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" data-setting="onlyWithMedia"> Only posts with media
+        </label>
       </div>
     </div>
 
@@ -570,6 +663,8 @@
           <option value="keywordFollow">🔍 Follow</option>
           <option value="growthSuite">🚀 Growth</option>
           <option value="autoCommenter">💬 Commenter</option>
+          <option value="autoRepost">🔄 Repost</option>
+          <option value="profileCommenter">🗣️ Profile</option>
           <option value="followEngagers">👥 Engagers</option>
           <option value="videoDownloader">🎬 Video</option>
           <option value="unfollowerDetector">🔔 Unfollower</option>
