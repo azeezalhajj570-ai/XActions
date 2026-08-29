@@ -217,8 +217,12 @@ function connectSocket(role = 'dashboard', extra = {}) {
     return undefined;
   }
 
+  // WebSocket-only transport: Cloudflare (and some proxies) terminate
+  // socket.io's polling->websocket upgrade path, but handle a direct
+  // WebSocket connection fine. Callers can override with extra.transports.
   const socket = io(CONFIG.WS_URL, {
     auth: { token, role },
+    transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: 3,
     reconnectionDelay: 1000,
