@@ -166,9 +166,15 @@ export function createApp({ rateLimiting = true } = {}) {
   }));
 
   app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-      ? ['https://xactions.app', process.env.FRONTEND_URL].filter(Boolean)
-      : (process.env.DEV_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:5173').split(','),
+    origin: (origin, cb) => {
+      // The MV3 extension claims sessions from a chrome-extension:// or
+      // edge-extension:// origin; allow those plus the known fronts.
+      if (!origin || /^(chrome|edge)-extension:\/\//.test(origin)) return cb(null, true);
+      const allowed = process.env.NODE_ENV === 'production'
+        ? ['https://xactions.app', process.env.FRONTEND_URL].filter(Boolean)
+        : (process.env.DEV_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:5173').split(',');
+      return cb(null, allowed.includes(origin));
+    },
     credentials: true
   }));
 
