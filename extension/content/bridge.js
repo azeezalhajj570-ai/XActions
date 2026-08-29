@@ -165,11 +165,27 @@
         break;
 
       case 'GET_ACCOUNT_INFO':
+        // Ask the page script for the account and resolve THIS message with
+        // the data, so the service worker's sendMessage promise gets the
+        // account directly instead of via a separate ACCOUNT_INFO_RESPONSE.
         window.postMessage({
           source: 'xactions-extension',
           type: 'GET_ACCOUNT_INFO',
         }, '*');
-        sendResponse({ success: true });
+
+        const onAccountInfo = (event) => {
+          if (event.source !== window) return;
+          if (!event.data || event.data.source !== 'xactions-page') return;
+          if (event.data.type !== 'ACCOUNT_INFO') return;
+          window.removeEventListener('message', onAccountInfo);
+          sendResponse({ data: event.data.data });
+        };
+        window.addEventListener('message', onAccountInfo);
+        // Timeout fallback: if the page never answers (injected not ready),
+        // resolve anyway so the caller can retry.
+        setTimeout(() => {
+          window.removeEventListener('message', onAccountInfo);
+        }, 3000);
         break;
 
       case 'AGENT_CONNECT':

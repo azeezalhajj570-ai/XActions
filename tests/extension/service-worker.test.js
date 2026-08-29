@@ -51,6 +51,9 @@ function makeTabsStub() {
     async query() { return [{ id: 42, url: 'https://x.com/home' }]; },
     async sendMessage(tabId, message) {
       sentToTabs.push({ tabId, message });
+      if (message.type === 'GET_ACCOUNT_INFO') {
+        return { data: { handle: 'myx', name: 'My X', url: 'https://x.com/myx', avatar: '' } };
+      }
       return { success: true };
     },
     onRemoved: { addListener() {} },

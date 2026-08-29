@@ -202,13 +202,45 @@
         });
 
         socket.on('connect_error', (err) => {
-          this.setState({ status: 'connecting', lastError: err?.message || 'Connection failed' });
+          const msg = err?.message || 'Connection failed';
+          // A rejected handshake (bad/expired pairing code, unknown session,
+          // wrong account) is permanent for this pairing — stop retrying and
+          // let the user re-pair instead of hammering the server.
+          const rejected = /pairing|session|account|invalid|expired|required|not found/i.test(msg);
+          if (rejected) {
+            this.pairing = null;
+            chrome.storage.local.remove([STORAGE_KEYS.pairing]);
+            this.setState({ status: 'offline', sessionId: null, lastError: msg });
+            try {
+              socket.removeAllListeners();
+              socket.disconnect();
+            } catch { /* already gone */ }
+            this.socket = null;
+          } else {
+            // Transient network failure — keep the reconnection manager going.
+            this.setState({ status: 'connecting', lastError: msg });
+          }
         });
 
         // Server asked this agent to step aside (a newer registration replaced it).
         socket.on('agent:replaced', () => {
           this.setState({ status: 'offline', lastError: 'Replaced by a newer agent connection' });
           socket.disconnect();
+        });
+
+        // Server rejected this connection (bad pairing code, stale session,
+        // wrong account, session no longer active). Clear the pairing so the
+        // user can re-pair, and stop reconnecting to a dead session.
+        socket.on('error', (err) => {
+          const msg = err?.message || 'Connection rejected';
+          this.pairing = null;
+          chrome.storage.local.remove([STORAGE_KEYS.pairing]);
+          this.setState({ status: 'offline', sessionId: null, lastError: msg });
+          try {
+            socket.removeAllListeners();
+            socket.disconnect();
+          } catch { /* already gone */ }
+          this.socket = null;
         });
 
         socket.on('execute', (data) => {
@@ -317,19 +349,24 @@
       this.agentTabId = tab.id;
       await chrome.storage.local.set({ [STORAGE_KEYS.tab]: tab.id });
 
-      try {
-        const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_ACCOUNT_INFO' });
-        if (response?.data) {
-          this.account = {
-            username: response.data.handle || '',
-            displayName: response.data.name || '',
-            profileUrl: response.data.url || '',
-            avatar: response.data.avatar || '',
-          };
-          await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
-          return this.account;
-        }
-      } catch { /* content script not ready yet */ }
+      // The injected page script may not be ready the moment the tab loads;
+      // retry a few times before giving up.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_ACCOUNT_INFO' });
+          if (response?.data?.handle) {
+            this.account = {
+              username: response.data.handle || '',
+              displayName: response.data.name || '',
+              profileUrl: response.data.url || '',
+              avatar: response.data.avatar || '',
+            };
+            await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
+            return this.account;
+          }
+        } catch { /* content script not ready yet */ }
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
 
       // Fall back to the persisted account rather than failing outright.
       return this.account;

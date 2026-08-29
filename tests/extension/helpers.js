@@ -157,6 +157,11 @@ export function loadExtensionScript(relPath, { io, chrome } = {}) {
   const cleanup = installGlobals({ io, chrome });
 
   try {
+    // A previous load may have left the module's singleton on globalThis
+    // (self.XActionsAgentConnection). Drop it so each load is fresh.
+    if (relPath.includes('agent-connection') || relPath.includes('service-worker')) {
+      delete globalThis.XActionsAgentConnection;
+    }
     (0, eval)(code);
   } finally {
     cleanup();

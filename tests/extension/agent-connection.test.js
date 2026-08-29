@@ -230,4 +230,48 @@ describe('agent connection manager', () => {
     await agentConnection.restore();
     expect(fakeIo._sockets.length).toBe(0);
   });
+
+  it('clears pairing when the server rejects the session (stale session recovery)', async () => {
+    const { agentConnection, fakeIo, storage } = track(freshAgent({
+      initialStorage: {
+        agentPairing: { pairingCode: 'AAAA1111', sessionId: 'stale_session_1' },
+        agentAccount: ACCOUNT,
+        agentTabId: 42,
+      },
+      tabs: accountTabs(ACCOUNT),
+    }));
+
+    await agentConnection.connect();
+    const socket = fakeIo._sockets[0];
+
+    // Server rejects the stale session during handshake.
+    await socket._fire('connect_error', { message: 'Session not found' });
+
+    const state = await agentConnection.getState();
+    expect(state.status).toBe('offline');
+    expect(state.sessionId).toBeNull();
+
+    const pairing = await storage.get('agentPairing');
+    expect(pairing.agentPairing).toBeUndefined();
+  });
+
+  it('keeps reconnecting on transient connect_error (network blip)', async () => {
+    const { agentConnection, fakeIo } = track(freshAgent({
+      initialStorage: {
+        agentPairing: { pairingCode: 'AAAA1111', sessionId: 'session_1' },
+        agentAccount: ACCOUNT,
+        agentTabId: 42,
+      },
+      tabs: accountTabs(ACCOUNT),
+    }));
+
+    await agentConnection.connect();
+    const socket = fakeIo._sockets[0];
+
+    await socket._fire('connect_error', { message: 'websocket error' });
+
+    const state = await agentConnection.getState();
+    expect(state.status).toBe('connecting');
+    expect(agentConnection.socket).toBe(socket); // socket kept for reconnection
+  });
 });
