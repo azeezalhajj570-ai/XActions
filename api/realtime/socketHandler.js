@@ -25,11 +25,21 @@ function generatePairingCode() {
 export function initializeSocketIO(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL
-        ? [process.env.FRONTEND_URL]
-        : (process.env.NODE_ENV === 'production'
-            ? ['https://xactions.app', 'https://xactions.azeez-tech.com']
-            : true),
+      // The MV3 extension (and dashboard) connects from a browser origin.
+      // Extension origins are chrome-extension://<id> (Chrome/Brave) or
+      // edge-extension://<id>, so allow any of those plus the known fronts.
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true); // non-browser clients (tests, CLI)
+        if (/^(chrome|edge)-extension:\/\//.test(origin)) return cb(null, true);
+        if (process.env.FRONTEND_URL) {
+          const allowed = [process.env.FRONTEND_URL];
+          return cb(null, allowed.includes(origin));
+        }
+        if (process.env.NODE_ENV === 'production') {
+          return cb(null, ['https://xactions.app', 'https://xactions.azeez-tech.com'].includes(origin));
+        }
+        return cb(null, true); // dev
+      },
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -493,7 +503,19 @@ function handleDisconnection(io, socket) {
     
     if (session.dashboard === socket) {
       session.dashboard = null;
-      
+
+      // The dashboard that created this session is gone. Tell the agent its
+      // session is ending so the extension clears the stale pairing and shows
+      // the re-pair prompt instead of holding a dead session.
+      if (session.agent) {
+        try {
+          session.agent.emit('session:ended');
+        } catch { /* agent socket already gone */ }
+        session.agent = null;
+        session.status = 'agent_disconnected';
+        broadcastToAdmins(io, 'session:updated', getSessionInfo(sessionId));
+      }
+
       // If both disconnected, clean up session after a delay
       if (!session.agent) {
         setTimeout(() => {

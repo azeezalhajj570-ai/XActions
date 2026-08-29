@@ -198,9 +198,20 @@
         });
 
         socket.on('disconnect', (reason) => {
+          // A server-initiated disconnect means the session was closed on the
+          // backend (dashboard refreshed, session cleaned up, agent replaced).
+          // The saved sessionId is dead — clear it so the popup shows the
+          // pairing panel again instead of holding a stale session forever.
+          if (reason === 'io server disconnect') {
+            this.pairing = null;
+            chrome.storage.local.remove([STORAGE_KEYS.pairing]);
+            this.setState({ status: 'offline', sessionId: null, lastError: 'Session closed. Enter a new pairing code.' });
+            return;
+          }
+          // Transient network loss — keep the session so socket.io can resume.
           this.setState({
             status: this.agentTabId ? 'x_tab_lost' : 'offline',
-            lastError: reason === 'io server disconnect' ? 'Disconnected by server' : null,
+            lastError: null,
           });
         });
 
@@ -229,6 +240,18 @@
         socket.on('agent:replaced', () => {
           this.setState({ status: 'offline', lastError: 'Replaced by a newer agent connection' });
           socket.disconnect();
+        });
+
+        // The dashboard session this agent was bound to ended (dashboard
+        // refreshed or closed). Clear the pairing so the popup prompts for a
+        // new code for the fresh dashboard session.
+        socket.on('session:ended', () => {
+          this.pairing = null;
+          chrome.storage.local.remove([STORAGE_KEYS.pairing]);
+          this.setState({ status: 'offline', sessionId: null, lastError: 'Dashboard session ended. Enter a new pairing code.' });
+          try {
+            socket.disconnect();
+          } catch { /* already gone */ }
         });
 
         // Server rejected this connection (bad pairing code, stale session,
