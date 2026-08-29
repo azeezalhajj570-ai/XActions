@@ -122,6 +122,11 @@ export function createApp({ rateLimiting = true } = {}) {
   const app = express();
   const httpServer = createServer(app);
 
+  // Trust the nginx reverse proxy (and Cloudflare) hop so rate limiters key
+  // on the real client IP from X-Forwarded-For instead of lumping every user
+  // into the proxy's IP. nginx sets X-Forwarded-For, so one trusted hop.
+  app.set('trust proxy', 1);
+
   // Initialize Socket.io for real-time browser-to-browser communication
   const io = initializeSocketIO(httpServer);
 
@@ -209,7 +214,7 @@ export function createApp({ rateLimiting = true } = {}) {
     // Stricter rate limits for expensive/resource-intensive operations
     const heavyLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
-      max: 10,
+      max: 60, // the dashboard polls /api/operations every 10s; 10 was too tight
       message: { error: 'Too many requests for this resource, please try again later' }
     });
     app.use('/api/graph', heavyLimiter);
