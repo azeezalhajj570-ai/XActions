@@ -187,6 +187,63 @@ function requireAuth() {
 }
 
 /**
+ * Connect to the real-time Socket.IO server with the saved auth token.
+ *
+ * Centralises the connection options every dashboard page repeats: it attaches
+ * the saved token with the page's role, caps reconnection so a dead backend or
+ * a rejected token is not hammered forever, and — the important part — detects
+ * an auth rejection and sends the user to /login instead of leaving the socket
+ * retrying in a loop.
+ *
+ * The server's socket middleware answers `connect_error` with a message like
+ * "Invalid token", "Token expired", "User not found" or "Authentication
+ * required". Any of those means the saved token is no longer usable, so the
+ * right move is to drop it and re-authenticate, not to keep reconnecting.
+ *
+ * @param {string} role - 'dashboard', 'admin' or 'agent'
+ * @param {object} [extra] - Extra Socket.IO options (e.g. { transports })
+ * @returns {import('socket.io-client').Socket|undefined} the socket, or
+ *   undefined if Socket.IO is not loaded or no token is saved
+ */
+function connectSocket(role = 'dashboard', extra = {}) {
+  if (typeof io === 'undefined') {
+    console.warn('Socket.IO not loaded — real-time updates disabled');
+    return undefined;
+  }
+
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    window.location.href = '/login';
+    return undefined;
+  }
+
+  const socket = io(CONFIG.WS_URL, {
+    auth: { token, role },
+    reconnection: true,
+    reconnectionAttempts: 3,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 10000,
+    ...extra,
+  });
+
+  socket.on('connect_error', (err) => {
+    const msg = err?.message || '';
+    if (/token|authentication|user not found/i.test(msg)) {
+      // The saved token is rejected or stale. Stop the reconnect loop and
+      // re-authenticate instead of burning requests against a dead session.
+      socket.disconnect();
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    } else {
+      console.warn('Socket connect error (will retry):', msg);
+    }
+  });
+
+  return socket;
+}
+
+/**
  * Show a toast notification
  */
 function showToast(message, type = 'info') {
@@ -241,5 +298,5 @@ function showToast(message, type = 'info') {
 
 // Export for module usage (if using modules)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CONFIG, apiRequest, aiApiRequest, pollOperationStatus, formatNumber, formatDate, timeAgo, isAuthenticated, requireAuth, showToast };
+  module.exports = { CONFIG, apiRequest, aiApiRequest, pollOperationStatus, formatNumber, formatDate, timeAgo, isAuthenticated, requireAuth, connectSocket, showToast };
 }

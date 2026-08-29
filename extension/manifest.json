@@ -22,6 +22,8 @@
     "https://api.openai.com/*",
     "https://api.anthropic.com/*",
     "https://api.x.ai/*",
+    "https://xactions.azeez-tech.com/*",
+    "https://xactions.app/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],

@@ -28,6 +28,9 @@ export default [
       '.wrangler/**',
       'coverage/**',
       '**/*.min.js',
+      // Vendored third-party bundles (Socket.IO client for the extension and dashboard).
+      'extension/background/vendor/**',
+      'dashboard/vendor/**',
       // Captured X bundles used as parser fixtures; not our code.
       'tests/**/fixtures/**',
     ],
@@ -81,7 +84,14 @@ export default [
   },
   {
     files: ['extension/**/*.js'],
-    languageOptions: { globals: { ...globals.webextensions } },
+    languageOptions: {
+      globals: {
+        ...globals.webextensions,
+        // Classic service-worker scripts load these via importScripts().
+        importScripts: 'readonly',
+        io: 'readonly',
+      },
+    },
   },
   {
     // Dashboard pages load these from sibling <script> tags (js/config.js, CDN Chart.js, Socket.IO).

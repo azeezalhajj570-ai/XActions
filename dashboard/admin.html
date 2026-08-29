@@ -6,7 +6,8 @@
   <title>Admin - XActions Live Sessions</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="/vendor/socket.io.min.js"></script>
+  <script src="/js/config.js"></script>
   <style>
     :root {
       --bg-primary: #000000;
@@ -568,10 +569,12 @@
     let totalUnfollows = 0;
     let offlineWarned = false;
 
-    // Designed offline notice (backend migrating).
-    const OFFLINE_HTML = '<div class="offline-note" role="status"><span class="offline-ic">📡</span><div><strong>Backend offline.</strong> The hosted API is being migrated. Browser scripts, the CLI, and docs work without it. <a href="/docs">Read the docs →</a></div></div>';
+    // Realtime is temporarily unavailable. The hosted API may be restarting,
+    // migrating, or the network may be flaky — the page keeps retrying briefly
+    // then shows this instead of a misleading permanent "backend offline".
+    const OFFLINE_HTML = '<div class="offline-note" role="status"><span class="offline-ic">📡</span><div><strong>Realtime unavailable.</strong> Could not reach the live session feed. Refresh the page to retry. <a href="/docs">Read the docs →</a></div></div>';
     function showAdminOffline() {
-      if (!offlineWarned) { console.warn('Admin realtime offline. Backend is being migrated.'); offlineWarned = true; }
+      if (!offlineWarned) { console.warn('Admin realtime unavailable after retries.'); offlineWarned = true; }
       const badge = document.getElementById('connection-status');
       if (badge) {
         badge.className = 'status-badge status-disconnected';
@@ -583,9 +586,9 @@
       }
     }
 
-    // Connect to WebSocket as admin. Cap reconnection so a dead backend is not hammered forever.
-    const socket = io(API_URL, {
-      auth: { token: authToken, role: 'admin' },
+    // Connect to WebSocket as admin. connectSocket() attaches the saved token,
+    // caps reconnection, and redirects to /login when the token is rejected.
+    const socket = connectSocket('admin', {
       reconnectionAttempts: 4,
       timeout: 8000,
     });

@@ -1,6 +1,6 @@
 # XActions Browser Extension
 
-> Run XActions automations on X/Twitter directly from your browser toolbar. No console access needed. Dark-themed popup with 11 automation cards, live dashboard, category filtering, search, progress tracking, and keyboard shortcuts.
+> Run XActions automations on X/Twitter directly from your browser toolbar. No console access needed. Dark-themed popup with 11 automation cards, live dashboard, category filtering, search, progress tracking, and keyboard shortcuts. Doubles as the browser agent for the XActions web dashboard.
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![Chrome](https://img.shields.io/badge/Chrome-✓-green)
@@ -13,6 +13,19 @@
 2. Navigate to **x.com**
 3. Click the **XA** icon in your toolbar
 4. Pick an automation, configure settings, click ▶️
+
+### Dashboard agent (pairing)
+
+To run operations from the XActions web dashboard, enter the dashboard's
+**pairing code** in the popup (the dashboard shows it under Connect Browser).
+The extension's service worker connects to the backend over Socket.IO and
+relays `execute` commands to the page via the content bridge. No console
+pasting, no CDN scripts. See [docs/realtime-sessions.md](../docs/realtime-sessions.md).
+
+If the backend is not `https://xactions.azeez-tech.com`, set the backend URL
+in the popup's Settings tab (e.g. `http://localhost:3001` locally) and run
+`npm run build:extension` after installing dependencies to refresh the
+vendored Socket.IO client.
 
 Full installation guide: [docs/extension.md](../docs/extension.md)
 
@@ -71,15 +84,19 @@ Full installation guide: [docs/extension.md](../docs/extension.md)
 ```
 extension/
 ├── manifest.json                  Manifest V3 configuration
+├── build.js                       Vendors socket.io-client (npm run build:extension)
 ├── background/
-│   └── service-worker.js          State management, badge, context menus, rate limits
+│   ├── service-worker.js          State, badge, context menus, agent socket dispatch
+│   ├── agent-connection.js        Single Socket.IO client for the backend agent
+│   └── vendor/
+│       └── socket.io-client.js    Vendored UMD bundle (built, not from CDN)
 ├── content/
 │   ├── bridge.js                  Content script — message relay
 │   └── injected.js                Page-context script — 11 automation runners
 ├── popup/
-│   ├── popup.html                 Popup UI (632 lines)
-│   ├── popup.css                  Dark theme styles (1086 lines)
-│   └── popup.js                   Popup controller (782 lines)
+│   ├── popup.html                 Popup UI (status rows, pairing panel, cards)
+│   ├── popup.css                  Dark theme styles
+│   └── popup.js                   Popup controller
 └── icons/
     ├── icon16.png, icon48.png, icon128.png
 ```
@@ -90,6 +107,11 @@ extension/
 Popup  ──chrome.runtime──►  Background  ──chrome.tabs──►  Bridge  ──postMessage──►  Injected
 popup.js                    service-worker.js              bridge.js                 injected.js
        ◄──chrome.runtime──              ◄──chrome.runtime──        ◄──postMessage──
+
+Backend (Socket.IO) ◄──►  service-worker.js (agent-connection.js)
+   execute/stop/progress/action/complete/error over the agent socket,
+   relayed to/from the page via the bridge. The service worker is the
+   networking boundary; the page never touches the socket.
 ```
 
 ## Detailed Docs
@@ -110,7 +132,7 @@ popup.js                    service-worker.js              bridge.js            
 | `scripting` | Inject automation code |
 | `contextMenus` | Right-click: Download video, Unroll thread, Analyze account |
 | `notifications` | Rate limit alerts |
-| `host_permissions` | Only x.com and twitter.com |
+| `host_permissions` | x.com/twitter.com for automations; the XActions backend (`xactions.azeez-tech.com`, `xactions.app`) and localhost for the agent socket |
 
 ## Credits
 

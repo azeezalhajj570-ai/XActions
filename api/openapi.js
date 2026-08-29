@@ -4224,6 +4224,40 @@ Free alternatives: Browser scripts, CLI, and Node.js library at https://xactions
           responses: { 200: ok200('Script content'), 402: payment402 },
         },
       },
+
+      // ─── Pairing (extension agent) ────────────────────────────────
+      '/api/pairing/info': {
+        get: {
+          tags: ['Pairing'],
+          summary: 'Report whether extension-agent pairing is enabled and the backend URL',
+          responses: { 200: ok200('Pairing info') },
+        },
+      },
+      '/api/pairing/claim': {
+        post: {
+          tags: ['Pairing'],
+          summary: 'Claim a dashboard session with a pairing code (the code is the credential)',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['pairingCode', 'username'],
+                  properties: {
+                    pairingCode: { type: 'string' },
+                    username: { type: 'string' },
+                    displayName: { type: 'string' },
+                    profileUrl: { type: 'string' },
+                    avatar: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 200: ok200('Session claimed'), 400: { description: 'Invalid, expired, used, or missing code/username' } },
+        },
+      },
     },
 
     tags: [

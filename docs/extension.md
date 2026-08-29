@@ -50,6 +50,34 @@ After loading, navigate to **x.com**. Click the **XA** icon:
 
 ---
 
+## Connect to the XActions Dashboard
+
+The extension doubles as the **browser agent** for the XActions web dashboard.
+No console pasting is involved — the extension's service worker connects to
+the backend over Socket.IO and relays commands to the page through the content
+bridge.
+
+1. Open the XActions dashboard and click **Connect Browser** to get a
+   **pairing code** (8 characters, valid ~10 minutes).
+2. In the extension popup, enter the code in the **Dashboard pairing code**
+   box and click **Connect to Dashboard**.
+3. The popup status rows flip to connected:
+   - **X Connection** — a live x.com tab is bound
+   - **Agent Connection** — the backend socket is up
+   - **Backend** — the XActions API is reachable
+   - **Session** — the dashboard session is active
+4. The dashboard shows **🟢 XActions Extension Connected** with the account
+   name, and operations run through the extension on your x.com tab.
+
+If the backend is not the default `https://xactions.azeez-tech.com`, set the
+backend URL in the popup's **Settings** tab (e.g. `http://localhost:3001` for
+local development).
+
+See [docs/realtime-sessions.md](realtime-sessions.md) for the full protocol
+and local/production setup.
+
+---
+
 ## First Launch
 
 On first install, a **Welcome to XActions** modal appears:

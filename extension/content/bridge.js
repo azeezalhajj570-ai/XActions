@@ -52,6 +52,11 @@
             message: msg.action,
           },
         });
+        // Relay to the backend agent socket.
+        chrome.runtime.sendMessage({
+          type: 'AGENT_BRIDGE_MESSAGE',
+          message: msg,
+        });
         break;
 
       case 'AUTOMATION_COMPLETE':
@@ -64,6 +69,10 @@
             message: `${msg.automationId} completed — ${msg.summary || 'done'}`,
           },
         });
+        chrome.runtime.sendMessage({
+          type: 'AGENT_BRIDGE_MESSAGE',
+          message: msg,
+        });
         break;
 
       case 'AUTOMATION_ERROR':
@@ -75,6 +84,10 @@
             automation: msg.automationId,
             message: msg.error,
           },
+        });
+        chrome.runtime.sendMessage({
+          type: 'AGENT_BRIDGE_MESSAGE',
+          message: msg,
         });
         break;
 
@@ -155,6 +168,24 @@
         window.postMessage({
           source: 'xactions-extension',
           type: 'GET_ACCOUNT_INFO',
+        }, '*');
+        sendResponse({ success: true });
+        break;
+
+      case 'AGENT_CONNECT':
+        // Ask the page script for the current account; the reply flows back
+        // through ACCOUNT_INFO -> ACCOUNT_INFO_RESPONSE.
+        window.postMessage({
+          source: 'xactions-extension',
+          type: 'AGENT_CONNECT',
+        }, '*');
+        sendResponse({ success: true });
+        break;
+
+      case 'AGENT_DISCONNECT':
+        window.postMessage({
+          source: 'xactions-extension',
+          type: 'AGENT_DISCONNECT',
         }, '*');
         sendResponse({ success: true });
         break;

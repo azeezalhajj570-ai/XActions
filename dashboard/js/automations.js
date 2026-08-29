@@ -37,7 +37,7 @@
   // ── Init ───────────────────────────────────────────────
   async function init() {
     await fetchStatus();
-    connectSocket();
+    setupSocket();
     bindGlobalEvents();
   }
 
@@ -262,11 +262,11 @@
   }
 
   // ── Socket.IO ─────────────────────────────────────────
-  function connectSocket() {
+  function setupSocket() {
     try {
-      const token = localStorage.getItem('authToken');
-      socket = io(CONFIG.WS_URL, {
-        auth: { token, role: 'dashboard' },
+      // connectSocket() (from config.js) attaches the saved token, caps
+      // reconnection, and redirects to /login when the token is rejected.
+      socket = connectSocket('dashboard', {
         transports: ['websocket', 'polling']
       });
 

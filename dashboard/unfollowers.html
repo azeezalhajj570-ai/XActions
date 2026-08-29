@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Who Unfollowed You — XActions</title>
-  <link rel="preconnect" href="https://cdn.socket.io" crossorigin>
-  <link rel="dns-prefetch" href="//cdn.socket.io">
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" defer></script>
+  <script src="/vendor/socket.io.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -366,7 +364,6 @@
   <script>
     // ── State ──────────────────────────────────────
     const API = window.CONFIG?.API_BASE || '/api';
-    const WS_URL = window.CONFIG?.WS_URL || window.location.origin;
     let socket = null;
     let followerChart = null;
     let isScanning = false;
@@ -664,11 +661,11 @@
     }
 
     // ── Socket.IO ──────────────────────────────────
-    function connectSocket() {
+    function setupSocket() {
       try {
-        const token = getToken();
-        socket = io(WS_URL, {
-          auth: { token },
+        // connectSocket() (from config.js) attaches the saved token, caps
+        // reconnection, and redirects to /login when the token is rejected.
+        socket = connectSocket('dashboard', {
           transports: ['websocket', 'polling'],
           reconnectionAttempts: 4,
           timeout: 8000,
@@ -745,7 +742,7 @@
         return;
       }
 
-      connectSocket();
+      setupSocket();
       await Promise.all([loadStats(), loadChanges(), loadChart(), loadSchedule()]);
     }
 

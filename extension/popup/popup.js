@@ -41,6 +41,21 @@
     logFilter: $('#logFilter'),
     btnPauseResume: $('#btnPauseResume'),
     noResultsMsg: $('#noResultsMsg'),
+    // Agent connection status
+    xStatusDot: $('#xStatusDot'),
+    xStatusText: $('#xStatusText'),
+    agentStatusDot: $('#agentStatusDot'),
+    agentStatusText: $('#agentStatusText'),
+    backendStatusDot: $('#backendStatusDot'),
+    backendStatusText: $('#backendStatusText'),
+    agentSessionStatus: $('#agentSessionStatus'),
+    agentErrorLine: $('#agentErrorLine'),
+    pairingPanel: $('#pairingPanel'),
+    pairingCodeInput: $('#pairingCodeInput'),
+    btnPair: $('#btnPair'),
+    agentConnectedActions: $('#agentConnectedActions'),
+    btnAgentDisconnect: $('#btnAgentDisconnect'),
+    agentBackendUrl: $('#agentBackendUrl'),
   };
 
   // ============================================
@@ -67,6 +82,7 @@
     setupGlobalControls();
     setupSettings();
     setupLogFilter();
+    setupAgentControls();
     await loadState();
     await checkConnection();
     await checkFirstRun();
@@ -75,6 +91,7 @@
     startSessionTimer();
     setupKeyboardShortcuts();
     loadPauseState();
+    refreshAgentStatus();
   }
 
   // ============================================
@@ -580,6 +597,120 @@
       }
     } catch { /* noop */ }
   }
+
+  // ============================================
+  // AGENT CONNECTION (Socket.IO to XActions backend)
+  // ============================================
+  function setupAgentControls() {
+    DOM.btnPair.addEventListener('click', async () => {
+      const code = DOM.pairingCodeInput.value.trim();
+      if (!code) {
+        showToast('Enter the pairing code from your dashboard', 'warning');
+        return;
+      }
+      const response = await chrome.runtime.sendMessage({ type: 'AGENT_PAIR', pairingCode: code });
+      if (response?.success) {
+        showToast('Pairing code accepted — connecting...', 'success');
+        DOM.pairingPanel.classList.add('hidden');
+        setTimeout(refreshAgentStatus, 500);
+      } else {
+        showToast(response?.error || 'Pairing failed', 'error');
+        DOM.pairingCodeInput.select();
+      }
+    });
+
+    DOM.btnAgentDisconnect.addEventListener('click', async () => {
+      await chrome.runtime.sendMessage({ type: 'AGENT_DISCONNECT' });
+      showToast('Agent disconnected', 'info');
+      refreshAgentStatus();
+    });
+
+    DOM.pairingCodeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') DOM.btnPair.click();
+    });
+
+    // Backend URL setting (Settings tab)
+    DOM.agentBackendUrl.addEventListener('change', async () => {
+      const response = await chrome.runtime.sendMessage({
+        type: 'AGENT_SET_BACKEND_URL',
+        backendUrl: DOM.agentBackendUrl.value.trim(),
+      });
+      showToast(response?.success ? 'Backend URL updated' : (response?.error || 'Could not update backend URL'), response?.success ? 'success' : 'error');
+      refreshAgentStatus();
+    });
+  }
+
+  function setStatusDot(el, connected) {
+    el.className = 'status-dot-sm ' + (connected ? 'connected' : 'disconnected');
+  }
+
+  async function refreshAgentStatus() {
+    let agentState;
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'AGENT_STATUS' });
+      agentState = response || {};
+    } catch { /* service worker restarting */ }
+
+    renderAgentStatus(agentState || {});
+    return agentState || {};
+  }
+
+  function renderAgentStatus(agentState) {
+    const status = agentState.status || 'offline';
+    const hasXTab = !!agentState.agentTabId || !!agentState.account?.username;
+
+    // X Connection — is there a live x.com tab bound?
+    setStatusDot(DOM.xStatusDot, hasXTab);
+    DOM.xStatusText.textContent = hasXTab ? 'Connected' : 'Offline';
+
+    // Agent Connection — is the socket connected to the backend?
+    const agentConnected = status === 'connected';
+    setStatusDot(DOM.agentStatusDot, agentConnected);
+    DOM.agentStatusText.textContent = agentConnected
+      ? 'Connected'
+      : (status === 'connecting' ? 'Connecting...' : (status === 'x_tab_lost' ? 'Tab Lost' : 'Offline'));
+
+    // Backend — reachable when the socket is up or mid-connect.
+    const backendUp = agentConnected || status === 'connecting';
+    setStatusDot(DOM.backendStatusDot, backendUp);
+    DOM.backendStatusText.textContent = backendUp ? 'Connected' : 'Disconnected';
+
+    // Session
+    DOM.agentSessionStatus.textContent = agentState.sessionId ? 'Active' : '—';
+
+    // Error line
+    if (agentState.lastError) {
+      DOM.agentErrorLine.textContent = agentState.lastError;
+      DOM.agentErrorLine.classList.remove('hidden');
+    } else {
+      DOM.agentErrorLine.classList.add('hidden');
+    }
+
+    // Pairing panel visibility
+    DOM.pairingPanel.classList.toggle('hidden', agentConnected || !!agentState.sessionId);
+    DOM.agentConnectedActions.classList.toggle('hidden', !agentConnected);
+
+    // Backend URL setting (only set when the field is empty so the user's edits stick)
+    if (DOM.agentBackendUrl && !DOM.agentBackendUrl.value && agentState.backendUrl) {
+      DOM.agentBackendUrl.value = agentState.backendUrl;
+    }
+
+    // Account info
+    if (agentState.account?.username) {
+      DOM.accountName.textContent = agentState.account.displayName || agentState.account.username;
+      DOM.accountHandle.textContent = `@${agentState.account.username}`;
+      if (agentState.account.avatar) {
+        DOM.accountAvatar.innerHTML = `<img src="${agentState.account.avatar}" alt="">`;
+      }
+    }
+  }
+
+  // Push updates from the service worker (AGENT_STATUS) while the popup is open.
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'AGENT_STATUS' && message.state) {
+      renderAgentStatus(message.state);
+    }
+  });
 
   // ============================================
   // STATE LOADING

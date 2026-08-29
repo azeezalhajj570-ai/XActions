@@ -9,6 +9,26 @@
  */
 
 const API_BASE = window.location.origin + '/api/analytics';
+
+/**
+ * Fetch wrapper that attaches the saved auth token, matching config.js.
+ * The /api/analytics routes require authentication; raw fetch() gets 401.
+ */
+async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem('authToken');
+  const headers = {
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const res = await fetch(API_BASE + path, { ...options, headers });
+  if (!res.ok && res.status === 401) {
+    // Token missing/expired — send the user to login
+    window.location.href = '/login';
+    throw new Error('Not authenticated');
+  }
+  return res;
+}
+
 let sentimentChart = null;
 let batchDonutChart = null;
 let socket = null;
@@ -145,7 +165,7 @@ async function analyzeSentiment() {
     loadingSkeleton.style.display = 'block';
 
     try {
-      const res = await fetch(API_BASE + '/sentiment', {
+      const res = await apiFetch('/sentiment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ texts: [textA, textB], mode }),
@@ -186,7 +206,7 @@ async function analyzeSentiment() {
     const lines = input.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
     if (lines.length > 1) {
-      const res = await fetch(API_BASE + '/sentiment', {
+      const res = await apiFetch('/sentiment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ texts: lines, mode }),
@@ -200,7 +220,7 @@ async function analyzeSentiment() {
         showToast('Batch analysis complete', `${data.results.length} texts analyzed`, 'success');
       }
     } else {
-      const res = await fetch(API_BASE + '/sentiment', {
+      const res = await apiFetch('/sentiment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: input, mode }),
@@ -425,7 +445,7 @@ function exportTimeline(format) {
   } else if (format === 'markdown') {
     const target = document.getElementById('timelineMonitor').selectedOptions[0]?.textContent?.split(' (')[0] || '';
     const period = document.getElementById('timelinePeriod').value;
-    fetch(`${API_BASE}/reports/${encodeURIComponent(target.replace('@', ''))}?period=${period}&format=markdown`)
+    apiFetch(`/reports/${encodeURIComponent(target.replace('@', ''))}?period=${period}&format=markdown`)
       .then(res => res.text())
       .then(md => {
         downloadFile('reputation-report.md', md, 'text/markdown');
@@ -462,7 +482,7 @@ async function startMonitor() {
   }
 
   try {
-    const res = await fetch(API_BASE + '/monitor', {
+    const res = await apiFetch('/monitor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -490,7 +510,7 @@ async function startMonitor() {
 
 async function loadMonitors() {
   try {
-    const res = await fetch(API_BASE + '/monitor');
+    const res = await apiFetch('/monitor');
     const data = await res.json();
     const container = document.getElementById('monitorsContainer');
 
@@ -529,7 +549,7 @@ async function loadMonitors() {
 
 async function deleteMonitor(id) {
   try {
-    await fetch(API_BASE + '/monitor/' + id, { method: 'DELETE' });
+    await apiFetch('/monitor/' + id, { method: 'DELETE' });
     loadMonitors();
     refreshMonitorSelect();
     showToast('Monitor removed', '', 'success');
@@ -547,7 +567,7 @@ const stopMonitor = deleteMonitor;
 
 async function refreshMonitorSelect() {
   try {
-    const res = await fetch(API_BASE + '/monitor');
+    const res = await apiFetch('/monitor');
     const data = await res.json();
     const select = document.getElementById('timelineMonitor');
     const current = select.value;
@@ -570,7 +590,7 @@ async function loadTimeline() {
   if (!monitorId) return;
 
   try {
-    const res = await fetch(`${API_BASE}/monitor/${monitorId}?limit=500`);
+    const res = await apiFetch(`/monitor/${monitorId}?limit=500`);
     const data = await res.json();
 
     if (!data.history || data.history.length === 0) {
@@ -789,11 +809,11 @@ function toggleAutoRefresh() {
 async function loadAlerts() {
   try {
     const severity = document.getElementById('alertSeverityFilter')?.value || '';
-    const url = severity
-      ? `${API_BASE}/alerts?severity=${severity}&limit=50`
-      : `${API_BASE}/alerts?limit=50`;
+    const path = severity
+      ? `/alerts?severity=${severity}&limit=50`
+      : '/alerts?limit=50';
 
-    const res = await fetch(url);
+    const res = await apiFetch(path);
     const data = await res.json();
     const container = document.getElementById('alertsContainer');
 
@@ -831,12 +851,11 @@ async function loadAlerts() {
 
 function initSocket() {
   try {
-    if (typeof io === 'undefined') {
-      console.log('Socket.IO not loaded — real-time updates disabled');
-      return;
-    }
-
-    socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
+    // connectSocket() (from config.js) attaches the saved token, caps
+    // reconnection, and redirects to /login when the token is rejected.
+    socket = connectSocket('dashboard', {
+      transports: ['websocket', 'polling'],
+    });
 
     socket.on('connect', () => {
       console.log('📊 Analytics socket connected');

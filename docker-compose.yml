@@ -101,6 +101,12 @@ services:
       redis:
         condition: service_healthy
     command: ["node", "api/services/jobQueue.js"]
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'api/services/jobQueue.js' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
 
 volumes:
   postgres_data:

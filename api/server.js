@@ -79,6 +79,7 @@ import graphRoutes from './routes/graph.js';
 import threadRoutes from './routes/thread.js';
 import unfollowersRoutes from './routes/unfollowers.js';
 import videoRoutes from './routes/video.js';
+import pairingRoutes from './routes/pairing.js';
 // Competitive feature routes (09-A through 09-P)
 import historyRoutes from './routes/history.js';
 import scheduleRoutes from './routes/schedule.js';
@@ -135,7 +136,12 @@ export function createApp({ rateLimiting = true } = {}) {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io", "https://cdn.jsdelivr.net"],
+        // The dashboard uses inline event handlers (onclick=...) pervasively,
+        // so script-src-attr must allow 'unsafe-inline' too; helmet otherwise
+        // defaults it to 'none' and blocks them. Cloudflare's beacon is the
+        // analytics script injected by the CDN/proxy in front of the app.
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://static.cloudflareinsights.com"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "wss:", "https:", ...(process.env.NODE_ENV !== 'production' ? ["http://localhost:*"] : [])],
@@ -339,6 +345,7 @@ export function createApp({ rateLimiting = true } = {}) {
   app.use('/api/unfollowers', unfollowersRoutes);
   app.use('/api/thread', threadRoutes);
   app.use('/api/video', videoRoutes);
+  app.use('/api/pairing', pairingRoutes);
   app.use('/api/agent', agentRoutes);
   // Competitive feature routes (09-A through 09-P)
   app.use('/api/analytics', historyRoutes); // history, growth, overlap endpoints augment existing analytics

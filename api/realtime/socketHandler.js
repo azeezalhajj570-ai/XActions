@@ -1,6 +1,7 @@
 // Copyright (c) 2024-2026 nich (@nichxbt). Licensed under the Apache License, Version 2.0.
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 
 // Payment routes archived - XActions is now 100% free and open-source
@@ -9,15 +10,26 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Store active sessions
-const activeSessions = new Map(); // odessId -> { odess, dashboard, user, status }
+const activeSessions = new Map(); // sessionId -> { agent, dashboard, user, status, operation, progress, account, config, createdAt }
 const adminSockets = new Set(); // Admin sockets watching all sessions
+
+// Pairing codes issued to dashboards, claimed by the extension agent.
+// code -> { sessionId, userId, expiresAt }
+const pendingSessions = new Map();
+const PAIRING_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function generatePairingCode() {
+  return randomBytes(4).toString('hex').toUpperCase(); // 8 chars, no ambiguous letters
+}
 
 export function initializeSocketIO(httpServer) {
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.FRONTEND_URL
         ? [process.env.FRONTEND_URL]
-        : (process.env.NODE_ENV === 'production' ? ['https://xactions.app'] : true),
+        : (process.env.NODE_ENV === 'production'
+            ? ['https://xactions.app', 'https://xactions.azeez-tech.com']
+            : true),
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -25,32 +37,47 @@ export function initializeSocketIO(httpServer) {
 
   // Middleware to authenticate socket connections
   io.use(async (socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      const role = socket.handshake.auth.role; // 'agent', 'dashboard', or 'admin'
+    const token = socket.handshake.auth.token;
+    const role = socket.handshake.auth.role; // 'agent', 'dashboard', or 'admin'
 
-      if (!token && role !== 'agent') {
-        return next(new Error('Authentication required'));
+    if (!token && role !== 'agent') {
+      return next(new Error('Authentication required'));
+    }
+
+    if (token) {
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (error) {
+        // Distinguish an expired/malformed token from a server config problem.
+        // A missing JWT_SECRET makes jwt.verify throw for every connection, so
+        // it must not be masked as a client-side "Invalid token".
+        const missingSecret = !process.env.JWT_SECRET;
+        console.error(`❌ Socket auth: token rejected (${error.message})${missingSecret ? ' — JWT_SECRET is not set on the server' : ''}`);
+        return next(new Error(missingSecret ? 'Server auth misconfigured' : 'Invalid token'));
       }
 
-      if (token) {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await prisma.user.findUnique({
+      let user;
+      try {
+        user = await prisma.user.findUnique({
           where: { id: decoded.userId }
         });
-
-        if (!user) {
-          return next(new Error('User not found'));
-        }
-
-        socket.user = user;
+      } catch (error) {
+        // The user lookup hits PostgreSQL; a DB outage must not be reported as
+        // a bad token, or every dashboard/admin socket looks like a login bug.
+        console.error(`❌ Socket auth: user lookup failed (${error.message})`);
+        return next(new Error('Authentication service unavailable'));
       }
 
-      socket.role = role || 'dashboard';
-      next();
-    } catch (error) {
-      next(new Error('Invalid token'));
+      if (!user) {
+        return next(new Error('User not found'));
+      }
+
+      socket.user = user;
     }
+
+    socket.role = role || 'dashboard';
+    next();
   });
 
   io.on('connection', (socket) => {
@@ -117,34 +144,135 @@ async function initializeStreamIO(io) {
   }
 }
 
-// ===== AGENT (x.com tab) =====
+// ===== AGENT (X.com tab via extension, or legacy console script) =====
 function handleAgentConnection(io, socket) {
-  const sessionId = socket.handshake.auth.sessionId;
-  
-  if (!sessionId) {
-    socket.emit('error', { message: 'Session ID required' });
+  const auth = socket.handshake.auth || {};
+  const sessionId = auth.sessionId;
+
+  if (!sessionId && !auth.pairingCode) {
+    socket.emit('error', { message: 'Session ID or pairing code required' });
     socket.disconnect();
     return;
   }
 
-  // Store agent socket
-  const session = activeSessions.get(sessionId);
+  let session;
+  let boundSessionId = sessionId;
+
+  if (!sessionId) {
+    // Extension path. The agent authenticates with the pairing code the
+    // dashboard issued: it is short-lived, single-use, and bound to a session,
+    // so it doubles as the bearer credential for the socket handshake.
+    const code = String(auth.pairingCode || '').trim().toUpperCase();
+    const entry = pendingSessions.get(code);
+
+    if (!entry || entry.expiresAt < Date.now()) {
+      if (entry) pendingSessions.delete(code);
+      socket.emit('error', { message: 'Invalid or expired pairing code' });
+      socket.disconnect();
+      return;
+    }
+
+    // The code may have been HTTP-claimed already (the extension's normal
+    // first step). The socket connection is the final consumer: it consumes
+    // the code and binds the session. A code that was never claimed also
+    // works, so a socket-only pairing is possible.
+    pendingSessions.delete(code);
+    entry.claimed = true;
+
+    boundSessionId = entry.sessionId;
+    session = activeSessions.get(boundSessionId);
+    if (!session) {
+      socket.emit('error', { message: 'Session no longer active' });
+      socket.disconnect();
+      return;
+    }
+
+    // Reject agents that do not name the X account they are running as.
+    const username = String(auth.username || '').trim().replace(/^@/, '');
+    if (!username) {
+      socket.emit('error', { message: 'X account username required' });
+      socket.disconnect();
+      return;
+    }
+
+    session.account = {
+      username,
+      displayName: auth.displayName || username,
+      profileUrl: auth.profileUrl || '',
+      avatar: auth.avatar || '',
+    };
+    session.claimedBy = 'extension';
+    session.claimedAt = Date.now();
+  } else if (auth.username && auth.agentType === 'extension') {
+    // Extension reconnect: the session was claimed earlier; the agent binds
+    // again with the sessionId + the same X account.
+    session = activeSessions.get(sessionId);
+    if (!session) {
+      socket.emit('error', { message: 'Session not found' });
+      socket.disconnect();
+      return;
+    }
+    if (session.claimedBy !== 'extension') {
+      socket.emit('error', { message: 'Session was not claimed by an extension agent' });
+      socket.disconnect();
+      return;
+    }
+    const username = String(auth.username || '').trim().replace(/^@/, '');
+    if (session.account?.username && session.account.username !== username) {
+      socket.emit('error', { message: 'X account does not match the claimed session' });
+      socket.disconnect();
+      return;
+    }
+  } else {
+    // Legacy console-agent path: sessionId-only claim, unchanged.
+    session = activeSessions.get(sessionId);
+  }
+
   if (session) {
+    // One live agent per session: a re-registered extension replaces a stale one.
+    if (session.agent && session.agent !== socket) {
+      try {
+        session.agent.emit('agent:replaced');
+      } catch { /* socket already gone */ }
+      try {
+        session.agent.disconnect();
+      } catch { /* socket already gone */ }
+    }
+
     session.agent = socket;
     session.status = 'connected';
-    
+
     // Notify dashboard that agent connected
     if (session.dashboard) {
-      session.dashboard.emit('agent:connected', { sessionId });
+      session.dashboard.emit('agent:connected', {
+        sessionId: boundSessionId,
+        account: session.account,
+      });
     }
-    
+
     // Notify admins
-    broadcastToAdmins(io, 'session:updated', getSessionInfo(sessionId));
+    broadcastToAdmins(io, 'session:updated', getSessionInfo(boundSessionId));
   }
+
+  // Extension reports that the X tab it was bound to closed while the socket
+  // stayed up (the service worker keeps running).
+  socket.on('agent:tab-closed', () => {
+    const session = activeSessions.get(boundSessionId);
+    if (session && session.agent === socket) {
+      session.agent = null;
+      session.status = 'agent_disconnected';
+
+      if (session.dashboard) {
+        session.dashboard.emit('agent:disconnected', { reason: 'tab_closed' });
+      }
+
+      broadcastToAdmins(io, 'session:updated', getSessionInfo(boundSessionId));
+    }
+  });
 
   // Agent reports progress
   socket.on('progress', (data) => {
-    const session = activeSessions.get(sessionId);
+    const session = activeSessions.get(boundSessionId);
     if (session) {
       session.progress = data;
       
@@ -155,7 +283,7 @@ function handleAgentConnection(io, socket) {
       
       // Forward to admins
       broadcastToAdmins(io, 'session:progress', {
-        sessionId,
+        sessionId: boundSessionId,
         userId: session.user?.id,
         username: session.user?.username,
         ...data
@@ -165,7 +293,7 @@ function handleAgentConnection(io, socket) {
 
   // Agent reports action completed
   socket.on('action', (data) => {
-    const session = activeSessions.get(sessionId);
+    const session = activeSessions.get(boundSessionId);
     if (session) {
       // Forward to dashboard
       if (session.dashboard) {
@@ -174,7 +302,7 @@ function handleAgentConnection(io, socket) {
       
       // Forward to admins
       broadcastToAdmins(io, 'session:action', {
-        sessionId,
+        sessionId: boundSessionId,
         userId: session.user?.id,
         username: session.user?.username,
         ...data
@@ -184,7 +312,7 @@ function handleAgentConnection(io, socket) {
 
   // Agent reports completion
   socket.on('complete', async (data) => {
-    const session = activeSessions.get(sessionId);
+    const session = activeSessions.get(boundSessionId);
     if (session) {
       session.status = 'completed';
       
@@ -207,7 +335,7 @@ function handleAgentConnection(io, socket) {
       
       // Notify admins
       broadcastToAdmins(io, 'session:complete', {
-        sessionId,
+        sessionId: boundSessionId,
         userId: session.user?.id,
         username: session.user?.username,
         ...data
@@ -217,7 +345,7 @@ function handleAgentConnection(io, socket) {
 
   // Agent reports error
   socket.on('error', (data) => {
-    const session = activeSessions.get(sessionId);
+    const session = activeSessions.get(boundSessionId);
     if (session) {
       session.status = 'error';
       
@@ -226,14 +354,14 @@ function handleAgentConnection(io, socket) {
       }
       
       broadcastToAdmins(io, 'session:error', {
-        sessionId,
+        sessionId: boundSessionId,
         userId: session.user?.id,
         ...data
       });
     }
   });
 
-  socket.emit('connected', { sessionId, message: 'Agent connected to XActions' });
+  socket.emit('connected', { sessionId: boundSessionId, message: 'Agent connected to XActions' });
 }
 
 // ===== DASHBOARD (user's control panel) =====
@@ -249,15 +377,25 @@ function handleDashboardConnection(io, socket) {
     status: 'waiting', // waiting for agent to connect
     operation: null,
     progress: null,
+    account: null,
     createdAt: new Date()
   });
 
   socket.sessionId = sessionId;
 
-  // Send session ID to dashboard (they'll use this in the agent script)
-  socket.emit('session:created', { 
+  // Issue a pairing code the extension can claim (replaces the old
+  // console-paste agentScript mechanism).
+  const pairingCode = generatePairingCode();
+  pendingSessions.set(pairingCode, {
     sessionId,
-    agentScript: generateAgentScript(sessionId)
+    userId: socket.user.id,
+    expiresAt: Date.now() + PAIRING_CODE_TTL_MS
+  });
+
+  // Send session ID and pairing code to dashboard
+  socket.emit('session:created', {
+    sessionId,
+    pairingCode
   });
 
   // Notify admins of new session
@@ -292,7 +430,7 @@ function handleDashboardConnection(io, socket) {
       });
     } else {
       socket.emit('error', { 
-        message: 'Agent not connected. Make sure the script is running on x.com',
+        message: 'Agent not connected. Open the XActions extension on x.com and enter your pairing code.',
         agentDisconnected: true
       });
     }
@@ -386,272 +524,11 @@ function getSessionInfo(sessionId) {
     status: session.status,
     operation: session.operation,
     progress: session.progress,
+    account: session.account,
     createdAt: session.createdAt,
     hasAgent: !!session.agent,
     hasDashboard: !!session.dashboard
   };
 }
 
-function generateAgentScript(sessionId) {
-  const wsUrl = process.env.API_URL || 'http://localhost:3001';
-  
-  return `// XActions Agent - Paste this in your x.com console
-(function() {
-  const XACTIONS_SESSION = '${sessionId}';
-  const XACTIONS_WS = '${wsUrl}';
-  
-  // Load Socket.io client
-  const script = document.createElement('script');
-  script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
-  script.onload = function() {
-    // Connect to XActions
-    const socket = io(XACTIONS_WS, {
-      auth: { role: 'agent', sessionId: XACTIONS_SESSION }
-    });
-    
-    socket.on('connect', () => {
-      console.log('✅ Connected to XActions');
-      showNotification('Connected to XActions Dashboard!');
-    });
-    
-    socket.on('execute', async (data) => {
-      console.log('🚀 Executing:', data.operation);
-      try {
-        await executeOperation(socket, data.operation, data.config);
-      } catch (error) {
-        socket.emit('error', { message: error.message });
-      }
-    });
-    
-    socket.on('stop', () => {
-      window.XACTIONS_STOP = true;
-      console.log('⏹️ Stop requested');
-    });
-    
-    window.XACTIONS_SOCKET = socket;
-  };
-  document.head.appendChild(script);
-  
-  function showNotification(msg) {
-    const div = document.createElement('div');
-    div.style.cssText = 'position:fixed;top:20px;right:20px;background:#1d9bf0;color:white;padding:16px 24px;border-radius:12px;z-index:99999;font-family:system-ui;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-    div.textContent = msg;
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
-  }
-  
-  // Operation implementations will be injected by the server
-  async function executeOperation(socket, operation, config) {
-    window.XACTIONS_STOP = false;
-    
-    const operations = {
-      unfollowNonFollowers: unfollowNonFollowersOp,
-      unfollowEveryone: unfollowEveryoneOp,
-      detectUnfollowers: detectUnfollowersOp
-    };
-    
-    if (operations[operation]) {
-      await operations[operation](socket, config);
-    } else {
-      socket.emit('error', { message: 'Unknown operation: ' + operation });
-    }
-  }
-  
-  // === UNFOLLOW NON-FOLLOWERS ===
-  async function unfollowNonFollowersOp(socket, config) {
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const max = config.maxUnfollows || 100;
-    let unfollowed = 0;
-    
-    socket.emit('progress', { status: 'starting', message: 'Finding non-followers...' });
-    
-    // Navigate to following page
-    const username = document.querySelector('[data-testid="UserName"]')?.textContent?.match(/@(\\w+)/)?.[1];
-    if (!username) {
-      socket.emit('error', { message: 'Could not detect your username. Make sure you are on x.com' });
-      return;
-    }
-    
-    window.location.href = 'https://x.com/' + username + '/following';
-    await sleep(2000);
-    
-    while (unfollowed < max && !window.XACTIONS_STOP) {
-      const cells = document.querySelectorAll('[data-testid="UserCell"]');
-      let found = false;
-      
-      for (const cell of cells) {
-        if (window.XACTIONS_STOP) break;
-        
-        // Check if they don't follow back (no "Follows you" badge)
-        const followsYou = cell.querySelector('[data-testid="userFollowIndicator"]');
-        if (followsYou) continue; // Skip - they follow back
-        
-        // Find unfollow button
-        const btn = cell.querySelector('[data-testid$="-unfollow"]');
-        if (!btn) continue;
-        
-        const handle = cell.querySelector('a[href^="/"]')?.href?.split('/').pop() || 'unknown';
-        
-        btn.click();
-        await sleep(500);
-        
-        // Confirm unfollow
-        const confirm = document.querySelector('[data-testid="confirmationSheetConfirm"]');
-        if (confirm) {
-          confirm.click();
-          await sleep(300);
-        }
-        
-        unfollowed++;
-        found = true;
-        
-        socket.emit('action', { type: 'unfollow', handle, count: unfollowed });
-        socket.emit('progress', { 
-          status: 'running',
-          current: unfollowed, 
-          max,
-          percent: Math.round((unfollowed / max) * 100),
-          message: 'Unfollowed @' + handle
-        });
-        
-        await sleep(1500 + Math.random() * 1000);
-        break;
-      }
-      
-      if (!found) {
-        // Scroll to load more
-        window.scrollBy(0, 500);
-        await sleep(1000);
-      }
-    }
-    
-    socket.emit('complete', { 
-      operation: 'unfollowNonFollowers',
-      unfollowed,
-      stopped: window.XACTIONS_STOP
-    });
-  }
-  
-  // === UNFOLLOW EVERYONE ===
-  async function unfollowEveryoneOp(socket, config) {
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const max = config.maxUnfollows || 500;
-    let unfollowed = 0;
-    
-    socket.emit('progress', { status: 'starting', message: 'Starting mass unfollow...' });
-    
-    const username = document.querySelector('[data-testid="UserName"]')?.textContent?.match(/@(\\w+)/)?.[1];
-    if (!username) {
-      socket.emit('error', { message: 'Could not detect your username' });
-      return;
-    }
-    
-    window.location.href = 'https://x.com/' + username + '/following';
-    await sleep(2000);
-    
-    while (unfollowed < max && !window.XACTIONS_STOP) {
-      const btn = document.querySelector('[data-testid$="-unfollow"]');
-      if (!btn) {
-        window.scrollBy(0, 500);
-        await sleep(1000);
-        continue;
-      }
-      
-      const cell = btn.closest('[data-testid="UserCell"]');
-      const handle = cell?.querySelector('a[href^="/"]')?.href?.split('/').pop() || 'unknown';
-      
-      btn.click();
-      await sleep(500);
-      
-      const confirm = document.querySelector('[data-testid="confirmationSheetConfirm"]');
-      if (confirm) {
-        confirm.click();
-        await sleep(300);
-      }
-      
-      unfollowed++;
-      
-      socket.emit('action', { type: 'unfollow', handle, count: unfollowed });
-      socket.emit('progress', { 
-        status: 'running',
-        current: unfollowed, 
-        max,
-        percent: Math.round((unfollowed / max) * 100),
-        message: 'Unfollowed @' + handle
-      });
-      
-      await sleep(1500 + Math.random() * 1000);
-    }
-    
-    socket.emit('complete', { 
-      operation: 'unfollowEveryone',
-      unfollowed,
-      stopped: window.XACTIONS_STOP
-    });
-  }
-  
-  // === DETECT UNFOLLOWERS ===
-  async function detectUnfollowersOp(socket, config) {
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    
-    socket.emit('progress', { status: 'starting', message: 'Scanning followers...' });
-    
-    const username = document.querySelector('[data-testid="UserName"]')?.textContent?.match(/@(\\w+)/)?.[1];
-    if (!username) {
-      socket.emit('error', { message: 'Could not detect your username' });
-      return;
-    }
-    
-    // Get current followers
-    window.location.href = 'https://x.com/' + username + '/followers';
-    await sleep(2000);
-    
-    const followers = new Set();
-    let lastSize = 0;
-    let stuckCount = 0;
-    
-    while (stuckCount < 5 && !window.XACTIONS_STOP) {
-      const cells = document.querySelectorAll('[data-testid="UserCell"]');
-      cells.forEach(cell => {
-        const handle = cell.querySelector('a[href^="/"]')?.href?.split('/').pop();
-        if (handle) followers.add(handle);
-      });
-      
-      socket.emit('progress', { 
-        status: 'running',
-        current: followers.size,
-        message: 'Found ' + followers.size + ' followers...'
-      });
-      
-      if (followers.size === lastSize) {
-        stuckCount++;
-      } else {
-        stuckCount = 0;
-        lastSize = followers.size;
-      }
-      
-      window.scrollBy(0, 800);
-      await sleep(1000);
-    }
-    
-    // Check against stored followers (from localStorage)
-    const stored = JSON.parse(localStorage.getItem('xactions_followers') || '[]');
-    const unfollowers = stored.filter(h => !followers.has(h));
-    
-    // Save current followers
-    localStorage.setItem('xactions_followers', JSON.stringify([...followers]));
-    
-    socket.emit('complete', { 
-      operation: 'detectUnfollowers',
-      totalFollowers: followers.size,
-      unfollowers: unfollowers,
-      unfollowerCount: unfollowers.length,
-      isFirstRun: stored.length === 0
-    });
-  }
-  
-  console.log('⚡ XActions Agent loaded. Connecting to dashboard...');
-})();`;
-}
-
-export { activeSessions, adminSockets };
+export { activeSessions, adminSockets, pendingSessions };

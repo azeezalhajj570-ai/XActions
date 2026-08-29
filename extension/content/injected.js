@@ -598,18 +598,24 @@
   // ============================================
   function scrapeAccountInfo() {
     try {
-      // Try to get account info from the page
+      // Sidebar account switcher reliably holds the logged-in user.
+      const switcher = document.querySelector('div[data-testid="SideNav_AccountSwitcher_Button"]');
+      const switcherAvatar = switcher?.querySelector('img[src*="profile_images"]');
+      const switcherName = switcher?.querySelector('div[dir="ltr"]');
+
+      // Profile page elements, as a fallback.
       const nameEl = document.querySelector('[data-testid="UserName"]') || document.querySelector('div[dir="ltr"] > span');
       const avatarEl = document.querySelector('[data-testid="UserAvatar-Container"] img') || document.querySelector('img[alt][src*="profile_images"]');
 
-      // Try nav sidebar for logged-in user
-      const sidebarAvatar = document.querySelector('div[data-testid="SideNav_AccountSwitcher_Button"] img');
-      const sidebarName = document.querySelector('div[data-testid="SideNav_AccountSwitcher_Button"]');
+      // The switcher's nested link (or a profile link in the page) yields the handle.
+      const handleLink = switcher?.querySelector('a[href^="/"]') || document.querySelector('a[href^="/"][href*="/following"]');
+      const handle = handleLink?.getAttribute('href')?.split('/')[1]
+        || (window.location.pathname.split('/')[1] || '');
 
       return {
-        name: nameEl?.textContent || sidebarName?.querySelector('span')?.textContent || 'Unknown',
-        avatar: avatarEl?.src || sidebarAvatar?.src || '',
-        handle: window.location.pathname.split('/')[1] || '',
+        name: switcherName?.textContent?.trim() || nameEl?.textContent?.trim() || 'Unknown',
+        avatar: switcherAvatar?.src || avatarEl?.src || '',
+        handle,
         url: window.location.href,
       };
     } catch {
@@ -653,6 +659,16 @@
 
       case 'RESUME_ALL':
         // Resuming would need re-running, handled by popup
+        break;
+
+      case 'AGENT_CONNECT':
+        // The service worker is pairing with the backend; hand it the account
+        // this X tab is signed in as.
+        window.postMessage({ source: 'xactions-page', type: 'ACCOUNT_INFO', data: scrapeAccountInfo() }, '*');
+        break;
+
+      case 'AGENT_DISCONNECT':
+        // Nothing to clean up in page context; the service worker handles it.
         break;
 
       case 'GET_ACCOUNT_INFO':

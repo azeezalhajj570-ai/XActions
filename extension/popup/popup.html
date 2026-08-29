@@ -39,6 +39,42 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- ============================================ -->
+  <!-- AGENT CONNECTION STATUS -->
+  <!-- ============================================ -->
+  <section id="agentStatus" class="section">
+    <div class="agent-status-card">
+      <div class="agent-status-row">
+        <span class="agent-status-label">X Connection</span>
+        <span class="agent-status-value"><span id="xStatusDot" class="status-dot-sm disconnected"></span><span id="xStatusText">Offline</span></span>
+      </div>
+      <div class="agent-status-row">
+        <span class="agent-status-label">Agent Connection</span>
+        <span class="agent-status-value"><span id="agentStatusDot" class="status-dot-sm disconnected"></span><span id="agentStatusText">Offline</span></span>
+      </div>
+      <div class="agent-status-row">
+        <span class="agent-status-label">Backend</span>
+        <span class="agent-status-value"><span id="backendStatusDot" class="status-dot-sm disconnected"></span><span id="backendStatusText">Disconnected</span></span>
+      </div>
+      <div class="agent-status-row">
+        <span class="agent-status-label">Session</span>
+        <span class="agent-status-value" id="agentSessionStatus">—</span>
+      </div>
+      <div id="agentErrorLine" class="agent-error hidden"></div>
+      <div id="pairingPanel" class="pairing-panel hidden">
+        <label class="pairing-label">Dashboard pairing code
+          <input type="text" id="pairingCodeInput" placeholder="e.g. 1A2B3C4D" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </label>
+        <div class="pairing-actions">
+          <button id="btnPair" class="btn-primary">Connect to Dashboard</button>
+        </div>
+      </div>
+      <div id="agentConnectedActions" class="pairing-actions hidden">
+        <button id="btnAgentDisconnect" class="btn-secondary">Disconnect</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
   <!-- ACCOUNT INFO -->
   <!-- ============================================ -->
   <section id="accountInfo" class="section">
@@ -553,6 +589,13 @@
   <!-- SETTINGS TAB -->
   <!-- ============================================ -->
   <section id="tab-settings" class="tab-content">
+    <div class="settings-section">
+      <h3>Agent Connection</h3>
+      <label>Backend URL
+        <input type="text" id="agentBackendUrl" placeholder="https://xactions.azeez-tech.com">
+      </label>
+      <small class="settings-hint">Where the extension agent connects. Use http://localhost:3001 for local development.</small>
+    </div>
     <div class="settings-section">
       <h3>Global Settings</h3>
       <label>Default min delay (ms)

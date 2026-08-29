@@ -71,6 +71,7 @@
     "deploy": "bash scripts/deploy.sh",
     "deploy:railway": "bash scripts/deploy.sh railway",
     "build:cloudflare": "node scripts/build-cloudflare.mjs",
+    "build:extension": "node extension/build.js",
     "deploy:cloudflare": "bash scripts/deploy.sh cloudflare",
     "deploy:pages": "bash deploy/cloudflare/build.sh && wrangler pages deploy pages-out --project-name xactions --branch main --commit-dirty=true",
     "deploy:fly": "bash scripts/deploy.sh fly",
@@ -127,6 +128,7 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "redis": "^4.6.11",
     "socket.io": "^4.7.5",
+    "socket.io-client": "^4.8.3",
     "stripe": "^14.10.0",
     "yauzl": "^3.4.0"
   },
@@ -154,7 +156,7 @@
     "nodemon": "^3.0.2",
     "remotion": "^4.0.428",
     "supertest": "^6.3.4",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.11"
   },
   "author": {
     "name": "nich",

@@ -30,6 +30,11 @@ All communication uses `chrome.runtime.sendMessage` (popup ↔ background ↔ br
 | `GLOBAL_PAUSE` | — | `{ success: true }` | Pause all automations |
 | `GLOBAL_RESUME` | — | `{ success: true }` | Resume all automations |
 | `GET_STATE` | — | `{ activeAutomations, totalActions, globalPaused }` | Query full state |
+| `AGENT_PAIR` | `{ pairingCode }` | `{ success: true }` | Store a dashboard pairing code and connect |
+| `AGENT_CONNECT` | — | `{ success: true }` | Force (re)connect of the backend agent socket |
+| `AGENT_DISCONNECT` | — | `{ success: true }` | Disconnect the backend agent and clear pairing |
+| `AGENT_STATUS` | — | `{ status, sessionId, account, agentTabId, backendUrl }` | Current agent connection snapshot |
+| `AGENT_SET_BACKEND_URL` | `{ backendUrl }` | `{ success: true }` | Change the backend the agent connects to |
 
 ### Background → Content Script Messages
 
@@ -41,6 +46,8 @@ All communication uses `chrome.runtime.sendMessage` (popup ↔ background ↔ br
 | `PAUSE_ALL` | — | Pause all automations |
 | `RESUME_ALL` | — | Resume all automations |
 | `GET_ACCOUNT_INFO` | — | Request account info from DOM |
+| `AGENT_CONNECT` | — | Ask the page for the current account (pairing) |
+| `AGENT_DISCONNECT` | — | Notify the page the agent disconnected |
 | `PING` | — | Health check (responds `{ pong: true }`) |
 
 ### Content Script → Background Messages
@@ -50,6 +57,7 @@ All communication uses `chrome.runtime.sendMessage` (popup ↔ background ↔ br
 | `ACTION_PERFORMED` | `{ automationId, action }` | An action was executed (like, follow, etc.) |
 | `ACTIVITY_LOG` | `{ entry: { time, type, automation, message } }` | Log entry to persist |
 | `ACCOUNT_INFO_RESPONSE` | `{ data: { name, handle, avatar, url } }` | Account info scraped from DOM |
+| `AGENT_BRIDGE_MESSAGE` | `{ message }` | Page event relayed to the backend agent socket (`ACTION_PERFORMED` / `AUTOMATION_COMPLETE` / `AUTOMATION_ERROR`) |
 
 ### Bridge ↔ Injected (window.postMessage)
 

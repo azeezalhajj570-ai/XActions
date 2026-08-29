@@ -1,6 +1,14 @@
 // XActions Extension — Background Service Worker
-// Manages automation state, badge updates, alarm scheduling
+// Manages automation state, badge updates, alarm scheduling,
+// and the Socket.IO agent connection to the XActions backend.
 // by nichxbt
+
+// The Socket.IO client is vendored locally (built by extension/build.js) so
+// the worker never loads cdn.socket.io and x.com's CSP is irrelevant.
+importScripts('./vendor/socket.io-client.js');
+importScripts('./agent-connection.js');
+
+const { agentConnection } = self.XActionsAgentConnection;
 
 // ============================================
 // STATE
@@ -95,6 +103,32 @@ async function handleMessage(message, sender) {
 
     case 'LLM_REQUEST':
       return completeChat(message.request || {});
+
+    // ===== AGENT CONNECTION (Socket.IO to the XActions backend) =====
+
+    // From the popup: pair with a dashboard session code.
+    case 'AGENT_PAIR':
+      return agentConnection.pair(message.pairingCode);
+
+    // From the popup: force a connect/reconnect attempt.
+    case 'AGENT_CONNECT':
+      return agentConnection.connect();
+
+    // From the popup: explicit disconnect.
+    case 'AGENT_DISCONNECT':
+      return agentConnection.disconnect();
+
+    // From the popup: current snapshot for the status rows.
+    case 'AGENT_STATUS':
+      return agentConnection.getState();
+
+    // From the popup settings tab: change the backend URL.
+    case 'AGENT_SET_BACKEND_URL':
+      return agentConnection.setBackendUrl(message.backendUrl);
+
+    // From the bridge: page-context events forwarded to the backend socket.
+    case 'AGENT_BRIDGE_MESSAGE':
+      return agentConnection.onBridgeMessage(message.message || {});
 
     default:
       return { error: 'Unknown message type' };
@@ -456,10 +490,27 @@ async function getXTabs() {
   return tabs;
 }
 
-// Restore state on service worker restart
+// ============================================
+// AGENT TAB LIFECYCLE
+// ============================================
+// If the tab the agent is bound to closes, report it so the dashboard shows
+// the agent as disconnected even though the service worker socket stays up.
+chrome.tabs.onRemoved.addListener((tabId) => {
+  agentConnection.onTabClosed(tabId);
+});
+
+// ============================================
+// RESTORE ON SERVICE WORKER RESTART
+// ============================================
+// Restore automation state (as before) and reconnect the agent socket if it
+// was connected. The connection manager guards against duplicate sockets.
 chrome.storage.local.get(['automations', 'totalActions', 'globalPaused']).then(data => {
   if (data.automations) state.activeAutomations = data.automations;
   if (data.totalActions) state.totalActions = data.totalActions;
   if (data.globalPaused) state.globalPaused = data.globalPaused;
   updateBadge();
+});
+
+agentConnection.restore().catch((err) => {
+  console.warn('⚠️ Agent restore failed:', err?.message || err);
 });

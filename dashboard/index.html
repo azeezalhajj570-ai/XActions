@@ -32,7 +32,7 @@
   <script>
     if (localStorage.getItem('authToken')) {
       var s = document.createElement('script');
-      s.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+      s.src = '/vendor/socket.io.min.js';
       document.head.appendChild(s);
     }
   </script>
@@ -1415,13 +1415,11 @@
     const API_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:3001/api' 
       : '/api';
-    const WS_URL = window.location.hostname === 'localhost'
-      ? 'http://localhost:3001'
-      : window.location.origin;
     let currentOperation = null;
     let authToken = localStorage.getItem('authToken');
     let socket = null;
     let sessionId = null;
+    let pairingCode = null;
     let agentConnected = false;
 
     // ===== SOCKET.IO REAL-TIME CONNECTION =====
@@ -1432,9 +1430,9 @@
         return;
       }
 
-      socket = io(WS_URL, {
-        auth: { token: authToken, role: 'dashboard' },
-        reconnection: true,
+      // connectSocket() attaches the token, caps reconnection, and sends the
+      // user to /login when the token is rejected (instead of looping forever).
+      socket = connectSocket('dashboard', {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000
       });
@@ -1446,26 +1444,22 @@
 
       socket.on('connect_error', (error) => {
         console.error('❌ Socket connection error:', error.message);
-        if (error.message.includes('Invalid token') || error.message.includes('Authentication')) {
-          showToast('Session expired. Please log in again.', 'error');
-          localStorage.removeItem('authToken');
-          window.location.href = '/login';
-        } else {
-          document.getElementById('connection-substatus').textContent = 'Connection failed: ' + error.message;
-        }
+        document.getElementById('connection-substatus').textContent = 'Connection failed: ' + error.message;
       });
 
       socket.on('session:created', (data) => {
         sessionId = data.sessionId;
+        pairingCode = data.pairingCode;
         console.log('📡 Session created:', sessionId);
-        // Store agent script for display
-        window.agentScript = data.agentScript;
-        document.getElementById('connection-substatus').textContent = 'Session ready! Click Connect Browser to continue.';
+        document.getElementById('connection-substatus').textContent = 'Session ready! Install the XActions extension and enter your pairing code.';
       });
 
-      socket.on('agent:connected', () => {
+      socket.on('agent:connected', (data) => {
         agentConnected = true;
         updateConnectionStatus('connected');
+        if (data?.account?.username) {
+          document.getElementById('connection-substatus').textContent = `Ready to run operations as @${data.account.username}`;
+        }
         console.log('🔗 Agent connected!');
       });
 
@@ -1505,22 +1499,24 @@
       if (status === 'connected') {
         indicator.style.background = 'var(--success)';
         indicator.style.boxShadow = '0 0 8px var(--success)';
-        statusText.textContent = '🟢 Browser Connected';
-        substatus.textContent = 'Ready to run operations on x.com';
+        statusText.textContent = '🟢 XActions Extension Connected';
+        if (!document.getElementById('connection-substatus').textContent.startsWith('Ready to run operations as')) {
+          document.getElementById('connection-substatus').textContent = 'Ready to run operations on x.com';
+        }
         btn.textContent = 'Connected ✓';
         btn.disabled = true;
         btn.style.background = 'var(--success)';
       } else if (status === 'waiting') {
         indicator.style.background = 'var(--warning)';
         indicator.style.boxShadow = '0 0 8px var(--warning)';
-        statusText.textContent = '🟡 Waiting for Browser';
-        substatus.textContent = 'Paste the script in your x.com console';
-        btn.textContent = 'Show Script';
+        statusText.textContent = '🟡 Waiting for Extension';
+        document.getElementById('connection-substatus').textContent = 'Install the XActions extension, open x.com, and enter this code:';
+        btn.textContent = 'Show Pairing Code';
       } else {
         indicator.style.background = 'var(--text-secondary)';
         indicator.style.boxShadow = 'none';
         statusText.textContent = 'Not Connected';
-        substatus.textContent = 'Connect your x.com browser tab to run operations';
+        document.getElementById('connection-substatus').textContent = 'Connect your x.com browser tab to run operations';
         btn.textContent = 'Connect Browser';
         btn.disabled = false;
         btn.style.background = 'var(--accent)';
@@ -1532,38 +1528,38 @@
       
       // Wait for session to be created
       setTimeout(() => {
-        if (window.agentScript) {
+        if (pairingCode) {
           updateConnectionStatus('waiting');
-          showAgentScriptModal();
+          showPairingModal();
         } else {
           showToast('Connecting... please wait and try again.', 'info');
         }
       }, 500);
     }
 
-    function showAgentScriptModal() {
+    function showPairingModal() {
       const modal = document.createElement('div');
       modal.id = 'agent-script-modal';
       modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
       modal.innerHTML = `
-        <div style="background:var(--bg-secondary);border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow:auto;padding:24px;">
+        <div style="background:var(--bg-secondary);border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:24px;">
           <h2 style="margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-            <span>🔗</span> Connect Your Browser
+            <span>🔗</span> Connect the XActions Extension
           </h2>
           <ol style="color:var(--text-secondary);margin-bottom:20px;padding-left:20px;">
-            <li style="margin-bottom:8px;">Open <a href="https://x.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">x.com</a> in a new tab and log in</li>
-            <li style="margin-bottom:8px;">Press <kbd style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;">F12</kbd> to open Developer Tools</li>
-            <li style="margin-bottom:8px;">Go to the <strong>Console</strong> tab</li>
-            <li style="margin-bottom:8px;">Paste the script below and press Enter</li>
+            <li style="margin-bottom:8px;">Install the <strong>XActions extension</strong> (Chrome/Edge) and pin it to your toolbar</li>
+            <li style="margin-bottom:8px;">Open <a href="https://x.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">x.com</a> in a tab and sign in</li>
+            <li style="margin-bottom:8px;">Click the <strong>XA</strong> icon and enter the pairing code below</li>
           </ol>
-          <div style="position:relative;">
-            <pre style="background:var(--bg-primary);padding:16px;border-radius:8px;overflow-x:auto;font-size:0.75rem;max-height:200px;overflow-y:auto;"><code id="agent-script-code">${window.agentScript}</code></pre>
-            <button onclick="copyAgentScript()" style="position:absolute;top:8px;right:8px;background:var(--accent);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;">Copy</button>
+          <div style="text-align:center;background:var(--bg-primary);padding:20px;border-radius:12px;margin-bottom:16px;">
+            <div style="color:var(--text-secondary);font-size:0.8125rem;margin-bottom:8px;">Your pairing code</div>
+            <div id="pairing-code-display" style="font-size:2rem;font-weight:800;letter-spacing:0.35em;color:var(--accent);font-family:monospace;">${pairingCode}</div>
+            <button onclick="copyPairingCode()" style="margin-top:12px;background:var(--accent);color:white;border:none;padding:8px 20px;border-radius:9999px;cursor:pointer;font-weight:600;">Copy Code</button>
           </div>
-          <div style="margin-top:20px;display:flex;gap:12px;">
+          <div style="margin-top:8px;display:flex;gap:12px;">
             <button onclick="document.getElementById('agent-script-modal').remove()" style="flex:1;padding:12px;background:var(--bg-tertiary);color:var(--text-primary);border:none;border-radius:9999px;cursor:pointer;font-weight:600;">Close</button>
           </div>
-          <p style="margin-top:16px;text-align:center;color:var(--text-secondary);font-size:0.8125rem;">The page will update automatically when connected</p>
+          <p style="margin-top:16px;text-align:center;color:var(--text-secondary);font-size:0.8125rem;">The page will update automatically when the extension connects</p>
         </div>
       `;
       document.body.appendChild(modal);
@@ -1572,11 +1568,11 @@
       });
     }
 
-    function copyAgentScript() {
-      navigator.clipboard.writeText(window.agentScript);
+    function copyPairingCode() {
+      navigator.clipboard.writeText(pairingCode);
       const btn = event.target;
       btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = 'Copy', 2000);
+      setTimeout(() => btn.textContent = 'Copy Code', 2000);
     }
 
     function showProgress(operation) {
