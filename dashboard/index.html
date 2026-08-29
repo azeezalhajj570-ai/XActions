@@ -28,12 +28,12 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   
-  <!-- Socket.io for real-time browser-to-browser communication (loaded only when logged in) -->
+  <!-- Socket.io for real-time browser-to-browser communication.
+       Loaded synchronously (not async) so `io` exists before the inline
+       dashboard script's initSocket() runs at boot. -->
   <script>
     if (localStorage.getItem('authToken')) {
-      var s = document.createElement('script');
-      s.src = '/vendor/socket.io.min.js';
-      document.head.appendChild(s);
+      document.write('<script src="/vendor/socket.io.min.js?v=3"><\/script>');
     }
   </script>
   
@@ -1115,7 +1115,7 @@
       outline-offset: 2px;
     }
   </style>
-  <script src="/js/config.js"></script>
+  <script src="/js/config.js?v=3"></script>
 </head>
 <body>
   <a href="#main-content" class="skip-nav">Skip to main content</a>
