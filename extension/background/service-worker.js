@@ -42,19 +42,19 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'xactions-download-video',
-      title: 'Download video (XActions)',
+      title: 'Download video (XFlow)',
       contexts: ['link', 'video', 'page'],
       documentUrlPatterns: ['https://x.com/*', 'https://twitter.com/*'],
     });
     chrome.contextMenus.create({
       id: 'xactions-unroll-thread',
-      title: 'Unroll thread (XActions)',
+      title: 'Unroll thread (XFlow)',
       contexts: ['link', 'page'],
       documentUrlPatterns: ['https://x.com/*', 'https://twitter.com/*'],
     });
     chrome.contextMenus.create({
       id: 'xactions-analyze-account',
-      title: 'Analyze account (XActions)',
+      title: 'Analyze account (XFlow)',
       contexts: ['link', 'page'],
       documentUrlPatterns: ['https://x.com/*', 'https://twitter.com/*'],
     });
@@ -471,7 +471,7 @@ chrome.webRequest?.onCompleted?.addListener?.(
         chrome.notifications.create('rate-limit', {
           type: 'basic',
           iconUrl: 'icons/icon128.png',
-          title: 'XActions — Rate Limited',
+          title: 'XFlow — Rate Limited',
           message: 'X/Twitter rate limit detected. Automations paused automatically.',
         });
       } catch { /* notifications may not be available */ }

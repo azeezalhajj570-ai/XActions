@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "XActions — X/Twitter Automation Toolkit",
+  "name": "XFlow — X Automation",
   "version": "1.0.0",
-  "description": "Run XActions automation scripts on X/Twitter without browser console. Auto-like, smart unfollow, keyword follow, growth suite, profile sweeps with AI comments, and more.",
+  "description": "Run X automation on X/Twitter without browser console. Auto-like, smart unfollow, keyword follow, growth suite, auto-repost, profile sweeps with AI comments, and more.",
   "author": "nichxbt",
   "homepage_url": "https://github.com/nirholas/XActions",
 

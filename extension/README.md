@@ -1,6 +1,6 @@
-# XActions Browser Extension
+# XFlow — X Automation Browser Extension
 
-> Run XActions automations on X/Twitter directly from your browser toolbar. No console access needed. Dark-themed popup with 11 automation cards, live dashboard, category filtering, search, progress tracking, and keyboard shortcuts. Doubles as the browser agent for the XActions web dashboard.
+> Run X automation on X/Twitter directly from your browser toolbar. No console access needed. Dark-themed popup with automation cards, live dashboard, category filtering, search, progress tracking, and keyboard shortcuts. Doubles as the browser agent for the XActions web dashboard.
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![Chrome](https://img.shields.io/badge/Chrome-✓-green)

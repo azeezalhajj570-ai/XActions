@@ -1005,7 +1005,7 @@
       const btn = document.createElement('button');
       btn.className = 'xactions-dl-btn';
       btn.innerHTML = '⬇';
-      btn.title = 'Download video (XActions)';
+      btn.title = 'Download video (XFlow)';
       btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:50%;transition:background 0.2s;color:#1d9bf0;';
       btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(29,155,240,0.1)');
       btn.addEventListener('mouseleave', () => btn.style.background = 'none');
@@ -1029,7 +1029,7 @@
           btn.title = 'Could not extract video URL — try right-click > Save Video';
           log(`⚠️ Could not extract video URL for tweet ${tweetId}`, 'warning');
         }
-        setTimeout(() => { btn.innerHTML = '⬇'; btn.title = 'Download video (XActions)'; }, 3000);
+        setTimeout(() => { btn.innerHTML = '⬇'; btn.title = 'Download video (XFlow)'; }, 3000);
       });
 
       actionBar.appendChild(btn);
@@ -1307,7 +1307,7 @@
       const btn = document.createElement('button');
       btn.className = 'xactions-unroll-btn';
       btn.innerHTML = '🧵';
-      btn.title = 'Unroll thread (XActions)';
+      btn.title = 'Unroll thread (XFlow)';
       btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:14px;padding:4px 8px;border-radius:50%;transition:background 0.2s;color:#1d9bf0;';
       btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(29,155,240,0.1)');
       btn.addEventListener('mouseleave', () => btn.style.background = 'none');

@@ -535,7 +535,7 @@
 
     // Reset
     DOM.btnResetAll.addEventListener('click', async () => {
-      if (!confirm('This will delete ALL XActions data and settings. Continue?')) return;
+      if (!confirm('This will delete ALL XFlow data and settings. Continue?')) return;
       await chrome.storage.local.clear();
       showToast('All data reset', 'warning');
       setTimeout(() => location.reload(), 500);
