@@ -15,6 +15,17 @@ let socket = null;
 
 const $ = (sel) => document.querySelector(sel);
 
+// apiRequest returns the parsed body directly; groups.js was written against
+// a { ok, data } shape. Wrap it so the rest of this file keeps its contract.
+async function api(endpoint, options = {}) {
+  try {
+    const data = await api(endpoint, options);
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, data: { error: err.message || 'Request failed' } };
+  }
+}
+
 const STATUS_PILL = {
   PENDING: 'pill--pending',
   CLAIMED: 'pill--running',
@@ -27,7 +38,7 @@ const STATUS_PILL = {
 };
 
 async function loadAccounts() {
-  const res = await apiRequest('/accounts');
+  const res = await api('/accounts');
   if (res.ok) {
     accountsCache = (res.data.accounts || []).filter((a) => a.isActive && a.hasCookie && !a.isBlocked);
     renderAccountSelect();
@@ -48,7 +59,7 @@ function renderAccountSelect() {
 }
 
 async function loadGroups() {
-  const res = await apiRequest('/groups');
+  const res = await api('/groups');
   if (!res.ok) { showToast(res.data?.error || 'Failed to load groups', 'error'); return; }
   const groups = res.data.groups || [];
   const container = $('#groups-container');
@@ -76,7 +87,7 @@ async function loadGroups() {
     b.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!confirm(`Delete group and all its tasks?`)) return;
-      const res = await apiRequest(`/groups/${b.dataset.id}`, { method: 'DELETE' });
+      const res = await api(`/groups/${b.dataset.id}`, { method: 'DELETE' });
       if (res.ok) { showToast('Group deleted', 'success'); loadGroups(); } else showToast(res.data?.error, 'error');
     }));
 }
@@ -98,7 +109,7 @@ function showList() {
 }
 
 async function loadGroupDetail(id) {
-  const res = await apiRequest(`/groups/${id}`);
+  const res = await api(`/groups/${id}`);
   if (!res.ok) { showToast(res.data?.error, 'error'); return; }
   currentGroup = res.data.group;
   stats = res.data.stats;
@@ -126,7 +137,7 @@ async function loadGroupDetail(id) {
 }
 
 async function loadLinkedAccounts() {
-  const res = await apiRequest(`/groups/${currentGroupId}/accounts`);
+  const res = await api(`/groups/${currentGroupId}/accounts`);
   if (!res.ok) return [];
   const accounts = res.data.accounts || [];
   $('#accounts-tbody').innerHTML = accounts.map((a) => `
@@ -138,7 +149,7 @@ async function loadLinkedAccounts() {
 
   $('#accounts-tbody').querySelectorAll('[data-unlink]').forEach((b) =>
     b.addEventListener('click', async () => {
-      const res = await apiRequest(`/groups/${currentGroupId}/accounts/${b.dataset.unlink}`, { method: 'DELETE' });
+      const res = await api(`/groups/${currentGroupId}/accounts/${b.dataset.unlink}`, { method: 'DELETE' });
       if (res.ok) { showToast('Account unlinked', 'success'); loadGroupDetail(currentGroupId); } else showToast(res.data?.error, 'error');
     }));
 
@@ -163,7 +174,7 @@ function renderStats() {
 }
 
 async function loadMembers() {
-  const res = await apiRequest(`/groups/${currentGroupId}/members`);
+  const res = await api(`/groups/${currentGroupId}/members`);
   if (!res.ok) return;
   const members = res.data.members || [];
   $('#member-count').textContent = `(${members.length})`;
@@ -177,7 +188,7 @@ async function loadMembers() {
   $('#members-tbody').querySelectorAll('[data-remove]').forEach((b) =>
     b.addEventListener('click', async () => {
       if (!confirm('Remove this member? Pending tasks targeting them will be cancelled.')) return;
-      const res = await apiRequest(`/groups/${currentGroupId}/members/${b.dataset.remove}`, { method: 'DELETE' });
+      const res = await api(`/groups/${currentGroupId}/members/${b.dataset.remove}`, { method: 'DELETE' });
       if (res.ok) { showToast('Member removed', 'success'); loadGroupDetail(currentGroupId); } else showToast(res.data?.error, 'error');
     }));
 }
@@ -185,7 +196,7 @@ async function loadMembers() {
 async function loadTasks() {
   const status = $('#task-status-filter')?.value || '';
   const q = status ? `?status=${status}&limit=100` : '?limit=100';
-  const res = await apiRequest(`/groups/${currentGroupId}/tasks${q}`);
+  const res = await api(`/groups/${currentGroupId}/tasks${q}`);
   if (!res.ok) return;
   const tasks = res.data.tasks || [];
   $('#tasks-tbody').innerHTML = tasks.map((t) => `
@@ -212,7 +223,7 @@ function joinGroupRoom(id) {
 }
 
 function refreshStats() {
-  apiRequest(`/groups/${currentGroupId}/stats`).then((res) => {
+  api(`/groups/${currentGroupId}/stats`).then((res) => {
     if (res.ok) { stats = res.data.stats; renderStats(); }
   });
 }
@@ -239,7 +250,7 @@ $('#modal-new-group').addEventListener('click', (e) => {
 $('#btn-create-group').addEventListener('click', async () => {
   const name = $('#new-group-name').value.trim();
   if (!name) { showToast('Name is required', 'error'); return; }
-  const res = await apiRequest('/groups', {
+  const res = await api('/groups', {
     method: 'POST',
     body: JSON.stringify({ name, description: $('#new-group-desc').value.trim() }),
   });
@@ -257,7 +268,7 @@ $('#btn-back').addEventListener('click', showList);
 $('#btn-import-members').addEventListener('click', async () => {
   const raw = $('#member-input').value;
   if (!raw.trim()) { showToast('Paste some usernames first', 'error'); return; }
-  const res = await apiRequest(`/groups/${currentGroupId}/members/import`, {
+  const res = await api(`/groups/${currentGroupId}/members/import`, {
     method: 'POST',
     body: JSON.stringify({ usernames: raw }),
   });
@@ -273,7 +284,7 @@ $('#btn-import-members').addEventListener('click', async () => {
 $('#btn-link-account').addEventListener('click', async () => {
   const id = $('#account-select').value;
   if (!id) { showToast('Select an account first', 'error'); return; }
-  const res = await apiRequest(`/groups/${currentGroupId}/accounts`, {
+  const res = await api(`/groups/${currentGroupId}/accounts`, {
     method: 'POST',
     body: JSON.stringify({ accountIds: [id] }),
   });
@@ -289,7 +300,7 @@ $('#btn-save-actions').addEventListener('click', async () => {
     const el = $(`#act-${a}`);
     actions[a] = !!el?.checked;
   });
-  const res = await apiRequest(`/groups/${currentGroupId}`, {
+  const res = await api(`/groups/${currentGroupId}`, {
     method: 'PATCH',
     body: JSON.stringify({
       actions,
@@ -302,7 +313,7 @@ $('#btn-save-actions').addEventListener('click', async () => {
 });
 
 $('#btn-generate').addEventListener('click', async () => {
-  const res = await apiRequest(`/groups/${currentGroupId}/tasks/generate`, { method: 'POST' });
+  const res = await api(`/groups/${currentGroupId}/tasks/generate`, { method: 'POST' });
   if (res.ok) {
     showToast(`Generated ${res.data.generated?.created || 0} new tasks`, 'success');
     loadGroupDetail(currentGroupId);
@@ -310,27 +321,27 @@ $('#btn-generate').addEventListener('click', async () => {
 });
 
 $('#btn-start').addEventListener('click', async () => {
-  const res = await apiRequest(`/groups/${currentGroupId}/automation/start`, { method: 'POST' });
+  const res = await api(`/groups/${currentGroupId}/automation/start`, { method: 'POST' });
   if (res.ok) { showToast('Automation started', 'success'); loadGroupDetail(currentGroupId); }
   else showToast(res.data?.error, 'error');
 });
 
 $('#btn-pause').addEventListener('click', async () => {
-  const res = await apiRequest(`/groups/${currentGroupId}/automation/pause`, { method: 'POST' });
+  const res = await api(`/groups/${currentGroupId}/automation/pause`, { method: 'POST' });
   if (res.ok) { showToast('Automation paused', 'success'); loadGroupDetail(currentGroupId); }
   else showToast(res.data?.error, 'error');
 });
 
 $('#btn-cancel-pending').addEventListener('click', async () => {
   if (!confirm('Cancel all PENDING tasks for this group?')) return;
-  const res = await apiRequest(`/groups/${currentGroupId}/tasks/cancel`, { method: 'POST', body: '{}' });
+  const res = await api(`/groups/${currentGroupId}/tasks/cancel`, { method: 'POST', body: '{}' });
   if (res.ok) { showToast(`Cancelled ${res.data.cancelled} tasks`, 'success'); loadTasks(); refreshStats(); }
   else showToast(res.data?.error, 'error');
 });
 
 $('#btn-delete').addEventListener('click', async () => {
   if (!confirm('Delete this group permanently?')) return;
-  const res = await apiRequest(`/groups/${currentGroupId}`, { method: 'DELETE' });
+  const res = await api(`/groups/${currentGroupId}`, { method: 'DELETE' });
   if (res.ok) { showToast('Group deleted', 'success'); showList(); }
   else showToast(res.data?.error, 'error');
 });
@@ -377,7 +388,7 @@ function renderXGroupGroupSelect(groups) {
 async function loadXGroupOptions() {
   await loadAccounts();
   renderXGroupAccountSelect();
-  const res = await apiRequest('/groups');
+  const res = await api('/groups');
   if (res.ok) renderXGroupGroupSelect(res.data.groups || []);
 }
 
@@ -397,7 +408,7 @@ async function xGroupSync() {
   if (!groupId) { showToast('Select a target group', 'error'); return; }
 
   // Validate + resolve the conversation ID.
-  const parsed = await apiRequest('/x/groups/parse', { method: 'POST', body: { url } });
+  const parsed = await api('/x/groups/parse', { method: 'POST', body: { url } });
   if (!parsed.ok) {
     showToast(parsed.data?.error || 'Invalid group URL', 'error');
     return;
@@ -405,7 +416,7 @@ async function xGroupSync() {
   xGroup.conversationId = parsed.data.conversationId;
   setXGroupResult('Parsed conversation — starting sync...', 'Queuing extraction job…');
 
-  const syncRes = await apiRequest(`/x/groups/${xGroup.conversationId}/members/sync`, {
+  const syncRes = await api(`/x/groups/${xGroup.conversationId}/members/sync`, {
     method: 'POST',
     body: { accountId, groupId },
   });
@@ -424,7 +435,7 @@ function pollXGroupStatus() {
   clearInterval(xGroup.pollTimer);
   const tick = async () => {
     if (!xGroup.conversationId) return;
-    const res = await apiRequest(`/x/groups/${xGroup.conversationId}/sync-status`);
+    const res = await api(`/x/groups/${xGroup.conversationId}/sync-status`);
     if (!res.ok) return;
     const s = res.data;
     if (s.status === 'COMPLETED' || s.status === 'FAILED' || s.status === 'CANCELLED' || s.status === 'RATE_LIMITED') {
@@ -446,7 +457,7 @@ async function loadXGroupMembers(page = 1) {
   if (!xGroup.conversationId) return;
   xGroup.page = page;
   const q = encodeURIComponent($('#xgroup-search').value.trim());
-  const res = await apiRequest(`/x/groups/${xGroup.conversationId}/members?page=${page}&pageSize=${xGroup.pageSize}&search=${q}`);
+  const res = await api(`/x/groups/${xGroup.conversationId}/members?page=${page}&pageSize=${xGroup.pageSize}&search=${q}`);
   if (!res.ok) { showToast(res.data?.error || 'Failed to load members', 'error'); return; }
   const { members, total } = res.data;
   $('#xgroup-members-card').style.display = 'block';
@@ -468,7 +479,7 @@ async function loadXGroupMembers(page = 1) {
 function exportXGroupMembers(format) {
   if (!xGroup.conversationId) return;
   const q = encodeURIComponent($('#xgroup-search').value.trim());
-  apiRequest(`/x/groups/${xGroup.conversationId}/members?pageSize=100&search=${q}`).then((res) => {
+  api(`/x/groups/${xGroup.conversationId}/members?pageSize=100&search=${q}`).then((res) => {
     if (!res.ok) return;
     const members = res.data.members || [];
     const rows = members.map((m) => ({

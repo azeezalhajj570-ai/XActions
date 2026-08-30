@@ -63,12 +63,22 @@ async function apiRequest(endpoint, options = {}) {
     : `${CONFIG.API_BASE}${endpoint}`;
   
   const response = await fetch(url, mergedOptions);
-  const data = await response.json();
-  
+  // 304 Not Modified: the browser's conditional GET revalidated against an
+  // ETag. The body is empty, so json() would throw — treat it as the empty
+  // result rather than a failure.
+  if (response.status === 304) {
+    return {};
+  }
+  const text = await response.text();
+  let data = {};
+  if (text) {
+    try { data = JSON.parse(text); } catch { /* non-JSON body */ }
+  }
+
   if (!response.ok) {
     throw new Error(data.error || data.message || 'Request failed');
   }
-  
+
   return data;
 }
 
