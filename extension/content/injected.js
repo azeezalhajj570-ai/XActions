@@ -1089,12 +1089,21 @@
             // the member list — it lives in the conversation-info overlay, so
             // open it first (the conversation info button), wait for it to
             // render, then scrape the UserCell rows.
-            const infoBtn = document.querySelector('[data-testid="conversationInfoButton"]');
+            const infoBtn = document.querySelector(
+              '[data-testid="conversationInfoButton"], [data-testid="DmGroupInfoButton"], [data-testid="groupDmHeader"], [aria-label="Conversation info"], [aria-label="Group info"]',
+            );
             if (infoBtn) {
               try { infoBtn.click(); } catch { /* ignore */ }
             }
-            await new Promise((r) => setTimeout(r, 900));
-            const domMembers = scrapeGroupMembersFromDOM();
+            await new Promise((r) => setTimeout(r, 1200));
+            // The overlay may still be rendering — poll for member rows up to
+            // ~4s before giving up.
+            let domMembers = [];
+            for (let i = 0; i < 5; i++) {
+              domMembers = scrapeGroupMembersFromDOM();
+              if (domMembers.length > 0) break;
+              await new Promise((r) => setTimeout(r, 700));
+            }
             if (domMembers.length > 0) {
               window.postMessage({
                 source: 'xactions-page',
