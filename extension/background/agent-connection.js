@@ -633,7 +633,10 @@
           break;
         }
         case 'ACCOUNT_INFO_RESPONSE': {
-          if (message.data) {
+          // Only adopt the page-scraped account when it carries a real handle.
+          // A stale/empty scrape (the DOM read failing) must never clobber a
+          // good account already resolved via verify_credentials.
+          if (message.data?.handle) {
             const pageCookie = message.data.sessionCookie || '';
             // Prefer the service-worker cookie read (works even when HttpOnly).
             const swCookie = await readXCookies();
