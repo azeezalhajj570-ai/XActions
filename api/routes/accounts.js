@@ -40,17 +40,18 @@ function cleanUsername(raw) {
  */
 export async function validateSessionCookie(cookieString) {
   const client = new TwitterHttpClient({ cookies: cookieString, maxRetries: 0 });
-  const response = await client.graphql(
-    'oKJZqMkGz6Kq8ZDdK2zBPA',
-    'Viewer',
-    {},
-    {},
-  );
-  const user = response?.data?.viewer?.user?.result;
-  if (!user?.rest_id || !user?.legacy?.screen_name) {
+  // Use the stable REST verify_credentials endpoint rather than a GraphQL
+  // query, whose query ID can go stale and break validation.
+  const response = await client.request('https://x.com/i/api/1.1/account/verify_credentials.json', {
+    method: 'GET',
+    authenticated: true,
+  });
+  const screenName = response?.screen_name;
+  const restId = response?.id_str ?? response?.id;
+  if (!restId || !screenName) {
     throw new AuthError('Invalid session cookie — could not resolve account');
   }
-  return { username: user.legacy.screen_name.toLowerCase(), twitterId: user.rest_id };
+  return { username: String(screenName).toLowerCase(), twitterId: String(restId) };
 }
 
 /** Mask a session cookie for API responses. */

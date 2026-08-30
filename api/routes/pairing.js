@@ -53,6 +53,8 @@ router.post('/claim', async (req, res) => {
   let resolvedUsername = '';
   let verified = false;
   if (typeof sessionCookie === 'string' && /auth_token=[^;]+/.test(sessionCookie)) {
+    const hasCt0 = /ct0=[^;]+/.test(sessionCookie);
+    console.log(`[pairing] claim ${code}: cookie received (auth_token ✓, ct0 ${hasCt0 ? '✓' : '✗'}, len ${sessionCookie.length})`);
     try {
       const info = await validateSessionCookie(sessionCookie);
       resolvedUsername = (info?.username || '').trim().replace(/^@/, '');
@@ -60,6 +62,8 @@ router.post('/claim', async (req, res) => {
     } catch (err) {
       console.warn('⚠️ Pairing claim: cookie validation failed:', err?.message);
     }
+  } else {
+    console.log(`[pairing] claim ${code}: no valid sessionCookie in body (${typeof sessionCookie})`);
   }
 
   const cleanUsername = (resolvedUsername || username || '').trim().replace(/^@/, '');
