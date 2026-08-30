@@ -429,6 +429,17 @@
       this.agentTabId = tab.id;
       await chrome.storage.local.set({ [STORAGE_KEYS.tab]: tab.id });
 
+      // Ensure the page script is present before reading the account. The
+      // bridge injects at page load, but if the tab predates the extension
+      // (or the bridge missed), inject on demand via chrome.scripting.
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          world: 'MAIN',
+          files: ['content/injected.js'],
+        });
+      } catch { /* already injected or scripting unavailable */ }
+
       // The injected page script may not be ready the moment the tab loads;
       // retry a few times before giving up.
       for (let attempt = 0; attempt < 5; attempt++) {

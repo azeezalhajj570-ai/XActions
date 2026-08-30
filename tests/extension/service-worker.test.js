@@ -57,6 +57,7 @@ function makeTabsStub() {
       return { success: true };
     },
     onRemoved: { addListener() {} },
+    onUpdated: { addListener() {} },
   };
 }
 

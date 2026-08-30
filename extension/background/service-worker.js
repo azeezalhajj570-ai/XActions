@@ -527,6 +527,14 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   agentConnection.onTabClosed(tabId);
 });
 
+// Inject the page script when an x.com tab finishes navigating, so the bridge
+// is always backed by injected.js (CSP-safe, world:'MAIN').
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'complete') return;
+  if (!tab?.url || !/^https:\/\/(x|twitter)\.com\//.test(tab.url)) return;
+  injectPageScript({ tab }).catch(() => {});
+});
+
 // ============================================
 // RESTORE ON SERVICE WORKER RESTART
 // ============================================

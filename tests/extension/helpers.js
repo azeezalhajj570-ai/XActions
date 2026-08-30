@@ -75,6 +75,7 @@ export function makeChrome({ storage, tabs } = {}) {
       async query() { return []; },
       async sendMessage() { return { data: null }; },
       onRemoved: { addListener() {} },
+      onUpdated: { addListener() {} },
     },
     runtime,
     cookies: {

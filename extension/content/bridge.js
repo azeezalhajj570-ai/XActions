@@ -17,10 +17,11 @@
   // world:'MAIN', which bypasses the page CSP entirely.
   function injectScript() {
     try {
-      chrome.runtime.sendMessage({ type: 'INJECT_PAGE_SCRIPT' }, () => {
-        // If the service worker is not available or fails, fall back to the
-        // legacy <script src> injection (may be CSP-blocked on x.com).
-        if (chrome.runtime.lastError) {
+      chrome.runtime.sendMessage({ type: 'INJECT_PAGE_SCRIPT' }, (response) => {
+        // Fall back to the legacy <script src> injection if the service worker
+        // was unavailable or chrome.scripting failed (may be CSP-blocked, but
+        // better than nothing).
+        if (chrome.runtime.lastError || !response || response.success !== true) {
           const script = document.createElement('script');
           script.src = chrome.runtime.getURL('content/injected.js');
           script.onload = () => script.remove();

@@ -33,6 +33,8 @@ function accountTabs(account) {
       }
       return { success: true };
     },
+    onRemoved: { addListener() {} },
+    onUpdated: { addListener() {} },
   };
 }
 
