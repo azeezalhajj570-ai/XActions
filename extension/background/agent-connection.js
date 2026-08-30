@@ -154,11 +154,16 @@
         return { success: true, already: true };
       }
       if (this.claimInFlight) {
-        return { success: true, already: true };
+        // Another connect() is mid-claim; await its outcome instead of
+        // returning success prematurely (pair() depends on a real socket).
+        try {
+          return await this.claimInFlight;
+        } catch (err) {
+          return { success: false, error: err?.message || 'Connection failed' };
+        }
       }
 
-      this.claimInFlight = true;
-      try {
+      const runClaim = (async () => {
         const pairing = await this.ensurePairing();
         if (!pairing) {
           const reason = this.state.lastError || 'Not paired. Enter a pairing code in the popup.';
@@ -307,8 +312,13 @@
         });
 
         return { success: true };
+      })();
+
+      this.claimInFlight = runClaim;
+      try {
+        return await runClaim;
       } finally {
-        this.claimInFlight = false;
+        this.claimInFlight = null;
       }
     }
 
