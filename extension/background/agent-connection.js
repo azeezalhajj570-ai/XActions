@@ -43,12 +43,19 @@
    */
   async function readXCookies(tabUrl) {
     try {
+      if (typeof chrome.cookies?.get !== 'function') {
+        // The "cookies" permission is missing — the extension was reloaded
+        // rather than re-added after a manifest change. Surface this clearly.
+        throw new Error('missing cookies permission');
+      }
       const url = tabUrl || 'https://x.com/';
       const authToken = await chrome.cookies.get({ url, name: 'auth_token' });
       const ct0 = await chrome.cookies.get({ url, name: 'ct0' });
       if (!authToken?.value) return '';
       return `auth_token=${authToken.value}` + (ct0?.value ? `; ct0=${ct0.value}` : '');
-    } catch { /* cookies permission missing or not on x.com */ }
+    } catch (err) {
+      if (err?.message === 'missing cookies permission') throw err;
+    }
     return '';
   }
 
@@ -480,7 +487,15 @@
       await chrome.storage.local.set({ [STORAGE_KEYS.tab]: tab.id });
 
       // 1) Authoritative identity from x.com via the session cookie.
-      const sessionCookie = await readXCookies(tab.url);
+      let sessionCookie = '';
+      try {
+        sessionCookie = await readXCookies(tab.url);
+      } catch (err) {
+        if (err?.message === 'missing cookies permission') {
+          await this.setState({ lastError: 'The XFlow extension needs re-adding: remove it and Load unpacked again (cookies permission).' });
+          return null;
+        }
+      }
       if (sessionCookie) {
         try {
           const account = await fetchXAccount(sessionCookie);
