@@ -341,7 +341,7 @@ document.querySelectorAll('.tab').forEach((tab) =>
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
     tab.classList.add('active');
-    ['overview', 'actions', 'members', 'accounts', 'tasks'].forEach((name) => {
+    ['overview', 'actions', 'members', 'accounts', 'tasks', 'xgroups'].forEach((name) => {
       $(`#tab-${name}`).style.display = name === tab.dataset.tab ? 'block' : 'none';
     });
   }));
@@ -352,11 +352,162 @@ function esc(str) {
   }[c]));
 }
 
+// ============================================
+// X Group DM Member Sync
+// ============================================
+let xGroup = { conversationId: null, taskId: null, page: 1, pageSize: 50, pollTimer: null };
+
+function renderXGroupAccountSelect() {
+  const sel = $('#xgroup-account');
+  if (!sel) return;
+  sel.innerHTML = accountsCache.length
+    ? accountsCache.map((a) => `<option value="${a.id}">@${a.username}</option>`).join('')
+    : '<option value="">No eligible accounts — add one under Accounts</option>';
+}
+
+function renderXGroupGroupSelect(groups) {
+  const sel = $('#xgroup-group');
+  if (!sel) return;
+  sel.innerHTML = (groups.length
+    ? groups.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`)
+    : ['<option value="">No groups yet — create one first</option>']
+  ).join('');
+}
+
+async function loadXGroupOptions() {
+  await loadAccounts();
+  renderXGroupAccountSelect();
+  const res = await apiRequest('/groups');
+  if (res.ok) renderXGroupGroupSelect(res.data.groups || []);
+}
+
+function setXGroupResult(html, progress) {
+  const box = $('#xgroup-result');
+  box.style.display = 'block';
+  $('#xgroup-summary').innerHTML = html;
+  $('#xgroup-progress').textContent = progress || '';
+}
+
+async function xGroupSync() {
+  const url = $('#xgroup-url').value.trim();
+  const accountId = $('#xgroup-account').value;
+  const groupId = $('#xgroup-group').value;
+  if (!url) { showToast('Enter an X Group DM URL', 'error'); return; }
+  if (!accountId) { showToast('Select an X account', 'error'); return; }
+  if (!groupId) { showToast('Select a target group', 'error'); return; }
+
+  // Validate + resolve the conversation ID.
+  const parsed = await apiRequest('/x/groups/parse', { method: 'POST', body: { url } });
+  if (!parsed.ok) {
+    showToast(parsed.data?.error || 'Invalid group URL', 'error');
+    return;
+  }
+  xGroup.conversationId = parsed.data.conversationId;
+  setXGroupResult('Parsed conversation — starting sync...', 'Queuing extraction job…');
+
+  const syncRes = await apiRequest(`/x/groups/${xGroup.conversationId}/members/sync`, {
+    method: 'POST',
+    body: { accountId, groupId },
+  });
+  if (!syncRes.ok) {
+    showToast(syncRes.data?.error || 'Failed to start sync', 'error');
+    setXGroupResult('Sync could not start.', syncRes.data?.error || '');
+    return;
+  }
+  xGroup.taskId = syncRes.data.taskId;
+  showToast('Sync started', 'success');
+  pollXGroupStatus();
+}
+
+function pollXGroupStatus() {
+  if (!xGroup.conversationId) return;
+  clearInterval(xGroup.pollTimer);
+  const tick = async () => {
+    if (!xGroup.conversationId) return;
+    const res = await apiRequest(`/x/groups/${xGroup.conversationId}/sync-status`);
+    if (!res.ok) return;
+    const s = res.data;
+    if (s.status === 'COMPLETED' || s.status === 'FAILED' || s.status === 'CANCELLED' || s.status === 'RATE_LIMITED') {
+      clearInterval(xGroup.pollTimer);
+      setXGroupResult(
+        `Sync <b>${esc(s.status)}</b> — processed ${s.processed || 0} members${s.total ? ` of ${s.total}` : ''}.`,
+        s.status === 'FAILED' ? 'Check the task log for details.' : '',
+      );
+      if (s.status === 'COMPLETED') loadXGroupMembers(1);
+      return;
+    }
+    setXGroupResult('Syncing…', `Processed ${s.processed || 0} members${s.total ? ` of ${s.total}` : ''} (${s.pages || 0} pages)`);
+  };
+  tick();
+  xGroup.pollTimer = setInterval(tick, 2500);
+}
+
+async function loadXGroupMembers(page = 1) {
+  if (!xGroup.conversationId) return;
+  xGroup.page = page;
+  const q = encodeURIComponent($('#xgroup-search').value.trim());
+  const res = await apiRequest(`/x/groups/${xGroup.conversationId}/members?page=${page}&pageSize=${xGroup.pageSize}&search=${q}`);
+  if (!res.ok) { showToast(res.data?.error || 'Failed to load members', 'error'); return; }
+  const { members, total } = res.data;
+  $('#xgroup-members-card').style.display = 'block';
+  $('#xgroup-member-count').textContent = `${total} members`;
+  $('#xgroup-page').textContent = `Page ${page}`;
+  $('#xgroup-tbody').innerHTML = members.length
+    ? members.map((m) => `
+      <tr>
+        <td>${esc(m.displayName || m.username)}</td>
+        <td>@${esc(m.username)}</td>
+        <td>${esc(m.xUserId)}</td>
+        <td>${m.isCurrentMember ? '<span class="pill pill--running">Active</span>' : '<span class="pill pill--paused">Left</span>'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" class="muted">No members found.</td></tr>';
+  $('#btn-xgroup-prev').disabled = page <= 1;
+  $('#btn-xgroup-next').disabled = page * xGroup.pageSize >= total;
+}
+
+function exportXGroupMembers(format) {
+  if (!xGroup.conversationId) return;
+  const q = encodeURIComponent($('#xgroup-search').value.trim());
+  apiRequest(`/x/groups/${xGroup.conversationId}/members?pageSize=100&search=${q}`).then((res) => {
+    if (!res.ok) return;
+    const members = res.data.members || [];
+    const rows = members.map((m) => ({
+      x_user_id: m.xUserId,
+      username: m.username,
+      display_name: m.displayName || '',
+      profile_url: m.profileUrl || '',
+    }));
+    const blob = format === 'csv'
+      ? new Blob([[`x_user_id,username,display_name,profile_url\n${rows.map((r) => [r.x_user_id, r.username, r.display_name, r.profile_url].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')}`]], { type: 'text/csv' })
+      : new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `xgroup-${xGroup.conversationId}.${format}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+
+// X Group DM Sync controls
+$('#btn-xgroup-sync').addEventListener('click', xGroupSync);
+$('#btn-xgroup-view').addEventListener('click', () => loadXGroupMembers(1));
+$('#btn-xgroup-export-csv').addEventListener('click', () => exportXGroupMembers('csv'));
+$('#btn-xgroup-export-json').addEventListener('click', () => exportXGroupMembers('json'));
+$('#btn-xgroup-prev').addEventListener('click', () => loadXGroupMembers(Math.max(1, xGroup.page - 1)));
+$('#btn-xgroup-next').addEventListener('click', () => loadXGroupMembers(xGroup.page + 1));
+$('#xgroup-search').addEventListener('input', debounce(() => loadXGroupMembers(1), 400));
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
 // Boot
 (async () => {
   const sb = document.getElementById('sidebar');
   if (window.renderSidebar) sb.innerHTML = window.renderSidebar();
   loadGroups();
   loadAccounts();
+  loadXGroupOptions();
   try { socket = connectSocket('dashboard', { transports: ['websocket', 'polling'] }); } catch { /* offline */ }
 })();

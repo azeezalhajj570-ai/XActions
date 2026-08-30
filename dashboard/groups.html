@@ -176,6 +176,7 @@
           <div class="tab" data-tab="actions">Actions</div>
           <div class="tab" data-tab="members">Members</div>
           <div class="tab" data-tab="accounts">Accounts</div>
+          <div class="tab" data-tab="xgroups">X Group Sync</div>
           <div class="tab" data-tab="tasks">Tasks</div>
         </div>
 
@@ -262,6 +263,61 @@
                 <thead><tr><th>Action</th><th>Account</th><th>Member</th><th>Status</th><th>Retries</th><th>Error</th></tr></thead>
                 <tbody id="tasks-tbody"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- X Group DM Sync -->
+        <div id="tab-xgroups" style="display:none;">
+          <div class="card">
+            <h3 style="margin-bottom:10px;">X Group DM Sync</h3>
+            <p class="muted" style="font-size:12px;margin-bottom:14px;">
+              Paste an X group chat URL to pull its members into the app through a linked X account.
+              The extracted members are linked to the selected group and become targets for that group's automation.
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+              <div style="flex:1;min-width:280px;">
+                <label class="form-label" style="font-size:11px;">Group DM URL</label>
+                <input type="text" class="form-input" id="xgroup-url" placeholder="https://x.com/i/chat/g2090169325890269541" style="font-size:13px;">
+              </div>
+              <div style="min-width:170px;">
+                <label class="form-label" style="font-size:11px;">X Account</label>
+                <select class="form-select" id="xgroup-account"><option value="">— select account —</option></select>
+              </div>
+              <div style="min-width:170px;">
+                <label class="form-label" style="font-size:11px;">Target Group</label>
+                <select class="form-select" id="xgroup-group"><option value="">— select group —</option></select>
+              </div>
+              <button class="btn btn--primary" id="btn-xgroup-sync">Get Members</button>
+            </div>
+            <div id="xgroup-result" style="margin-top:14px;display:none;">
+              <div class="card" style="padding:12px;background:var(--bg-2);">
+                <div id="xgroup-summary" style="font-size:13px;"></div>
+                <div id="xgroup-progress" style="font-size:12px;margin-top:6px;color:var(--text-2);"></div>
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                  <button class="btn btn--secondary btn--sm" id="btn-xgroup-view">View Members</button>
+                  <button class="btn btn--secondary btn--sm" id="btn-xgroup-export-csv">Export CSV</button>
+                  <button class="btn btn--secondary btn--sm" id="btn-xgroup-export-json">Export JSON</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="xgroup-members-card" style="display:none;">
+            <div class="toolbar">
+              <input type="text" class="form-input" id="xgroup-search" placeholder="Search members..." style="max-width:220px;font-size:13px;">
+              <span id="xgroup-member-count" class="muted" style="font-size:12px;"></span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead><tr><th>Member</th><th>Username</th><th>X ID</th><th>Status</th></tr></thead>
+                <tbody id="xgroup-tbody"></tbody>
+              </table>
+            </div>
+            <div class="toolbar" style="margin-top:10px;">
+              <button class="btn btn--secondary btn--sm" id="btn-xgroup-prev">&larr; Prev</button>
+              <span id="xgroup-page" class="muted" style="font-size:12px;">Page 1</span>
+              <button class="btn btn--secondary btn--sm" id="btn-xgroup-next">Next &rarr;</button>
             </div>
           </div>
         </div>

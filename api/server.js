@@ -90,6 +90,7 @@ import teamsRoutes from './routes/teams.js';
 import optimizerRoutes from './routes/optimizer.js';
 import groupsRoutes from './routes/groups.js';
 import accountsRoutes from './routes/accounts.js';
+import xGroupsRoutes from './routes/xGroups.js';
 import { startScheduler } from './services/unfollowerScheduler.js';
 import { initializeSocketIO } from './realtime/socketHandler.js';
 import { initializeLicensing, brandingMiddleware } from './services/licensing.js';
@@ -361,6 +362,7 @@ export function createApp({ rateLimiting = true } = {}) {
   app.use('/api/pairing', pairingRoutes);
   app.use('/api/groups', groupsRoutes);
   app.use('/api/accounts', accountsRoutes);
+  app.use('/api/x/groups', xGroupsRoutes);
   app.use('/api/agent', agentRoutes);
   // Competitive feature routes (09-A through 09-P)
   app.use('/api/analytics', historyRoutes); // history, growth, overlap endpoints augment existing analytics

@@ -19,6 +19,7 @@ import { keywordFollowBrowser } from './operations/puppeteer/keywordFollow.js';
 import { autoCommentBrowser } from './operations/puppeteer/autoComment.js';
 import { runBrowserScript } from './operations/puppeteer/scriptRunner.js';
 import { runGroupAutomation } from './groups/automationWorker.js';
+import { runXGroupMemberSync } from './xGroups/sync.js';
 
 const prisma = new PrismaClient();
 
@@ -366,6 +367,32 @@ operationsQueue.process('groupAutomation', 1, async (job) => {
       delay,
       attempts: 3,
       jobId: `group-${job.data.groupId}-${Date.now()}`,
+    });
+  }
+  return stats;
+});
+
+// X Group DM member sync — extract + upsert + link members for a conversation.
+operationsQueue.process('xGroupMemberSync', 1, async (job) => {
+  console.log(`🔄 Processing job ${job.id}: xGroupMemberSync (${job.data.conversationId})`);
+  const stats = await runXGroupMemberSync({
+    accountId: job.data.accountId,
+    conversationId: job.data.conversationId,
+    groupId: job.data.groupId,
+    isCancelled: () => isJobCancelled(job.id),
+  });
+  // A rate-limited sync reschedules at the account's next available window.
+  if (stats?.status === 'RATE_LIMITED' && stats?.nextRunAt) {
+    const delay = Math.max(stats.nextRunAt.getTime() - Date.now(), 1000);
+    await operationsQueue.add('xGroupMemberSync', {
+      accountId: job.data.accountId,
+      conversationId: job.data.conversationId,
+      groupId: job.data.groupId,
+    }, {
+      priority: 10,
+      delay,
+      attempts: 1,
+      jobId: `xgs-${job.data.conversationId}-${Date.now()}`,
     });
   }
   return stats;

@@ -317,3 +317,23 @@ model GroupTask {
   @@index([accountId, status])
   @@index([status, nextRetryAt])
 }
+
+model XGroupMember {
+  id              String   @id @default(cuid())
+  conversationId  String
+  xUserId         String
+  username        String
+  displayName     String?
+  profileUrl      String?
+  avatarUrl       String?
+  isAdmin         Boolean  @default(false)
+  isCurrentMember Boolean  @default(true)
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([conversationId, xUserId])
+  @@index([conversationId])
+  @@index([username])
+}
