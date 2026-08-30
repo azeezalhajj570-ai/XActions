@@ -32,9 +32,26 @@
       font-family: var(--font);
       min-height: 100vh;
     }
-    .layout { display: flex; min-height: 100vh; }
-    .sidebar-left { width: 275px; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
+    .layout { display: flex; max-width: 1300px; margin: 0 auto; min-height: 100vh; }
+    .sidebar-left {
+      width: 275px;
+      padding: 0 12px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
     main { flex: 1; padding: 24px 32px; max-width: 1100px; }
+    @media (max-width: 768px) {
+      .sidebar-left { width: 68px; padding: 0 4px; }
+      .sidebar-left .logo a span:last-child, .sidebar-left .nav-item span:last-child { display: none; }
+      .sidebar-left .nav-item { justify-content: center; padding: 12px; }
+      .sidebar-left .action-btn { width: 50px; height: 50px; padding: 0; font-size: 0; }
+      .sidebar-left .action-btn::before { content: '\2192'; font-size: 1.5rem; }
+    }
 
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .page-header h1 { font-size: 24px; font-weight: 700; }
@@ -133,6 +150,7 @@
 <body>
   <div class="layout">
     <aside class="sidebar-left" id="sidebar"></aside>
+    <script src="/js/sidebar.js?v=2"></script>
     <main>
       <div class="page-header">
         <div>
@@ -347,7 +365,7 @@
     </div>
   </div>
 
-  <script src="/js/config.js?v=6"></script>
-  <script src="/js/groups.js?v=6"></script>
+  <script src="/js/config.js?v=8"></script>
+  <script src="/js/groups.js?v=8"></script>
 </body>
 </html>

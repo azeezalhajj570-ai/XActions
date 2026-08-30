@@ -520,5 +520,15 @@ function debounce(fn, ms) {
   loadGroups();
   loadAccounts();
   loadXGroupOptions();
-  try { socket = connectSocket('dashboard'); } catch { /* offline */ }
+  try {
+    socket = connectSocket('dashboard');
+    socket.on('connect', () => {
+      const b = $('#conn-badge');
+      if (b) { b.className = 'pill pill--running'; $('#conn-dot').className = 'conn-dot conn-dot--on'; $('#conn-text').textContent = 'Connected'; }
+    });
+    socket.on('disconnect', () => {
+      const b = $('#conn-badge');
+      if (b) { b.className = 'pill pill--paused'; $('#conn-dot').className = 'conn-dot conn-dot--off'; $('#conn-text').textContent = 'Disconnected'; }
+    });
+  } catch { /* offline */ }
 })();
