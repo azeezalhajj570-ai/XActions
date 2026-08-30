@@ -127,6 +127,17 @@ export function initializeSocketIO(httpServer) {
       socket.leave(`job:${jobId}`);
     });
 
+    // ===== GROUP AUTOMATION ROOMS =====
+    // Dashboards join group:<groupId> to receive live group automation events.
+    socket.on('group:join', (groupId) => {
+      socket.join(`group:${groupId}`);
+      console.log(`📡 Socket ${socket.id} joined group room: ${groupId}`);
+    });
+
+    socket.on('group:leave', (groupId) => {
+      socket.leave(`group:${groupId}`);
+    });
+
     socket.on('disconnect', () => {
       console.log(`🔌 Socket disconnected: ${socket.id}`);
       handleDisconnection(io, socket);

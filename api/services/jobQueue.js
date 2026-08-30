@@ -18,6 +18,7 @@ import { followEngagersBrowser } from './operations/puppeteer/followEngagers.js'
 import { keywordFollowBrowser } from './operations/puppeteer/keywordFollow.js';
 import { autoCommentBrowser } from './operations/puppeteer/autoComment.js';
 import { runBrowserScript } from './operations/puppeteer/scriptRunner.js';
+import { runGroupAutomation } from './groups/automationWorker.js';
 
 const prisma = new PrismaClient();
 
@@ -347,6 +348,27 @@ operationsQueue.process('datasetFetch', 2, async (job) => {
   const data = await ds.getData({ offset: offset || 0, limit: limit || 100 });
   job.progress({ status: 'done', message: `Fetched ${data?.items?.length ?? 0} records` });
   return data;
+});
+
+// Process jobs - groupAutomation (automatic group-based account operations)
+operationsQueue.process('groupAutomation', 1, async (job) => {
+  console.log(`🔄 Processing job ${job.id}: groupAutomation (group ${job.data.groupId})`);
+  const stats = await runGroupAutomation({
+    groupId: job.data.groupId,
+    io: global.io,
+    isCancelled: () => isJobCancelled(job.id),
+  });
+  // If tasks were rate-limited/cooldown, schedule a follow-up at the earliest reset.
+  if (stats?.nextRunAt) {
+    const delay = Math.max(stats.nextRunAt.getTime() - Date.now(), 1000);
+    await operationsQueue.add('groupAutomation', { groupId: job.data.groupId }, {
+      priority: 10,
+      delay,
+      attempts: 3,
+      jobId: `group-${job.data.groupId}-${Date.now()}`,
+    });
+  }
+  return stats;
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────

@@ -31,6 +31,8 @@ model User {
   operations          Operation[]
   payments            Payment[]
   subscription        Subscription?
+  accounts            Account[]
+  groups              Group[]
 
   @@index([email])
   @@index([username])
@@ -216,4 +218,102 @@ model UnfollowerSchedule {
   updatedAt  DateTime  @updatedAt
 
   @@index([active, nextRunAt])
+}
+
+// ---------------------------------------------------------------------------
+// Group Automation (feature/group-automation)
+// ---------------------------------------------------------------------------
+
+model Account {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username      String
+  sessionCookie String?
+  authMethod    String        @default("session")
+  isActive      Boolean       @default(true)
+  isBlocked     Boolean       @default(false)
+  lastUsedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  groups        GroupAccount[]
+  tasks         GroupTask[]
+
+  @@unique([userId, username])
+  @@index([userId])
+  @@index([isActive])
+}
+
+model Group {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  actions     String         @default("{\"like\":true,\"comment\":false,\"repost\":false,\"follow\":false}")
+  autoExecute Boolean        @default(false)
+  cooldownSec Int            @default(0)
+  paused      Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  accounts    GroupAccount[]
+  members     GroupMember[]
+  tasks       GroupTask[]
+
+  @@index([userId])
+}
+
+model GroupAccount {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, accountId])
+  @@index([accountId])
+}
+
+model GroupMember {
+  id          String     @id @default(cuid())
+  groupId     String
+  group       Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  username    String
+  displayName String?
+  profileUrl  String?
+  avatar      String?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  tasks       GroupTask[]
+
+  @@unique([groupId, username])
+  @@index([username])
+}
+
+model GroupTask {
+  id          String       @id @default(cuid())
+  groupId     String
+  group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      GroupMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  action      String
+  targetId    String?
+  status      String       @default("PENDING")
+  priority    Int          @default(5)
+  claimedAt   DateTime?
+  completedAt DateTime?
+  failedAt    DateTime?
+  retryCount  Int          @default(0)
+  nextRetryAt DateTime?
+  error       String?
+  result      String?
+  createdAt   DateTime     @default(now())
+
+  @@unique([groupId, accountId, memberId, action])
+  @@index([groupId, status])
+  @@index([accountId, status])
+  @@index([status, nextRetryAt])
 }

@@ -88,6 +88,8 @@ import datasetsRoutes from './routes/datasets.js';
 import notificationsRoutes from './routes/notifications.js';
 import teamsRoutes from './routes/teams.js';
 import optimizerRoutes from './routes/optimizer.js';
+import groupsRoutes from './routes/groups.js';
+import accountsRoutes from './routes/accounts.js';
 import { startScheduler } from './services/unfollowerScheduler.js';
 import { initializeSocketIO } from './realtime/socketHandler.js';
 import { initializeLicensing, brandingMiddleware } from './services/licensing.js';
@@ -357,6 +359,8 @@ export function createApp({ rateLimiting = true } = {}) {
   app.use('/api/thread', threadRoutes);
   app.use('/api/video', videoRoutes);
   app.use('/api/pairing', pairingRoutes);
+  app.use('/api/groups', groupsRoutes);
+  app.use('/api/accounts', accountsRoutes);
   app.use('/api/agent', agentRoutes);
   // Competitive feature routes (09-A through 09-P)
   app.use('/api/analytics', historyRoutes); // history, growth, overlap endpoints augment existing analytics
@@ -390,6 +394,10 @@ export function createApp({ rateLimiting = true } = {}) {
   });
   app.get('/graph', (req, res) => {
     res.sendFile(path.join(__dirname, '../dashboard/graph.html'));
+  });
+
+  app.get('/groups', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dashboard/groups.html'));
   });
   // Documentation sub-pages — serves 167 auto-generated SEO pages
   const docsBasePath = path.resolve(__dirname, '../dashboard/docs');
