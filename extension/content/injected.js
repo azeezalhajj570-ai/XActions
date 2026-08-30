@@ -1082,12 +1082,14 @@
               },
             }, '*');
           })
-          .catch((err) => {
+          .catch(async (err) => {
             // The REST path cannot access group DMs (X's API surface does not
             // expose group conversation participants). Fall back to reading the
             // open group chat's participant panel from the DOM — the same
             // [data-testid="UserCell"] rows the rest of the app scrapes. The
             // user must have the group chat open with its member list visible.
+            // Wait briefly for the panel to finish rendering before scraping.
+            await new Promise((r) => setTimeout(r, 600));
             const domMembers = scrapeGroupMembersFromDOM();
             if (domMembers.length > 0) {
               window.postMessage({
@@ -1123,27 +1125,54 @@
   // chat open with the member list visible (click the group info / people
   // icon so the panel is on screen).
   function scrapeGroupMembersFromDOM() {
-    const rows = document.querySelectorAll('[data-testid="UserCell"]');
     const members = [];
     const seen = new Set();
+    // 1) The group-info member list (x.com/i/chat/<id>/info) and the
+    //    participant panel render user rows. Try the known cell containers
+    //    first, then fall back to any profile link in the visible DOM that
+    //    is not the current user's own nav links.
+    const rows = document.querySelectorAll('[data-testid="UserCell"], [data-testid="conversationMembers"] [role="button"], [data-testid="conversationMembers"] a[href^="/"]');
     for (const row of rows) {
-      // The handle is in a link whose href is /<username>.
-      const link = row.querySelector('a[href^="/"]');
+      const link = row.matches('a[href^="/"]') ? row : row.querySelector('a[href^="/"]');
       const href = link?.getAttribute('href') || '';
       const username = (href.split('/').filter(Boolean)[0] || '').replace(/^@/, '');
-      if (!username || seen.has(username)) continue;
+      if (!username || username === 'home' || seen.has(username)) continue;
       seen.add(username);
       const nameEl = row.querySelector('[dir="ltr"] > span') || row.querySelector('span');
       const displayName = nameEl?.textContent?.trim() || username;
       const avatar = row.querySelector('img')?.src || '';
       members.push({
-        xUserId: username, // DOM rows do not expose the numeric user id
+        xUserId: username,
         username,
         displayName,
         profileUrl: `https://x.com/${username}`,
         avatarUrl: avatar || '',
         isAdmin: false,
       });
+    }
+    // 2) If the panel rows did not yield anything, scan every avatar +
+    //    handle link pair on the page (the group info page shows a member
+    //    grid of avatars with profile links beneath).
+    if (members.length === 0) {
+      const links = document.querySelectorAll('a[href^="/"]');
+      for (const link of links) {
+        const href = link.getAttribute('href') || '';
+        const username = (href.split('/').filter(Boolean)[0] || '').replace(/^@/, '');
+        if (!username || username === 'home' || username === 'search' || username === 'messages' || username === 'i' || username === 'settings' || username === 'notifications' || username === 'explore' || seen.has(username)) continue;
+        const img = link.querySelector('img');
+        // Only treat links that carry an avatar as member rows.
+        if (!img?.src) continue;
+        seen.add(username);
+        const nameEl = link.querySelector('[dir="ltr"] > span') || link.closest('[role="button"]')?.querySelector('span');
+        members.push({
+          xUserId: username,
+          username,
+          displayName: nameEl?.textContent?.trim() || username,
+          profileUrl: `https://x.com/${username}`,
+          avatarUrl: img.src || '',
+          isAdmin: false,
+        });
+      }
     }
     return members;
   }
