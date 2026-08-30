@@ -153,6 +153,7 @@ router.get('/:conversationId/sync-status', async (req, res) => {
       total: progress.total || 0,
       pages: progress.pages || 0,
       taskId: operation.id,
+      error: operation.error || null,
     });
   } catch (err) {
     console.error('❌ xGroup sync status error:', err);

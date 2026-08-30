@@ -468,7 +468,7 @@ function pollXGroupStatus() {
       clearInterval(xGroup.pollTimer);
       setXGroupResult(
         `Sync <b>${esc(s.status)}</b> — processed ${s.processed || 0} members${s.total ? ` of ${s.total}` : ''}.`,
-        s.status === 'FAILED' ? 'Check the task log for details.' : '',
+        s.status === 'FAILED' ? `Reason: ${esc(s.error || 'unknown')}` : (s.status === 'RATE_LIMITED' ? 'Rescheduled — rate limited.' : ''),
       );
       if (s.status === 'COMPLETED') loadXGroupMembers(1);
       return;

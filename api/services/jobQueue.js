@@ -395,6 +395,11 @@ operationsQueue.process('xGroupMemberSync', 1, async (job) => {
       jobId: `xgs-${job.data.conversationId}-${Date.now()}`,
     });
   }
+  // Permanent failures (access denied, conversation not found) must mark the
+  // operation row FAILED, not completed — throw so Bull's failed event fires.
+  if (stats?.status === 'FAILED') {
+    throw new Error(stats.error || 'Sync failed');
+  }
   return stats;
 });
 

@@ -207,6 +207,25 @@ export async function runXGroupMemberSync(options = {}) {
       accountUsed: accountId,
       status: SYNC_STATUS.COMPLETED,
     };
+  } catch (err) {
+    // Map known X failures to permanent statuses — never an endless retry.
+    const name = err?.name || '';
+    const status = err?.status;
+    if (name === 'AuthError' || status === 403 || status === 401) {
+      console.log(`[xGroupSync] ${conversationId}: ACCESS_DENIED — account cannot access this conversation`);
+      return { status: SYNC_STATUS.FAILED, error: 'ACCESS_DENIED', accountUsed: accountId, conversationId };
+    }
+    if (name === 'NotFoundError' || status === 404) {
+      console.log(`[xGroupSync] ${conversationId}: CONVERSATION_NOT_FOUND`);
+      return { status: SYNC_STATUS.FAILED, error: 'CONVERSATION_NOT_FOUND', accountUsed: accountId, conversationId };
+    }
+    if (name === 'RateLimitError' || status === 429) {
+      const nextRunAt = err?.resetAt ? new Date(err.resetAt) : new Date(Date.now() + 60 * 60 * 1000);
+      console.log(`[xGroupSync] ${conversationId}: RATE_LIMITED — reschedule at ${nextRunAt.toISOString()}`);
+      return { status: SYNC_STATUS.RATE_LIMITED, nextRunAt, accountUsed: accountId, conversationId };
+    }
+    // Transient/unknown: rethrow so Bull's retry/backoff handles it.
+    throw err;
   } finally {
     await releaseSyncLock(conversationId, lockToken);
   }
