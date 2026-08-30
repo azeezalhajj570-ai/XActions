@@ -5,7 +5,7 @@
 // Boots the real app through createApp() (no port binding) with a stubbed
 // Prisma client so the socket auth middleware resolves the test user without
 // a database. No network beyond loopback socket.io.
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { io as ioc } from 'socket.io-client';
 import jwt from 'jsonwebtoken';
 
@@ -70,6 +70,13 @@ describe('realtime sessions (extension agent)', () => {
   beforeAll(async () => {
     ({ app, httpServer, io } = createApp({ rateLimiting: false }));
     await new Promise((resolve) => httpServer.listen(0, resolve));
+  });
+
+  beforeEach(async () => {
+    // Session reuse is per-user; isolate tests by clearing the in-memory maps.
+    const { activeSessions, pendingSessions } = await import('../../../api/realtime/socketHandler.js');
+    activeSessions.clear();
+    pendingSessions.clear();
   });
 
   afterAll(async () => {
@@ -284,6 +291,35 @@ describe('realtime sessions (extension agent)', () => {
 
     agent.close();
     dash.close();
+  });
+
+  it('reuses the user session when the dashboard reconnects (refresh-safe pairing)', async () => {
+    const dash1 = connectDashboard(jwt.sign({ userId: TEST_USER.id }, process.env.JWT_SECRET));
+    const created1 = await once(dash1, 'session:created');
+
+    // Agent pairs to the first dashboard session.
+    const agent = connectAgent({
+      role: 'agent',
+      pairingCode: created1.pairingCode,
+      username: 'refreshuser',
+    });
+    await once(dash1, 'agent:connected');
+
+    // Dashboard refreshes: a new socket for the same user connects.
+    const dash2 = connectDashboard(jwt.sign({ userId: TEST_USER.id }, process.env.JWT_SECRET));
+    const created2 = await once(dash2, 'session:created');
+
+    // Same sessionId is reused — no new session, so no re-pair needed.
+    expect(created2.sessionId).toBe(created1.sessionId);
+
+    // The agent is still bound to the reused session.
+    const executeP = once(agent, 'execute');
+    dash2.emit('start:operation', { operation: 'detectUnfollowers', config: {} });
+    expect((await executeP).operation).toBe('detectUnfollowers');
+
+    agent.close();
+    dash2.close();
+    dash1.close();
   });
 
   it('reconnects an extension agent with sessionId + username after claiming', async () => {

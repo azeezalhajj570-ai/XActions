@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 nich (@nichxbt). Licensed under the Apache License, Version 2.0.
 // Pairing route tests: the extension claims a dashboard session via HTTP.
 // The pairing code itself is the credential — no JWT is involved.
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { io as ioc } from 'socket.io-client';
@@ -55,6 +55,13 @@ describe('POST /api/pairing/claim', () => {
   beforeAll(async () => {
     ({ app, httpServer, io } = createApp({ rateLimiting: false }));
     await new Promise((resolve) => httpServer.listen(0, resolve));
+  });
+
+  beforeEach(async () => {
+    // Isolate tests: session reuse is per-user, so clear the in-memory maps.
+    const { activeSessions, pendingSessions } = await import('../../api/realtime/socketHandler.js');
+    activeSessions.clear();
+    pendingSessions.clear();
   });
 
   afterAll(async () => {

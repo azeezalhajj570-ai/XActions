@@ -376,7 +376,44 @@ function handleAgentConnection(io, socket) {
 
 // ===== DASHBOARD (user's control panel) =====
 function handleDashboardConnection(io, socket) {
-  // Generate session ID for this user
+  // Reuse the user's live session if one exists, so a page refresh does not
+  // orphan the agent and force a re-pair: the new dashboard socket re-attaches
+  // to the existing session (and its pairing code / connected agent).
+  const existing = findLiveSessionForUser(socket.user.id);
+  const existingSessionId = existing?.sessionId;
+  const session = existing?.session;
+
+  if (existing && existingSessionId && session) {
+    // Re-attach: point the session at the new dashboard socket BEFORE the old
+    // socket's disconnect fires, so handleDisconnection sees the session's
+    // dashboard is already the new socket and does not tear the session down.
+    const oldDashboard = session.dashboard;
+    session.dashboard = socket;
+    socket.sessionId = existingSessionId;
+    if (oldDashboard && oldDashboard !== socket && oldDashboard.connected) {
+      try { oldDashboard.disconnect(); } catch { /* already gone */ }
+    }
+
+    // The agent (if any) stays bound; surface current state to the dashboard.
+    socket.emit('session:created', {
+      sessionId: existingSessionId,
+      pairingCode: findPairingCodeForSession(existingSessionId) || generatePairingCode(),
+      hasAgent: !!session.agent,
+    });
+
+    // Re-notify with the current connection state.
+    if (session.agent) {
+      socket.emit('agent:connected', { sessionId: existingSessionId, account: session.account });
+    } else {
+      socket.emit('agent:disconnected');
+    }
+
+    broadcastToAdmins(io, 'session:updated', getSessionInfo(existingSessionId));
+    attachDashboardListeners(io, socket, existingSessionId);
+    return;
+  }
+
+  // No live session for this user — create a fresh one.
   const sessionId = `session_${socket.user.id}_${Date.now()}`;
   
   // Create session
@@ -411,6 +448,30 @@ function handleDashboardConnection(io, socket) {
   // Notify admins of new session
   broadcastToAdmins(io, 'session:new', getSessionInfo(sessionId));
 
+  attachDashboardListeners(io, socket, sessionId);
+}
+
+/** Find the user's live session (one with a connected dashboard or agent). */
+function findLiveSessionForUser(userId) {
+  for (const [sessionId, session] of activeSessions) {
+    if (session.user?.id !== userId) continue;
+    if (session.dashboard?.connected || session.agent?.connected) {
+      return { sessionId, session };
+    }
+  }
+  return null;
+}
+
+/** Find the pairing code currently pending for a session. */
+function findPairingCodeForSession(sessionId) {
+  for (const [code, entry] of pendingSessions) {
+    if (entry.sessionId === sessionId) return code;
+  }
+  return null;
+}
+
+/** The dashboard -> server listeners shared by fresh and reused sessions. */
+function attachDashboardListeners(io, socket, sessionId) {
   // Dashboard requests to start an operation
   socket.on('start:operation', async (data) => {
     const { operation, config } = data;
