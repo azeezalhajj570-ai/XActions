@@ -117,6 +117,16 @@
         });
         break;
 
+      case 'X_ACCOUNT_RESULT':
+        // verify_credentials result from the page (same-origin fetch)
+        chrome.runtime.sendMessage({
+          type: 'X_ACCOUNT_RESULT',
+          ok: msg.ok,
+          data: msg.data,
+          error: msg.error,
+        });
+        break;
+
       case 'LLM_REQUEST':
         // x.com's CSP blocks the page from reaching LLM providers directly.
         // The service worker has host permissions for them, so relay the
@@ -204,6 +214,16 @@
         setTimeout(() => {
           window.removeEventListener('message', onAccountInfo);
         }, 3000);
+        break;
+
+      case 'FETCH_X_ACCOUNT':
+        // Ask the page script to fetch verify_credentials (same-origin). The
+        // result flows back via X_ACCOUNT_RESULT -> the service worker.
+        window.postMessage({
+          source: 'xactions-extension',
+          type: 'FETCH_X_ACCOUNT',
+        }, '*');
+        sendResponse({ success: true });
         break;
 
       case 'AGENT_CONNECT':

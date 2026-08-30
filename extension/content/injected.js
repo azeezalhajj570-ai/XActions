@@ -970,6 +970,41 @@
       case 'GET_ACCOUNT_INFO':
         window.postMessage({ source: 'xactions-page', type: 'ACCOUNT_INFO', data: scrapeAccountInfo() }, '*');
         break;
+
+      case 'FETCH_X_ACCOUNT': {
+        // Same-origin fetch to x.com: cookies attach automatically and the
+        // page CSP does not block same-origin fetches. Authoritative identity.
+        fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' },
+        })
+          .then((res) => (res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status))))
+          .then((data) => {
+            const username = data?.screen_name || '';
+            if (!username) throw new Error('missing screen_name');
+            window.postMessage({
+              source: 'xactions-page',
+              type: 'X_ACCOUNT_RESULT',
+              ok: true,
+              data: {
+                username,
+                displayName: data.name || username,
+                profileUrl: `https://x.com/${username}`,
+                avatar: data.profile_image_url_https || '',
+              },
+            }, '*');
+          })
+          .catch((err) => {
+            window.postMessage({
+              source: 'xactions-page',
+              type: 'X_ACCOUNT_RESULT',
+              ok: false,
+              error: err?.message || 'verify_credentials failed',
+            }, '*');
+          });
+        break;
+      }
     }
   });
 

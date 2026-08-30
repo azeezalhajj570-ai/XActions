@@ -11,10 +11,12 @@ function freshAgent({ initialStorage = {}, tabs } = {}) {
   const cleanup = installGlobals({ io: fakeIo, chrome });
   const exports = loadExtensionScript('background/agent-connection.js', { io: fakeIo, chrome });
   const { agentConnection } = exports;
+  // Give the tabs stub access to chrome so it can emit bridge->SW messages.
+  if (tabs) tabs._chrome = chrome;
   return { agentConnection, storage, chrome, fakeIo, cleanup };
 }
 
-// A tab that answers GET_ACCOUNT_INFO with an account.
+// A tab that answers GET_ACCOUNT_INFO / FETCH_X_ACCOUNT with an account.
 function accountTabs(account) {
   return {
     async query() {
@@ -30,6 +32,14 @@ function accountTabs(account) {
             avatar: account.avatar,
           },
         };
+      }
+      if (message.type === 'FETCH_X_ACCOUNT') {
+        // Simulate the injected page answering verify_credentials: emit an
+        // X_ACCOUNT_RESULT through the runtime message listeners.
+        const listeners = this._chrome?._listeners?.onMessage || [];
+        for (const fn of listeners.slice()) {
+          fn({ type: 'X_ACCOUNT_RESULT', ok: true, data: { username: account.username, displayName: account.displayName, profileUrl: account.profileUrl, avatar: account.avatar } }, {}, () => {});
+        }
       }
       return { success: true };
     },

@@ -56,6 +56,10 @@ export function makeChrome({ storage, tabs } = {}) {
     },
     onMessage: {
       addListener(fn) { listeners.onMessage.push(fn); },
+      removeListener(fn) {
+        const i = listeners.onMessage.indexOf(fn);
+        if (i !== -1) listeners.onMessage.splice(i, 1);
+      },
     },
     onInstalled: {
       addListener(fn) { listeners.onInstalled.push(fn); },

@@ -39,6 +39,9 @@ function loadServiceWorker({ initialStorage = {}, tabs } = {}) {
 
   cleanups.push(installGlobals({ io: fakeIo, chrome }));
 
+  // Give the tabs stub access to chrome so it can emit bridge->SW messages.
+  if (tabs) tabs._chrome = chrome;
+
   // Load ONLY the service worker: its importScripts() loads the connection
   // manager (and would load the vendored client, which tests replace with the
   // fake io). The worker shares the single instance via self.XActionsAgentConnection.
@@ -70,6 +73,12 @@ function makeTabsStub() {
       sentToTabs.push({ tabId, message });
       if (message.type === 'GET_ACCOUNT_INFO') {
         return { data: { handle: 'myx', name: 'My X', url: 'https://x.com/myx', avatar: '' } };
+      }
+      if (message.type === 'FETCH_X_ACCOUNT') {
+        const listeners = this._chrome?._listeners?.onMessage || [];
+        for (const fn of listeners.slice()) {
+          fn({ type: 'X_ACCOUNT_RESULT', ok: true, data: { username: 'myx', displayName: 'My X', profileUrl: 'https://x.com/myx', avatar: '' } }, {}, () => {});
+        }
       }
       return { success: true };
     },

@@ -60,39 +60,6 @@
   }
 
   /**
-   * Resolve the authenticated X account from the session cookie via x.com's
-   * verify_credentials endpoint. Runs in the service worker (x.com host
-   * permission, no page CSP). Returns { username, displayName, profileUrl,
-   * avatar } or throws.
-   */
-  async function fetchXAccount(sessionCookie) {
-    const ct0 = /ct0=([^;]+)/.exec(sessionCookie)?.[1] || '';
-    const res = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
-      method: 'GET',
-      headers: {
-        'authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
-        'cookie': sessionCookie,
-        'x-csrf-token': ct0,
-        'x-twitter-auth-type': 'OAuth2Session',
-        'content-type': 'application/json',
-      },
-      credentials: 'omit',
-    });
-    if (!res.ok) {
-      throw new Error(`verify_credentials HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    const username = data?.screen_name || '';
-    if (!username) throw new Error('verify_credentials missing screen_name');
-    return {
-      username,
-      displayName: data?.name || username,
-      profileUrl: `https://x.com/${username}`,
-      avatar: data?.profile_image_url_https || '',
-    };
-  }
-
-  /**
    * Read config + pairing + state from chrome.storage.local in one shot.
    */
   async function loadPersisted() {
@@ -470,10 +437,10 @@
     }
 
     /**
-     * Read the current X account. Primary: fetch x.com's own
-     * verify_credentials endpoint from the service worker (authoritative,
-     * no page-script/CSP dependency — the SW has x.com host permission).
-     * Fallback: the page script via the bridge.
+     * Read the current X account. Primary: have the injected page script call
+     * x.com's verify_credentials (same-origin fetch — cookies attach
+     * automatically and the page CSP allows it). Fallback: DOM scrape via the
+     * bridge, then the persisted account.
      */
     async refreshAccountFromTab() {
       await this.ensureInitialized();
@@ -486,30 +453,9 @@
       this.agentTabId = tab.id;
       await chrome.storage.local.set({ [STORAGE_KEYS.tab]: tab.id });
 
-      // 1) Authoritative identity from x.com via the session cookie.
-      let sessionCookie = '';
-      try {
-        sessionCookie = await readXCookies(tab.url);
-      } catch (err) {
-        if (err?.message === 'missing cookies permission') {
-          await this.setState({ lastError: 'The XFlow extension needs re-adding: remove it and Load unpacked again (cookies permission).' });
-          return null;
-        }
-      }
-      if (sessionCookie) {
-        try {
-          const account = await fetchXAccount(sessionCookie);
-          if (account?.username) {
-            this.account = { ...account, sessionCookie };
-            await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
-            return this.account;
-          }
-        } catch { /* fall through to the bridge read */ }
-      }
+      const sessionCookie = await readXCookies(tab.url);
 
-      // 2) Fall back to the page script through the bridge. Inject on demand
-      //    (CSP-safe, world:'MAIN') and time-box every step so pairing cannot
-      //    hang on a missing or unresponsive page script.
+      // 1) Authoritative identity: verify_credentials from the page (same-origin).
       try {
         await Promise.race([
           chrome.scripting.executeScript({
@@ -521,6 +467,14 @@
         ]);
       } catch { /* already injected or scripting unavailable */ }
 
+      const viaCredentials = await this.readAccountViaCredentials(tab.id);
+      if (viaCredentials?.username) {
+        this.account = { ...viaCredentials, sessionCookie };
+        await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
+        return this.account;
+      }
+
+      // 2) Fall back to the DOM scrape through the bridge.
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
           const response = await Promise.race([
@@ -543,14 +497,39 @@
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
 
-      // The tab is there but never answered (page still loading, or the
-      // injected script failed). Fall back to a persisted account so a warm
-      // reconnect still works, but only if we actually have one — never invent
-      // an empty account and send it to the backend.
+      // 3) The tab is there but never answered. Fall back to a persisted
+      //    account so a warm reconnect still works, but never invent one.
       if (this.account?.username) {
         return this.account;
       }
-      await this.setState({ lastError: 'Could not read the X account from the tab.' });
+      await this.setState({ lastError: 'Could not read the X account from the tab. Make sure you are signed in on x.com.' });
+      return null;
+    }
+
+    /**
+     * Ask the injected page script to fetch verify_credentials (same-origin,
+     * cookies auto-attached) and return the resolved account via the bridge.
+     */
+    async readAccountViaCredentials(tabId) {
+      try {
+        const result = await new Promise((resolve) => {
+          const onResult = (message) => {
+            if (message.type !== 'X_ACCOUNT_RESULT') return;
+            chrome.runtime.onMessage.removeListener(onResult);
+            clearTimeout(timer);
+            resolve(message);
+          };
+          chrome.runtime.onMessage.addListener(onResult);
+          const timer = setTimeout(() => {
+            chrome.runtime.onMessage.removeListener(onResult);
+            resolve(null);
+          }, 5000);
+          chrome.tabs.sendMessage(tabId, { type: 'FETCH_X_ACCOUNT' }).catch(() => {});
+        });
+        if (result?.ok && result?.data?.username) {
+          return result.data;
+        }
+      } catch { /* timeout or no listener */ }
       return null;
     }
 
