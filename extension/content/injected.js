@@ -1007,11 +1007,12 @@
       }
 
       case 'FETCH_X_GROUP_MEMBERS': {
-        // Same-origin fetch of the DM conversation from the page context:
-        // the browser's own session/headers are attached automatically, which
-        // is the path that actually works for group DMs (the server-side REST
-        // call 404s for group conversations). Reports the `users` map + the
-        // conversation's participant IDs back through the bridge.
+        // Extract the group DM's participants. Two paths:
+        //  1) Fast path: same-origin REST fetch (works for some accounts).
+        //  2) DOM path (the spec's "All Members" interface): scroll the
+        //     member list to load the virtualized rows, collect the profile
+        //     links x.com renders for every participant, dedupe, and report.
+        //     This is what actually works for group DMs.
         const conversationId = msg.conversationId || '';
         if (!/^g\d+$/.test(conversationId)) {
           window.postMessage({
@@ -1022,111 +1023,63 @@
           }, '*');
           break;
         }
-        const params = new URLSearchParams({
-          dm_users: 'true',
-          include_groups: 'true',
-          include_inbox_timelines: 'true',
-          supports_reactions: 'true',
-          count: '100',
-        });
-        // The web client signs these requests with the ct0 CSRF token; without
-        // it x.com returns 401/403 even for an authenticated same-origin fetch.
-        const ct0 = (document.cookie.match(/(?:^|; )ct0=([^;]+)/) || [])[1] || '';
-        const headers = { 'content-type': 'application/json' };
-        if (ct0) headers['x-csrf-token'] = ct0;
-        fetch(`https://x.com/i/api/1.1/dm/conversation/${conversationId}.json?${params.toString()}`, {
-          method: 'GET',
-          credentials: 'include',
-          headers,
-        })
-          .then((res) => {
-            if (res.status === 404) throw new Error('CONVERSATION_NOT_FOUND');
-            if (res.status === 403) throw new Error('ACCESS_DENIED');
-            if (res.status === 429) throw new Error('RATE_LIMITED');
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.json();
-          })
-          .then((data) => {
-            const users = data.users || {};
-            const timeline = data.conversation_timeline || {};
-            const participantIds = Object.keys(users);
-            const members = participantIds
-              .map((uid) => {
-                const u = users[uid] || {};
-                const username = u.screen_name || '';
-                if (!username) return null;
-                return {
-                  xUserId: uid,
-                  username,
-                  displayName: u.name || username,
-                  profileUrl: `https://x.com/${username}`,
-                  avatarUrl: u.profile_image_url_https || '',
-                  isAdmin: Boolean(u.is_admin || false),
-                };
-              })
-              .filter(Boolean);
-            const timelineMemberIds = new Set(
-              (timeline.entries || []).flatMap((e) =>
-                [e.message?.sender_id, e.message?.participants_ids || []].flat(),
-              ).filter(Boolean),
-            );
-            window.postMessage({
-              source: 'xactions-page',
-              type: 'X_GROUP_MEMBERS_RESULT',
-              ok: true,
-              data: {
-                conversationId,
-                members,
-                source: 'page',
-                timelineSenderIds: [...timelineMemberIds],
-              },
-            }, '*');
-          })
-          .catch(async (err) => {
-            // The REST path cannot access group DMs (X's API surface does not
-            // expose group conversation participants). Fall back to reading the
-            // group's member panel from the DOM. The /info page does NOT render
-            // the member list — it lives in the conversation-info overlay, so
-            // open it first (the conversation info button), wait for it to
-            // render, then scrape the UserCell rows.
-            const infoBtn = document.querySelector(
-              '[data-testid="conversationInfoButton"], [data-testid="DmGroupInfoButton"], [data-testid="groupDmHeader"], [aria-label="Conversation info"], [aria-label="Group info"]',
-            );
-            if (infoBtn) {
-              try { infoBtn.click(); } catch { /* ignore */ }
-            }
-            await new Promise((r) => setTimeout(r, 1200));
-            // The overlay may still be rendering — poll for member rows up to
-            // ~4s before giving up.
-            let domMembers = [];
-            for (let i = 0; i < 5; i++) {
-              domMembers = scrapeGroupMembersFromDOM();
-              if (domMembers.length > 0) break;
-              await new Promise((r) => setTimeout(r, 700));
-            }
-            if (domMembers.length > 0) {
-              window.postMessage({
-                source: 'xactions-page',
-                type: 'X_GROUP_MEMBERS_RESULT',
-                ok: true,
-                data: {
-                  conversationId,
-                  members: domMembers,
-                  source: 'dom',
-                },
-              }, '*');
-              return;
-            }
-            window.postMessage({
-              source: 'xactions-page',
-              type: 'X_GROUP_MEMBERS_RESULT',
-              ok: false,
-              error: domMembers.length === 0 && err?.message === 'ACCESS_DENIED'
-                ? 'ACCESS_DENIED'
-                : (err?.message || 'NETWORK_ERROR'),
-              hint: 'Open the group chat and show its member list, then retry.',
-            }, '*');
+
+        try {
+          // Fast path first (best-effort, non-blocking).
+          const ct0 = (document.cookie.match(/(?:^|; )ct0=([^;]+)/) || [])[1] || '';
+          const params = new URLSearchParams({
+            dm_users: 'true', include_groups: 'true', include_inbox_timelines: 'true',
+            supports_reactions: 'true', count: '100',
           });
+          const headers = { 'content-type': 'application/json' };
+          if (ct0) headers['x-csrf-token'] = ct0;
+          const res = await fetch(`https://x.com/i/api/1.1/dm/conversation/${conversationId}.json?${params.toString()}`, {
+            method: 'GET', credentials: 'include', headers,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const users = data.users || {};
+            const participantIds = Object.keys(users);
+            if (participantIds.length > 0) {
+              const members = participantIds
+                .map((uid) => {
+                  const u = users[uid] || {};
+                  const username = u.screen_name || '';
+                  if (!username) return null;
+                  return {
+                    xUserId: uid, username,
+                    displayName: u.name || username,
+                    profileUrl: `https://x.com/${username}`,
+                    avatarUrl: u.profile_image_url_https || '',
+                    isAdmin: Boolean(u.is_admin || false),
+                  };
+                })
+                .filter(Boolean);
+              window.postMessage({
+                source: 'xactions-page', type: 'X_GROUP_MEMBERS_RESULT',
+                ok: true, data: { conversationId, members, source: 'api' },
+              }, '*');
+              break;
+            }
+          }
+        } catch { /* REST path failed — fall through to DOM */ }
+
+        // DOM path: open the "All Members" view if it isn't already, then
+        // scroll the virtualized member list until no new members appear.
+        const members = await extractGroupMembersFromDOM();
+        if (members.length > 0) {
+          window.postMessage({
+            source: 'xactions-page', type: 'X_GROUP_MEMBERS_RESULT',
+            ok: true, data: { conversationId, members, source: 'dom' },
+          }, '*');
+        } else {
+          window.postMessage({
+            source: 'xactions-page', type: 'X_GROUP_MEMBERS_RESULT',
+            ok: false,
+            error: 'ACCESS_DENIED',
+            hint: 'Open the group chat and its "All Members" view, then retry.',
+          }, '*');
+        }
         break;
       }
     }
@@ -1137,67 +1090,84 @@
   // the same cells the follower/unfollower scripts scrape. Needs the group
   // chat open with the member list visible (click the group info / people
   // icon so the panel is on screen).
-  function scrapeGroupMembersFromDOM() {
-    const members = [];
+  // Scroll-traversal member extractor for group DMs.
+  //
+  // The "All Members" (جميع الأعضاء) interface renders participants as X
+  // profile links in a virtualized list. This function opens that view if it
+  // isn't already on screen, then scrolls the list container repeatedly,
+  // collecting newly rendered profile links until a full pass adds nothing.
+  // Returns deduplicated, normalized members.
+  async function extractGroupMembersFromDOM(maxScrolls = 80) {
     const seen = new Set();
-    // 1) The group-info member list (x.com/i/chat/<id>/info) and the
-    //    participant panel render user rows. Try the known cell containers
-    //    first, then fall back to any profile link in the visible DOM that
-    //    is not the current user's own nav links.
-    const rows = document.querySelectorAll('[data-testid="UserCell"], [data-testid="conversationMembers"] [role="button"], [data-testid="conversationMembers"] a[href^="/"], [data-testid="conversationMembers"] [data-testid="User-Name"], [data-testid="User-Name"] a[href^="/"]');
-    for (const row of rows) {
-      const link = row.matches('a[href^="/"]') ? row : row.querySelector('a[href^="/"]');
-      const href = link?.getAttribute('href') || '';
+    const members = [];
+    const addLink = (link) => {
+      const href = link?.getAttribute?.('href') || '';
       const username = (href.split('/').filter(Boolean)[0] || '').replace(/^@/, '');
-      if (!username || username === 'home' || seen.has(username)) continue;
+      if (!username || username === 'home' || username === 'search' || username === 'messages'
+        || username === 'i' || username === 'settings' || username === 'notifications'
+        || username === 'explore' || username === 'compose' || seen.has(username)) return;
       seen.add(username);
-      const nameEl = row.querySelector('[dir="ltr"] > span') || row.querySelector('span');
-      const displayName = nameEl?.textContent?.trim() || username;
-      const avatar = row.querySelector('img')?.src || '';
+      const img = link.querySelector('img');
+      const nameEl = link.querySelector('[dir="ltr"] > span')
+        || link.closest('[role="button"]')?.querySelector('span')
+        || link.parentElement?.parentElement?.querySelector('span');
       members.push({
-        xUserId: username,
+        xUserId: username, // DOM rows do not expose the numeric user id
         username,
-        displayName,
+        displayName: nameEl?.textContent?.trim() || username,
         profileUrl: `https://x.com/${username}`,
-        avatarUrl: avatar || '',
+        avatarUrl: img?.src || '',
         isAdmin: false,
       });
+    };
+
+    // 1) Try to open the "All Members" view: click the group header's member
+    //    count / people button (opens the conversation-info panel), then the
+    //    "Members" row inside it if present.
+    const headerBtn = document.querySelector(
+      '[data-testid="conversationInfoButton"], [data-testid="DmGroupInfoButton"], [data-testid="groupDmHeader"], [aria-label="Conversation info"], [aria-label="Group info"]',
+    );
+    if (headerBtn) {
+      try { headerBtn.click(); } catch { /* ignore */ }
+      await new Promise((r) => setTimeout(r, 900));
     }
-    // 2) If the panel rows did not yield anything, scan every avatar +
-    //    handle link pair on the page (the group info page shows a member
-    //    grid of avatars with profile links beneath).
-    if (members.length === 0) {
-      const links = document.querySelectorAll('a[href^="/"]');
-      for (const link of links) {
-        const href = link.getAttribute('href') || '';
-        const username = (href.split('/').filter(Boolean)[0] || '').replace(/^@/, '');
-        if (!username || username === 'home' || username === 'search' || username === 'messages' || username === 'i' || username === 'settings' || username === 'notifications' || username === 'explore' || seen.has(username)) continue;
-        const img = link.querySelector('img');
-        // Only treat links that carry an avatar as member rows.
-        if (!img?.src) continue;
-        seen.add(username);
-        const nameEl = link.querySelector('[dir="ltr"] > span') || link.closest('[role="button"]')?.querySelector('span');
-        members.push({
-          xUserId: username,
-          username,
-          displayName: nameEl?.textContent?.trim() || username,
-          profileUrl: `https://x.com/${username}`,
-          avatarUrl: img.src || '',
-          isAdmin: false,
-        });
+    const memberRow = [...document.querySelectorAll('[role="menuitem"], [role="button"]')]
+      .find((el) => /members|الأعضاء|people/i.test(el.textContent || '') && /all|كل/i.test(el.textContent || ''));
+    if (memberRow) {
+      try { memberRow.click(); } catch { /* ignore */ }
+      await new Promise((r) => setTimeout(r, 900));
+    }
+
+    // 2) Collect whatever is already rendered.
+    for (const link of document.querySelectorAll('a[href^="/"]')) {
+      const img = link.querySelector('img');
+      if (img?.src) addLink(link);
+    }
+
+    // 3) Scroll the member list (the scroll container or the window) until a
+    //    full pass adds no new members, up to maxScrolls.
+    let scrollable = document.querySelector('[data-testid="conversationMembers"], [aria-label="Members"], [data-testid="Scrollable"]');
+    for (let i = 0; i < maxScrolls; i++) {
+      const before = members.length;
+      if (scrollable) {
+        scrollable.scrollTop = scrollable.scrollHeight;
+      } else {
+        window.scrollBy(0, window.innerHeight * 0.8);
       }
-    }
-    // Debug: when nothing matched, record what the DOM actually contains so
-    // we can target the real selectors instead of guessing.
-    if (members.length === 0) {
-      const userCells = document.querySelectorAll('[data-testid="UserCell"]').length;
-      const convMembers = document.querySelectorAll('[data-testid="conversationMembers"]').length;
-      const userNames = document.querySelectorAll('[data-testid="User-Name"]').length;
-      const profileLinks = [...document.querySelectorAll('a[href^="/"]')]
-        .map((a) => (a.getAttribute('href') || '').split('/').filter(Boolean)[0])
-        .filter((u) => u && !['home', 'search', 'messages', 'i', 'settings', 'notifications', 'explore', 'compose'].includes(u))
-        .slice(0, 10);
-      console.log('[XFlow][groupMembers] DOM probe:', JSON.stringify({ userCells, convMembers, userNames, profileLinks }));
+      await new Promise((r) => setTimeout(r, 500));
+      for (const link of document.querySelectorAll('a[href^="/"]')) {
+        const img = link.querySelector('img');
+        if (img?.src) addLink(link);
+      }
+      if (members.length === before) {
+        // One more pass to be sure the tail has settled.
+        await new Promise((r) => setTimeout(r, 500));
+        for (const link of document.querySelectorAll('a[href^="/"]')) {
+          const img = link.querySelector('img');
+          if (img?.src) addLink(link);
+        }
+        if (members.length === before) break;
+      }
     }
     return members;
   }
