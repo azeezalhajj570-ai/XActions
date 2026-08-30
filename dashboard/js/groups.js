@@ -19,9 +19,10 @@ const $ = (sel) => document.querySelector(sel);
 // a { ok, data } shape. Wrap it so the rest of this file keeps its contract.
 async function api(endpoint, options = {}) {
   try {
-    const data = await api(endpoint, options);
+    const data = await apiRequest(endpoint, options);
     return { ok: true, data };
   } catch (err) {
+    console.error(`[groups] API ${options.method || 'GET'} ${endpoint} failed:`, err);
     return { ok: false, data: { error: err.message || 'Request failed' } };
   }
 }
