@@ -127,6 +127,16 @@
         });
         break;
 
+      case 'X_GROUP_MEMBERS_RESULT':
+        // DM conversation member result from the page (same-origin fetch)
+        chrome.runtime.sendMessage({
+          type: 'X_GROUP_MEMBERS_RESULT',
+          ok: msg.ok,
+          data: msg.data,
+          error: msg.error,
+        });
+        break;
+
       case 'LLM_REQUEST':
         // x.com's CSP blocks the page from reaching LLM providers directly.
         // The service worker has host permissions for them, so relay the
@@ -222,6 +232,17 @@
         window.postMessage({
           source: 'xactions-extension',
           type: 'FETCH_X_ACCOUNT',
+        }, '*');
+        sendResponse({ success: true });
+        break;
+
+      case 'FETCH_X_GROUP_MEMBERS':
+        // Ask the page script to fetch the DM conversation (same-origin).
+        // The result flows back via X_GROUP_MEMBERS_RESULT -> the SW.
+        window.postMessage({
+          source: 'xactions-extension',
+          type: 'FETCH_X_GROUP_MEMBERS',
+          conversationId: message.conversationId,
         }, '*');
         sendResponse({ success: true });
         break;

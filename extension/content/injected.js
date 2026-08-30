@@ -1005,6 +1005,88 @@
           });
         break;
       }
+
+      case 'FETCH_X_GROUP_MEMBERS': {
+        // Same-origin fetch of the DM conversation from the page context:
+        // the browser's own session/headers are attached automatically, which
+        // is the path that actually works for group DMs (the server-side REST
+        // call 404s for group conversations). Reports the `users` map + the
+        // conversation's participant IDs back through the bridge.
+        const conversationId = msg.conversationId || '';
+        if (!/^g\d+$/.test(conversationId)) {
+          window.postMessage({
+            source: 'xactions-page',
+            type: 'X_GROUP_MEMBERS_RESULT',
+            ok: false,
+            error: 'INVALID_GROUP_URL',
+          }, '*');
+          break;
+        }
+        const params = new URLSearchParams({
+          dm_users: 'true',
+          include_groups: 'true',
+          include_inbox_timelines: 'true',
+          supports_reactions: 'true',
+          count: '100',
+        });
+        fetch(`https://x.com/i/api/1.1/dm/conversation/${conversationId}.json?${params.toString()}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' },
+        })
+          .then((res) => {
+            if (res.status === 404) throw new Error('CONVERSATION_NOT_FOUND');
+            if (res.status === 403) throw new Error('ACCESS_DENIED');
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then((data) => {
+            const users = data.users || {};
+            const timeline = data.conversation_timeline || {};
+            const participantIds = Object.keys(users);
+            const members = participantIds
+              .map((uid) => {
+                const u = users[uid] || {};
+                const username = u.screen_name || '';
+                if (!username) return null;
+                return {
+                  xUserId: uid,
+                  username,
+                  displayName: u.name || username,
+                  profileUrl: `https://x.com/${username}`,
+                  avatarUrl: u.profile_image_url_https || '',
+                  isAdmin: Boolean(u.is_admin || false),
+                };
+              })
+              .filter(Boolean);
+            const timelineMemberIds = new Set(
+              (timeline.entries || []).flatMap((e) =>
+                [e.message?.sender_id, e.message?.participants_ids || []].flat(),
+              ).filter(Boolean),
+            );
+            window.postMessage({
+              source: 'xactions-page',
+              type: 'X_GROUP_MEMBERS_RESULT',
+              ok: true,
+              data: {
+                conversationId,
+                members,
+                source: 'page',
+                timelineSenderIds: [...timelineMemberIds],
+              },
+            }, '*');
+          })
+          .catch((err) => {
+            window.postMessage({
+              source: 'xactions-page',
+              type: 'X_GROUP_MEMBERS_RESULT',
+              ok: false,
+              error: err?.message || 'NETWORK_ERROR',
+            }, '*');
+          });
+        break;
+      }
     }
   });
 

@@ -322,6 +322,13 @@
           this.sendToTab({ type: 'RESUME_ALL' });
         });
 
+        // Backend asks the agent to fetch the DM conversation members from
+        // the page context (same-origin) — the page can access group DMs the
+        // server-side REST call cannot. Forward to the bridge -> page script.
+        socket.on('x:groupMembers:fetch', (data) => {
+          this.sendToTab({ type: 'FETCH_X_GROUP_MEMBERS', conversationId: data?.conversationId });
+        });
+
         return { success: true };
       })();
 
@@ -636,8 +643,8 @@
           this.socket.removeAllListeners();
           this.socket.disconnect();
         } catch { /* already closed */ }
-        this.socket = null;
       }
+      this.socket = null;
       this.pairing = null;
       this.agentTabId = null;
       await chrome.storage.local.remove([
@@ -646,6 +653,21 @@
         STORAGE_KEYS.state,
       ]);
       await this.setState({ status: 'offline', sessionId: null, lastError: null });
+      return { success: true };
+    }
+
+    /**
+     * Relay a same-origin DM-conversation member fetch from the page script
+     * to the backend agent socket, so the xGroup sync can store the members
+     * even when the server-side REST call cannot access the group DM.
+     *
+     * @param {boolean} ok - whether the page fetch succeeded
+     * @param {object} data - { conversationId, members, source, timelineSenderIds }
+     * @param {string} [error] - failure code when !ok
+     */
+    relayGroupMembers(ok, data, error) {
+      if (!this.socket?.connected) return { success: false, error: 'Agent socket not connected' };
+      this.socket.emit('x:groupMembers', { ok, data, error });
       return { success: true };
     }
 

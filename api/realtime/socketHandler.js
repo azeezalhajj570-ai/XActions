@@ -186,6 +186,20 @@ export function initializeSocketIO(httpServer) {
       socket.leave(`group:${groupId}`);
     });
 
+    // Dashboard asks the agent (extension) to fetch the DM conversation
+    // members from the page context (same-origin), which can access group
+    // DMs the server-side REST call cannot. Forward to the agent socket.
+    socket.on('x:groupMembers:fetch', (payload) => {
+      const session = activeSessions.get(socket.sessionId);
+      const agent = session?.agent;
+      if (!agent) {
+        socket.emit('x:groupMembers:result', { ok: false, error: 'AGENT_OFFLINE', conversationId: payload?.conversationId || null });
+        return;
+      }
+      agent.emit('x:groupMembers:fetch', { conversationId: payload?.conversationId });
+      // The agent's x:groupMembers reply is relayed to session.dashboard.
+    });
+
     socket.on('disconnect', () => {
       console.log(`🔌 Socket disconnected: ${socket.id}`);
       handleDisconnection(io, socket);
@@ -346,6 +360,60 @@ async function handleAgentConnection(io, socket) {
       }
 
       broadcastToAdmins(io, 'session:updated', getSessionInfo(boundSessionId));
+    }
+  });
+
+  // Agent relays a same-origin DM-conversation member fetch (the page script
+  // can access group DMs that the server-side REST call cannot). Upsert the
+  // members into XGroupMember and ack the result.
+  socket.on('x:groupMembers', async ({ ok, data, error }) => {
+    const session = activeSessions.get(boundSessionId);
+    if (!session) return;
+    if (!ok || !data?.members?.length) {
+      if (session.dashboard) {
+        session.dashboard.emit('x:groupMembers:result', { ok: false, error: error || 'NO_MEMBERS_FOUND', conversationId: data?.conversationId || null });
+      }
+      return;
+    }
+    const conversationId = data.conversationId;
+    try {
+      const prisma = (await import('@prisma/client')).PrismaClient;
+      const client = new prisma();
+      let inserted = 0;
+      let updated = 0;
+      for (const m of data.members) {
+        const existing = await client.xGroupMember.findUnique({
+          where: { conversationId_xUserId: { conversationId, xUserId: m.xUserId } },
+        });
+        if (existing) {
+          await client.xGroupMember.update({
+            where: { id: existing.id },
+            data: {
+              username: m.username, displayName: m.displayName, profileUrl: m.profileUrl,
+              avatarUrl: m.avatarUrl, isAdmin: !!m.isAdmin, isCurrentMember: true, lastSeenAt: new Date(),
+            },
+          });
+          updated++;
+        } else {
+          await client.xGroupMember.create({
+            data: {
+              conversationId, xUserId: m.xUserId, username: m.username, displayName: m.displayName,
+              profileUrl: m.profileUrl, avatarUrl: m.avatarUrl, isAdmin: !!m.isAdmin,
+              isCurrentMember: true, firstSeenAt: new Date(), lastSeenAt: new Date(),
+            },
+          });
+          inserted++;
+        }
+      }
+      await client.$disconnect();
+      if (session.dashboard) {
+        session.dashboard.emit('x:groupMembers:result', { ok: true, conversationId, total: data.members.length, inserted, updated });
+      }
+    } catch (err) {
+      console.error('❌ x:groupMembers upsert error:', err?.message);
+      if (session.dashboard) {
+        session.dashboard.emit('x:groupMembers:result', { ok: false, error: 'DB_ERROR', conversationId });
+      }
     }
   });
 

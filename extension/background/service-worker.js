@@ -149,6 +149,12 @@ async function handleMessage(message, sender) {
     case 'AGENT_BRIDGE_MESSAGE':
       return agentConnection.onBridgeMessage(message.message || {});
 
+    // From the bridge: the page script's same-origin DM conversation fetch
+    // (group member extraction). Relay the members to the backend agent
+    // socket so the xGroup sync can store them.
+    case 'X_GROUP_MEMBERS_RESULT':
+      return agentConnection.relayGroupMembers(message.ok, message.data, message.error);
+
     default:
       return { error: 'Unknown message type' };
   }

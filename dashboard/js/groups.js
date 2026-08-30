@@ -470,6 +470,12 @@ function pollXGroupStatus() {
         `Sync <b>${esc(s.status)}</b> — processed ${s.processed || 0} members${s.total ? ` of ${s.total}` : ''}.`,
         s.status === 'FAILED' ? `Reason: ${esc(s.error || 'unknown')}` : (s.status === 'RATE_LIMITED' ? 'Rescheduled — rate limited.' : ''),
       );
+      // The server-side REST path cannot access group DMs; offer the
+      // extension page-context fetch as a fallback.
+      if (s.status === 'FAILED' && (s.error === 'CONVERSATION_NOT_FOUND' || s.error === 'ACCESS_DENIED')) {
+        const btn = $('#btn-xgroup-via-ext');
+        if (btn) btn.style.display = 'inline-flex';
+      }
       if (s.status === 'COMPLETED') loadXGroupMembers(1);
       return;
     }
@@ -530,6 +536,7 @@ $('#btn-xgroup-sync').addEventListener('click', xGroupSync);
 $('#btn-xgroup-view').addEventListener('click', () => loadXGroupMembers(1));
 $('#btn-xgroup-export-csv').addEventListener('click', () => exportXGroupMembers('csv'));
 $('#btn-xgroup-export-json').addEventListener('click', () => exportXGroupMembers('json'));
+$('#btn-xgroup-via-ext').addEventListener('click', fetchXGroupViaExtension);
 $('#btn-xgroup-prev').addEventListener('click', () => loadXGroupMembers(Math.max(1, xGroup.page - 1)));
 $('#btn-xgroup-next').addEventListener('click', () => loadXGroupMembers(xGroup.page + 1));
 $('#xgroup-search').addEventListener('input', debounce(() => loadXGroupMembers(1), 400));
@@ -537,6 +544,18 @@ $('#xgroup-search').addEventListener('input', debounce(() => loadXGroupMembers(1
 function debounce(fn, ms) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+// Ask the connected extension agent to fetch the DM conversation members
+// from the page context (same-origin fetch, which can access group DMs the
+// server-side REST path cannot). The result arrives via x:groupMembers:result.
+async function fetchXGroupViaExtension() {
+  if (!xGroup.conversationId) return;
+  const sock = window.socket || socket;
+  if (!sock?.connected) { showToast('Agent not connected — pair the extension first', 'error'); return; }
+  setXGroupResult('Fetching members via extension…', 'Ask the XFlow extension to read the conversation from the open x.com tab.');
+  $('#btn-xgroup-via-ext').style.display = 'none';
+  sock.emit('x:groupMembers:fetch', { conversationId: xGroup.conversationId });
 }
 
 // Boot
@@ -555,6 +574,18 @@ function debounce(fn, ms) {
     socket.on('disconnect', () => {
       const b = $('#conn-badge');
       if (b) { b.className = 'pill pill--paused'; $('#conn-dot').className = 'conn-dot conn-dot--off'; $('#conn-text').textContent = 'Disconnected'; }
+    });
+    // Result of the extension page-context member fetch.
+    socket.on('x:groupMembers:result', (r) => {
+      if (!r?.ok) {
+        setXGroupResult('Extension fetch failed.', r?.error || 'unknown');
+        return;
+      }
+      setXGroupResult(
+        `Extension fetched <b>${r.total}</b> members (${r.inserted} new, ${r.updated} updated).`,
+        'Members saved. Open the group to generate tasks.',
+      );
+      loadXGroupMembers(1);
     });
   } catch { /* offline */ }
 })();
