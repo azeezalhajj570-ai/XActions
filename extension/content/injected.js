@@ -1029,10 +1029,15 @@
           supports_reactions: 'true',
           count: '100',
         });
+        // The web client signs these requests with the ct0 CSRF token; without
+        // it x.com returns 401/403 even for an authenticated same-origin fetch.
+        const ct0 = (document.cookie.match(/(?:^|; )ct0=([^;]+)/) || [])[1] || '';
+        const headers = { 'content-type': 'application/json' };
+        if (ct0) headers['x-csrf-token'] = ct0;
         fetch(`https://x.com/i/api/1.1/dm/conversation/${conversationId}.json?${params.toString()}`, {
           method: 'GET',
           credentials: 'include',
-          headers: { 'content-type': 'application/json' },
+          headers,
         })
           .then((res) => {
             if (res.status === 404) throw new Error('CONVERSATION_NOT_FOUND');
