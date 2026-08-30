@@ -18,6 +18,52 @@ const adminSockets = new Set(); // Admin sockets watching all sessions
 const pendingSessions = new Map();
 const PAIRING_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+/**
+ * Register (or refresh) an Account row for an extension agent's X account.
+ *
+ * Called when the extension pairs/binds: the session's dashboard user owns the
+ * Account, the agent's auth carries the identity + session cookie. Cookies are
+ * stored server-side only and never exposed to the client (the accounts API
+ * masks them).
+ *
+ * @param {object|null} user - the dashboard user who owns the session
+ * @param {{ username: string, displayName: string, profileUrl: string, avatar: string }} account
+ * @param {string} [sessionCookie] - `auth_token=...; ct0=...`
+ */
+async function registerExtensionAccount(user, account, sessionCookie) {
+  if (!user?.id || !account?.username) return;
+  const username = String(account.username).trim().replace(/^@/, '').toLowerCase();
+  if (!username) return;
+  const hasCookie = typeof sessionCookie === 'string' && /auth_token=[^;]+/.test(sessionCookie);
+  try {
+    await prisma.account.upsert({
+      where: { userId_username: { userId: user.id, username } },
+      update: {
+        ...(hasCookie ? { sessionCookie } : {}),
+        displayName: account.displayName || undefined,
+        profileUrl: account.profileUrl || undefined,
+        avatar: account.avatar || undefined,
+        isActive: true,
+        isBlocked: false,
+        authMethod: 'session',
+      },
+      create: {
+        userId: user.id,
+        username,
+        displayName: account.displayName || null,
+        profileUrl: account.profileUrl || null,
+        avatar: account.avatar || null,
+        sessionCookie: hasCookie ? sessionCookie : null,
+        isActive: true,
+        isBlocked: false,
+        authMethod: 'session',
+      },
+    });
+  } catch (err) {
+    console.warn(`⚠️ registerExtensionAccount failed for @${username}:`, err.message);
+  }
+}
+
 function generatePairingCode() {
   return randomBytes(4).toString('hex').toUpperCase(); // 8 chars, no ambiguous letters
 }
@@ -95,7 +141,9 @@ export function initializeSocketIO(httpServer) {
 
     // Handle different connection types
     if (socket.role === 'agent') {
-      handleAgentConnection(io, socket);
+      handleAgentConnection(io, socket).catch((err) => {
+        console.error(`❌ agent connection error (${socket.id}):`, err?.message);
+      });
     } else if (socket.role === 'dashboard') {
       handleDashboardConnection(io, socket);
     } else if (socket.role === 'admin') {
@@ -166,7 +214,7 @@ async function initializeStreamIO(io) {
 }
 
 // ===== AGENT (X.com tab via extension, or legacy console script) =====
-function handleAgentConnection(io, socket) {
+async function handleAgentConnection(io, socket) {
   const auth = socket.handshake.auth || {};
   const sessionId = auth.sessionId;
 
@@ -224,6 +272,8 @@ function handleAgentConnection(io, socket) {
     };
     session.claimedBy = 'extension';
     session.claimedAt = Date.now();
+    // Register the paired X account as an Account row for group automation.
+    await registerExtensionAccount(session.user, session.account, auth.sessionCookie);
   } else if (auth.username && auth.agentType === 'extension') {
     // Extension reconnect: the session was claimed earlier; the agent binds
     // again with the sessionId + the same X account.
@@ -244,6 +294,14 @@ function handleAgentConnection(io, socket) {
       socket.disconnect();
       return;
     }
+    // Refresh the account/cookie on reconnect so a rotated session stays valid.
+    session.account = {
+      username,
+      displayName: auth.displayName || session.account?.displayName || username,
+      profileUrl: auth.profileUrl || session.account?.profileUrl || '',
+      avatar: auth.avatar || session.account?.avatar || '',
+    };
+    await registerExtensionAccount(session.user, session.account, auth.sessionCookie);
   } else {
     // Legacy console-agent path: sessionId-only claim, unchanged.
     session = activeSessions.get(sessionId);

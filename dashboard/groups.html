@@ -247,7 +247,14 @@
         <div id="tab-accounts" style="display:none;">
           <div class="card">
             <h3 style="margin-bottom:10px;">Linked accounts</h3>
-            <p class="muted" style="font-size:12px;margin-bottom:10px;">Accounts are added under <b>Accounts</b> (top-level). Link them here so they execute group tasks.</p>
+            <p class="muted" style="font-size:12px;margin-bottom:10px;">
+              Add an X account by pasting its session cookie (<code>auth_token=...; ct0=...</code> from DevTools on x.com),
+              then link it to this group so it executes group tasks. Cookies are validated live and never stored in full.
+            </p>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+              <input type="text" class="form-input" id="account-cookie-input" placeholder="auth_token=...; ct0=..." style="flex:1;min-width:280px;font-size:12px;font-family:monospace;">
+              <button class="btn btn--primary btn--sm" id="btn-add-account">Add Account</button>
+            </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
               <select class="form-select" id="account-select" style="max-width:260px;"></select>
               <button class="btn btn--primary btn--sm" id="btn-link-account">Link Account</button>
@@ -365,7 +372,7 @@
     </div>
   </div>
 
-  <script src="/js/config.js?v=9"></script>
-  <script src="/js/groups.js?v=9"></script>
+  <script src="/js/config.js?v=10"></script>
+  <script src="/js/groups.js?v=10"></script>
 </body>
 </html>

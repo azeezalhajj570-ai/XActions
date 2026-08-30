@@ -229,6 +229,9 @@ model Account {
   userId        String
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   username      String
+  displayName   String?
+  profileUrl    String?
+  avatar        String?
   sessionCookie String?
   authMethod    String        @default("session")
   isActive      Boolean       @default(true)

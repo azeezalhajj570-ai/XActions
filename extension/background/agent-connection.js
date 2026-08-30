@@ -162,12 +162,14 @@
               displayName: pairing.displayName,
               profileUrl: pairing.profileUrl,
               avatar: pairing.avatar,
+              sessionCookie: pairing.sessionCookie || '',
             }
           : {
               role: 'agent',
               sessionId: pairing.sessionId,
               username: pairing.username,
               agentType: 'extension',
+              sessionCookie: pairing.sessionCookie || '',
             };
 
         const socket = io(this.config.backendUrl, {
@@ -329,6 +331,7 @@
             displayName: this.account.displayName,
             profileUrl: this.account.profileUrl,
             avatar: this.account.avatar,
+            sessionCookie: this.account.sessionCookie || '',
           }),
         });
       } catch (err) {
@@ -421,6 +424,7 @@
               displayName: response.data.name || '',
               profileUrl: response.data.url || '',
               avatar: response.data.avatar || '',
+              sessionCookie: response.data.sessionCookie || '',
             };
             await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
             return this.account;
@@ -546,6 +550,7 @@
               displayName: message.data.name || '',
               profileUrl: message.data.url || '',
               avatar: message.data.avatar || '',
+              sessionCookie: message.data.sessionCookie || '',
             };
             await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
           }

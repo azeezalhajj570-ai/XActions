@@ -20,6 +20,10 @@ delete process.env.X402_PAY_TO_ADDRESS;
 
 const TEST_USER = { id: 'user_test_1', username: 'tester', email: 'tester@x.test', isAdmin: false, twitterUsername: null };
 
+const prismaMocks = vi.hoisted(() => ({
+  accountUpsert: vi.fn(async ({ create, update }) => ({ id: 'acc_test', ...create, ...update })),
+}));
+
 vi.mock('@prisma/client', () => {
   const operationCreate = vi.fn(async (args) => ({ id: 'op_test', ...(args?.data || {}) }));
   return {
@@ -29,6 +33,9 @@ vi.mock('@prisma/client', () => {
       };
       operation = {
         create: operationCreate,
+      };
+      account = {
+        upsert: prismaMocks.accountUpsert,
       };
     },
   };
@@ -119,6 +126,7 @@ describe('realtime sessions (extension agent)', () => {
       pairingCode: created.pairingCode,
       username: 'myxaccount',
       displayName: 'My X Account',
+      sessionCookie: 'auth_token=abc; ct0=xyz',
     });
 
     // Register the ack listener BEFORE the connection completes so the
@@ -131,6 +139,17 @@ describe('realtime sessions (extension agent)', () => {
 
     const ack = await ackP;
     expect(ack.sessionId).toBe(created.sessionId);
+
+    // The paired X account is auto-registered for group automation.
+    expect(prismaMocks.accountUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({
+        userId: TEST_USER.id,
+        username: 'myxaccount',
+        sessionCookie: 'auth_token=abc; ct0=xyz',
+        authMethod: 'session',
+        isActive: true,
+      }),
+    }));
 
     agent.close();
     dash.close();

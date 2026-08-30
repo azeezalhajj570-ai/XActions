@@ -892,14 +892,27 @@
       const handle = handleLink?.getAttribute('href')?.split('/')[1]
         || (window.location.pathname.split('/')[1] || '');
 
+      // Session cookies for backend account registration. auth_token + ct0 are
+      // NOT HttpOnly on x.com, so the page can read them (the old console agent
+      // did exactly this). Sent only to the service worker, never exposed.
+      let sessionCookie = '';
+      try {
+        const parts = document.cookie.split(';').map((c) => c.trim());
+        const get = (k) => parts.find((c) => c.startsWith(k + '='))?.split('=').slice(1).join('=') || '';
+        const authToken = get('auth_token');
+        const ct0 = get('ct0');
+        if (authToken) sessionCookie = `auth_token=${authToken}` + (ct0 ? `; ct0=${ct0}` : '');
+      } catch { /* cookie read failed — identity only */ }
+
       return {
         name: switcherName?.textContent?.trim() || nameEl?.textContent?.trim() || 'Unknown',
         avatar: switcherAvatar?.src || avatarEl?.src || '',
         handle,
         url: window.location.href,
+        sessionCookie,
       };
     } catch {
-      return { name: 'Unknown', avatar: '', handle: '', url: window.location.href };
+      return { name: 'Unknown', avatar: '', handle: '', url: window.location.href, sessionCookie: '' };
     }
   }
 

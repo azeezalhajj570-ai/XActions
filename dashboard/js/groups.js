@@ -295,6 +295,31 @@ $('#btn-link-account').addEventListener('click', async () => {
   } else showToast(res.data?.error, 'error');
 });
 
+$('#btn-add-account').addEventListener('click', async () => {
+  const sessionCookie = $('#account-cookie-input').value.trim();
+  if (!sessionCookie) { showToast('Paste the session cookie first', 'error'); return; }
+  const btn = $('#btn-add-account');
+  btn.disabled = true;
+  btn.textContent = 'Validating…';
+  try {
+    const res = await api('/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ sessionCookie }),
+    });
+    if (res.ok) {
+      showToast(`Account @${res.data.account.username} added`, 'success');
+      $('#account-cookie-input').value = '';
+      await loadAccounts();
+      if (currentGroupId) loadGroupDetail(currentGroupId);
+    } else {
+      showToast(res.data?.error || 'Failed to add account', 'error');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add Account';
+  }
+});
+
 $('#btn-save-actions').addEventListener('click', async () => {
   const actions = {};
   ['like', 'comment', 'repost', 'follow'].forEach((a) => {
