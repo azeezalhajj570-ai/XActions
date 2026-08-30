@@ -145,8 +145,9 @@
       try {
         const pairing = await this.ensurePairing();
         if (!pairing) {
-          await this.setState({ status: 'offline', lastError: 'Not paired. Enter a pairing code in the popup.' });
-          return { success: false, error: 'Not paired' };
+          const reason = this.state.lastError || 'Not paired. Enter a pairing code in the popup.';
+          await this.setState({ status: 'offline', lastError: reason });
+          return { success: false, error: reason };
         }
 
         await this.setState({ status: 'connecting', lastError: null });
@@ -359,8 +360,42 @@
 
       this.pairing = { pairingCode };
       await chrome.storage.local.set({ [STORAGE_KEYS.pairing]: this.pairing });
-      await this.connect();
-      return { success: true };
+
+      // Wait for a real outcome — either the socket connects (with its
+      // sessionId) or the attempt fails. Returning early with success just
+      // makes the popup hide the panel while nothing is connected.
+      const outcome = await this.connect();
+      if (!outcome.success) return outcome;
+
+      const socket = this.socket;
+      if (!socket) return { success: false, error: 'Connection not established' };
+
+      if (socket.connected && this.state.status === 'connected') {
+        return { success: true };
+      }
+
+      // Socket exists but hasn't finished handshaking yet — wait briefly for
+      // the connect event (or a rejection) so the popup reflects reality.
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          cleanup();
+          resolve({ success: false, error: 'Timed out waiting for connection' });
+        }, 12000);
+        const onConnect = () => { cleanup(); resolve({ success: true }); };
+        const onError = (err) => {
+          cleanup();
+          resolve({ success: false, error: err?.message || 'Connection rejected' });
+        };
+        const cleanup = () => {
+          clearTimeout(timeout);
+          socket.off('connect', onConnect);
+          socket.off('connect_error', onError);
+          socket.off('error', onError);
+        };
+        socket.once('connect', onConnect);
+        socket.once('connect_error', onError);
+        socket.once('error', onError);
+      });
     }
 
     /** Read the current X account from a live x.com tab through the bridge. */
@@ -394,8 +429,15 @@
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
 
-      // Fall back to the persisted account rather than failing outright.
-      return this.account;
+      // The tab is there but never answered (page still loading, or the
+      // injected script failed). Fall back to a persisted account so a warm
+      // reconnect still works, but only if we actually have one — never invent
+      // an empty account and send it to the backend.
+      if (this.account?.username) {
+        return this.account;
+      }
+      await this.setState({ lastError: 'Could not read the X account from the tab.' });
+      return null;
     }
 
     /** Bind this agent to the current X tab: capture account + notify backend. */

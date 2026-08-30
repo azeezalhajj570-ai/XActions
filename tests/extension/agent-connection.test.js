@@ -274,4 +274,44 @@ describe('agent connection manager', () => {
     expect(state.status).toBe('connecting');
     expect(agentConnection.socket).toBe(socket); // socket kept for reconnection
   });
+
+  it('pair() returns failure (not fake success) when the claim cannot complete', async () => {
+    const { agentConnection, fakeIo } = track(freshAgent({ tabs: accountTabs(ACCOUNT) }));
+    const originalFetch = global.fetch;
+    global.fetch = async () => { throw new TypeError('Backend unreachable'); };
+    try {
+      const res = await agentConnection.pair('BEEF1234');
+      expect(res.success).toBe(false);
+      expect(res.error).toMatch(/Backend unreachable|Not paired|Could not read|Enter/i);
+      expect(fakeIo._sockets.length).toBe(0); // no socket created on a failed claim
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('pair() resolves success only after the socket actually connects', async () => {
+    const { agentConnection, fakeIo } = track(freshAgent({ tabs: accountTabs(ACCOUNT) }));
+    const originalFetch = global.fetch;
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ sessionId: 'session_paired' }),
+    });
+    try {
+      const resPromise = agentConnection.pair('CAFE1234');
+      await new Promise((r) => setTimeout(r, 30));
+      const socket = fakeIo._sockets[0];
+      expect(socket).toBeDefined();
+      socket.connect();
+      const res = await resPromise;
+      expect(res.success).toBe(true);
+      // The connect handler updates state asynchronously; give it a tick.
+      await new Promise((r) => setTimeout(r, 20));
+      const state = await agentConnection.getState();
+      expect(state.status).toBe('connected');
+      expect(state.sessionId).toBe('session_paired');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

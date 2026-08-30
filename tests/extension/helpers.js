@@ -183,21 +183,24 @@ export function makeFakeIo() {
       connected: false,
       emitted: [],
       _handlers: handlers,
-      on(event, fn) { handlers[event] = fn; },
-      once(event, fn) { handlers[event] = fn; },
+      on(event, fn) { (handlers[event] ||= []).push(fn); },
+      once(event, fn) { (handlers[event] ||= []).push(fn); },
+      off(event, fn) {
+        if (handlers[event]) handlers[event] = handlers[event].filter((h) => h !== fn);
+      },
       removeAllListeners() { Object.keys(handlers).forEach((k) => delete handlers[k]); },
       emit(event, ...args) { socket.emitted.push({ event, args }); },
       connect() {
         socket.connected = true;
-        handlers.connect?.();
+        (handlers.connect || []).slice().forEach((fn) => fn());
       },
       disconnect(reason) {
         socket.connected = false;
-        handlers.disconnect?.(reason || 'io client disconnect');
+        (handlers.disconnect || []).slice().forEach((fn) => fn(reason || 'io client disconnect'));
       },
       _fire(event, ...args) {
-        const result = handlers[event]?.(...args);
-        return result instanceof Promise ? result : Promise.resolve(result);
+        const results = (handlers[event] || []).map((fn) => fn(...args));
+        return Promise.all(results).then(() => undefined);
       },
     };
     sockets.push(socket);

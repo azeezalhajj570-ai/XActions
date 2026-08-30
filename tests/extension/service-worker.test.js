@@ -80,13 +80,34 @@ describe('service worker', () => {
     expect(res.account.username).toBe('myx');
   });
 
-  it('AGENT_PAIR stores the code and returns success', async () => {
-    const { handleMessage, storage } = loadServiceWorker({ tabs: makeTabsStub() });
+  it('AGENT_PAIR stores the code, claims the session, and returns success', async () => {
+    const { handleMessage, storage, fakeIo } = loadServiceWorker({ tabs: makeTabsStub() });
 
-    const res = await handleMessage({ type: 'AGENT_PAIR', pairingCode: 'BEEF1234' });
-    expect(res.success).toBe(true);
-    const saved = await storage.get('agentPairing');
-    expect(saved.agentPairing.pairingCode).toBe('BEEF1234');
+    // Stub the HTTP pairing claim so the extension gets a sessionId.
+    const originalFetch = global.fetch;
+    global.fetch = async (url, opts) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ sessionId: 'session_paired' }),
+    });
+
+    try {
+      const resPromise = handleMessage({ type: 'AGENT_PAIR', pairingCode: 'BEEF1234' });
+      // The claim + socket handshake is async; wait a tick so the socket exists,
+      // then fire its connect event so pair() resolves success.
+      await new Promise((r) => setTimeout(r, 50));
+      const socket = fakeIo._sockets[0];
+      expect(socket).toBeDefined();
+      socket.connect();
+
+      const res = await resPromise;
+      expect(res.success).toBe(true);
+      const saved = await storage.get('agentPairing');
+      expect(saved.agentPairing.pairingCode).toBe('BEEF1234');
+      expect(saved.agentPairing.sessionId).toBe('session_paired');
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   it('AGENT_BRIDGE_MESSAGE forwards ACTION_PERFORMED to the backend socket', async () => {

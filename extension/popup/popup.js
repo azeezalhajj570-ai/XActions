@@ -608,14 +608,23 @@
         showToast('Enter the pairing code from your dashboard', 'warning');
         return;
       }
-      const response = await chrome.runtime.sendMessage({ type: 'AGENT_PAIR', pairingCode: code });
-      if (response?.success) {
-        showToast('Pairing code accepted — connecting...', 'success');
-        DOM.pairingPanel.classList.add('hidden');
-        setTimeout(refreshAgentStatus, 500);
-      } else {
-        showToast(response?.error || 'Pairing failed', 'error');
-        DOM.pairingCodeInput.select();
+      DOM.btnPair.disabled = true;
+      DOM.btnPair.textContent = 'Connecting...';
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'AGENT_PAIR', pairingCode: code });
+        if (response?.success) {
+          showToast('Connected to dashboard', 'success');
+          DOM.pairingCodeInput.value = '';
+          await refreshAgentStatus();
+        } else {
+          showToast(response?.error || 'Pairing failed', 'error');
+          DOM.agentErrorLine.textContent = response?.error || 'Pairing failed';
+          DOM.agentErrorLine.classList.remove('hidden');
+          DOM.pairingCodeInput.select();
+        }
+      } finally {
+        DOM.btnPair.disabled = false;
+        DOM.btnPair.textContent = 'Connect to Dashboard';
       }
     });
 
@@ -678,16 +687,20 @@
     // Session
     DOM.agentSessionStatus.textContent = agentState.sessionId ? 'Active' : '—';
 
-    // Error line
-    if (agentState.lastError) {
+    // Error line — cleared when connected so a stale failure doesn't linger.
+    if (agentConnected) {
+      DOM.agentErrorLine.classList.add('hidden');
+      DOM.agentErrorLine.textContent = '';
+    } else if (agentState.lastError) {
       DOM.agentErrorLine.textContent = agentState.lastError;
       DOM.agentErrorLine.classList.remove('hidden');
     } else {
       DOM.agentErrorLine.classList.add('hidden');
     }
 
-    // Pairing panel visibility
-    DOM.pairingPanel.classList.toggle('hidden', agentConnected || !!agentState.sessionId);
+    // Pairing panel visibility — hidden only when actually connected. A stale
+    // sessionId alone (dead session) must not hide the form.
+    DOM.pairingPanel.classList.toggle('hidden', agentConnected);
     DOM.agentConnectedActions.classList.toggle('hidden', !agentConnected);
 
     // Backend URL setting (only set when the field is empty so the user's edits stick)
