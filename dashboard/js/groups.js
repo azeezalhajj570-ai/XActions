@@ -212,7 +212,7 @@ async function loadTasks() {
 
 function joinGroupRoom(id) {
   if (!socket) {
-    socket = connectSocket('dashboard', { transports: ['websocket', 'polling'] });
+    socket = connectSocket('dashboard');
     socket.on('group:taskCreated', () => refreshStats());
     socket.on('group:taskClaimed', (d) => { appendActivity(`▶ ${d.action} @${d.accountUsername} → @${d.memberUsername}`); refreshStats(); });
     socket.on('group:taskCompleted', (d) => { appendActivity(`✓ ${d.action} @${d.accountUsername} → @${d.memberUsername}`); refreshStats(); });
@@ -520,5 +520,5 @@ function debounce(fn, ms) {
   loadGroups();
   loadAccounts();
   loadXGroupOptions();
-  try { socket = connectSocket('dashboard', { transports: ['websocket', 'polling'] }); } catch { /* offline */ }
+  try { socket = connectSocket('dashboard'); } catch { /* offline */ }
 })();
