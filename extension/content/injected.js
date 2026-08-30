@@ -1131,7 +1131,7 @@
     //    participant panel render user rows. Try the known cell containers
     //    first, then fall back to any profile link in the visible DOM that
     //    is not the current user's own nav links.
-    const rows = document.querySelectorAll('[data-testid="UserCell"], [data-testid="conversationMembers"] [role="button"], [data-testid="conversationMembers"] a[href^="/"]');
+    const rows = document.querySelectorAll('[data-testid="UserCell"], [data-testid="conversationMembers"] [role="button"], [data-testid="conversationMembers"] a[href^="/"], [data-testid="conversationMembers"] [data-testid="User-Name"], [data-testid="User-Name"] a[href^="/"]');
     for (const row of rows) {
       const link = row.matches('a[href^="/"]') ? row : row.querySelector('a[href^="/"]');
       const href = link?.getAttribute('href') || '';
@@ -1173,6 +1173,18 @@
           isAdmin: false,
         });
       }
+    }
+    // Debug: when nothing matched, record what the DOM actually contains so
+    // we can target the real selectors instead of guessing.
+    if (members.length === 0) {
+      const userCells = document.querySelectorAll('[data-testid="UserCell"]').length;
+      const convMembers = document.querySelectorAll('[data-testid="conversationMembers"]').length;
+      const userNames = document.querySelectorAll('[data-testid="User-Name"]').length;
+      const profileLinks = [...document.querySelectorAll('a[href^="/"]')]
+        .map((a) => (a.getAttribute('href') || '').split('/').filter(Boolean)[0])
+        .filter((u) => u && !['home', 'search', 'messages', 'i', 'settings', 'notifications', 'explore', 'compose'].includes(u))
+        .slice(0, 10);
+      console.log('[XFlow][groupMembers] DOM probe:', JSON.stringify({ userCells, convMembers, userNames, profileLinks }));
     }
     return members;
   }
