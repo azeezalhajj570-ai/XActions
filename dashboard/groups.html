@@ -329,6 +329,20 @@
             </div>
           </div>
 
+          <div class="card" style="margin-top:14px;">
+            <h3 style="margin-bottom:10px;">Browser Script &amp; Export</h3>
+            <p class="muted" style="font-size:12px;margin-bottom:12px;">
+              Use the standalone console script to extract members from the open group chat and download them as
+              CSV/JSON — no backend sync needed. Open the group's <b>All Members</b> view on x.com, paste the script
+              into the DevTools console, and it scrolls the list and downloads the files.
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <button class="btn btn--secondary btn--sm" id="btn-xgroup-script-copy">Copy Script</button>
+              <a class="btn btn--secondary btn--sm" href="/script-files/xGroupMemberExporter.js" download>xGroupMemberExporter.js</a>
+            </div>
+            <pre style="max-height:160px;overflow:auto;font-size:11px;line-height:1.4;background:var(--bg-2);padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:12px;" id="xgroup-script-preview"></pre>
+          </div>
+
           <div class="card" id="xgroup-members-card" style="display:none;">
             <div class="toolbar">
               <input type="text" class="form-input" id="xgroup-search" placeholder="Search members..." style="max-width:220px;font-size:13px;">
@@ -373,7 +387,7 @@
     </div>
   </div>
 
-  <script src="/js/config.js?v=15"></script>
-  <script src="/js/groups.js?v=15"></script>
+  <script src="/js/config.js?v=16"></script>
+  <script src="/js/groups.js?v=16"></script>
 </body>
 </html>

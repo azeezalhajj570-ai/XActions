@@ -537,6 +537,21 @@ $('#btn-xgroup-view').addEventListener('click', () => loadXGroupMembers(1));
 $('#btn-xgroup-export-csv').addEventListener('click', () => exportXGroupMembers('csv'));
 $('#btn-xgroup-export-json').addEventListener('click', () => exportXGroupMembers('json'));
 $('#btn-xgroup-via-ext').addEventListener('click', fetchXGroupViaExtension);
+$('#btn-xgroup-script-copy').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/script-files/xGroupMemberExporter.js');
+    const text = await res.text();
+    await navigator.clipboard.writeText(text);
+    showToast('Script copied — paste it into the x.com console', 'success');
+  } catch {
+    showToast('Copy failed — use the download link instead', 'error');
+  }
+});
+// Load the script preview once.
+fetch('/script-files/xGroupMemberExporter.js').then((r) => r.text()).then((t) => {
+  const pre = $('#xgroup-script-preview');
+  if (pre) pre.textContent = t.slice(0, 2000) + (t.length > 2000 ? '\n…' : '');
+}).catch(() => {});
 $('#btn-xgroup-prev').addEventListener('click', () => loadXGroupMembers(Math.max(1, xGroup.page - 1)));
 $('#btn-xgroup-next').addEventListener('click', () => loadXGroupMembers(xGroup.page + 1));
 $('#xgroup-search').addEventListener('input', debounce(() => loadXGroupMembers(1), 400));

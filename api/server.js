@@ -332,6 +332,12 @@ export function createApp({ rateLimiting = true } = {}) {
   // Branding middleware - injects "Powered by XActions" if no license
   app.use(brandingMiddleware());
 
+  // Repo-root browser console scripts (scripts/*.js) served raw for download
+  app.use('/script-files', express.static(path.join(__dirname, '../scripts'), {
+    maxAge: '1h',
+    etag: true,
+  }));
+
   // Routes
   app.use('/webhooks', webhookRoutes); // Receive payment & Stripe webhook notifications
   app.use('/api/billing', billingRoutes); // Stripe subscription management
