@@ -76,7 +76,8 @@ async function apiRequest(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || data.message || 'Request failed');
+    const msg = data.error || data.message || 'Request failed';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 
   return data;
