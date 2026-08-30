@@ -202,9 +202,13 @@
 
         const socket = io(this.config.backendUrl, {
           auth,
-          // WebSocket-only: Cloudflare terminates socket.io's polling->upgrade
-          // path; a direct WebSocket connection works through it.
-          transports: ['websocket'],
+          // WebSocket-first with a plain polling fallback: Cloudflare
+          // terminates socket.io's polling->upgrade path, so upgrade is
+          // disabled; the client uses WebSocket when it works and falls
+          // back to long-polling (reliable through Cloudflare) when WS
+          // keeps failing.
+          transports: ['websocket', 'polling'],
+          upgrade: false,
           reconnection: true,
           reconnectionAttempts: Infinity,
           reconnectionDelay: 1000,

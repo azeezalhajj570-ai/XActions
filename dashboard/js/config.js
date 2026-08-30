@@ -234,12 +234,15 @@ function connectSocket(role = 'dashboard', extra = {}) {
     return undefined;
   }
 
-  // WebSocket-only transport: Cloudflare (and some proxies) terminate
-  // socket.io's polling->websocket upgrade path, but handle a direct
-  // WebSocket connection fine. Callers can override with extra.transports.
+  // WebSocket-first with a polling fallback. Cloudflare (and some proxies)
+  // terminate socket.io's polling->websocket upgrade path, so the upgrade
+  // probe is disabled entirely (upgrade:false): the client uses WebSocket
+  // when it works, and falls back to plain long-polling (which Cloudflare
+  // proxies reliably) when WebSocket keeps failing — instead of dying.
   const socket = io(CONFIG.WS_URL, {
     auth: { token, role },
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
+    upgrade: false,
     reconnection: true,
     reconnectionAttempts: 3,
     reconnectionDelay: 1000,
