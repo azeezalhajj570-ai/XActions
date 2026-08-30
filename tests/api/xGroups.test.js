@@ -117,15 +117,14 @@ const fakePrisma = {
   operation: {
     create: vi.fn(async ({ data }) => { const r = { id: db._next(), ...data }; db.operations.push(r); return r; }),
     findFirst: vi.fn(async ({ where }) => {
-      // Support { config: { path: [...], equals: v } } JSON filters.
+      // Support { config: { contains: v } } string-substring filters.
       const list = db.operations.filter((r) => {
         if (where.type && r.type !== where.type) return false;
         if (where.userId && r.userId !== where.userId) return false;
         if (where.config) {
-          const { path, equals } = where.config;
-          let val = r.config;
-          if (path) for (const p of path) val = val?.[p];
-          if (equals !== undefined && val !== equals) return false;
+          if (where.config.contains) {
+            if (!String(r.config || '').includes(where.config.contains)) return false;
+          }
         }
         return true;
       });
@@ -273,7 +272,7 @@ describe('X Group DM API', () => {
       userId: 'u1',
       type: 'xGroupMemberSync',
       status: 'queued',
-      config: { conversationId: 'g2090169325890269541' },
+      config: JSON.stringify({ conversationId: 'g2090169325890269541' }),
       progress: { processed: 12, total: 50, pages: 2 },
       createdAt: new Date(),
     });

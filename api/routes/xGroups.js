@@ -69,7 +69,7 @@ router.post('/:conversationId/members/sync', async (req, res) => {
       accountId,
       conversationId,
       groupId,
-      config: { conversationId, accountId, groupId },
+      config: JSON.stringify({ conversationId, accountId, groupId }),
     }, { attempts: 1 });
 
     return res.status(202).json({ taskId: jobId });
@@ -132,11 +132,12 @@ router.get('/:conversationId/sync-status', async (req, res) => {
   }
 
   try {
+    // config is a String column; match the conversation id by substring.
     const operation = await prisma.operation.findFirst({
       where: {
         type: 'xGroupMemberSync',
         userId: req.user.id,
-        config: { path: ['conversationId'], equals: conversationId },
+        config: { contains: conversationId },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -145,7 +146,6 @@ router.get('/:conversationId/sync-status', async (req, res) => {
       return res.json({ status: 'IDLE', processed: 0, total: 0, pages: 0 });
     }
 
-    const config = operation.config || {};
     const progress = operation.progress || {};
     return res.json({
       status: (operation.status || 'queued').toUpperCase(),
