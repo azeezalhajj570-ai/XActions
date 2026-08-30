@@ -57,6 +57,12 @@ async function apiRequest(endpoint, options = {}) {
       ...(options.headers || {})
     }
   };
+
+  // Stringify object bodies (callers may pass { url } instead of JSON text);
+  // fetch would otherwise coerce the object to "[object Object]".
+  if (mergedOptions.body && typeof mergedOptions.body === 'object') {
+    mergedOptions.body = JSON.stringify(mergedOptions.body);
+  }
   
   const url = endpoint.startsWith('http') 
     ? endpoint 
