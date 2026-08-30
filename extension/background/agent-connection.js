@@ -349,9 +349,14 @@
         return null;
       }
 
-      // First claim: POST /api/pairing/claim with the code + account.
+      // First claim: POST /api/pairing/claim with the code + account. The
+      // backend resolves the authoritative username from the session cookie,
+      // so the extension only needs the cookie (a username hint is optional).
       await this.refreshAccountFromTab();
-      if (!this.account?.username) return null;
+      if (!this.account?.sessionCookie) {
+        await this.setState({ lastError: 'No x.com session cookie found. Sign in on x.com and try again.' });
+        return null;
+      }
 
       let res;
       try {
