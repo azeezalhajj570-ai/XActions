@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 nich (@nichxbt). Licensed under the Apache License, Version 2.0.
 // Service worker tests: agent message dispatch plus regression that the
 // existing automation commands still fan out to X tabs.
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { installGlobals, makeStorage, makeChrome, makeFakeIo, loadExtensionScript } from './helpers.js';
 
 const cleanups = [];
@@ -198,5 +198,19 @@ describe('service worker', () => {
 
     const pairing = await storage.get('agentPairing');
     expect(pairing.agentPairing).toBeUndefined();
+  });
+
+  it('INJECT_PAGE_SCRIPT runs injected.js in the MAIN world via chrome.scripting', async () => {
+    const { chrome, handleMessage } = loadServiceWorker({ tabs: makeTabsStub() });
+    const executeSpy = vi.fn(async () => [{ result: true }]);
+    chrome.scripting.executeScript = executeSpy;
+
+    const res = await handleMessage({ type: 'INJECT_PAGE_SCRIPT' }, { tab: { id: 42 } });
+    expect(res.success).toBe(true);
+    expect(executeSpy).toHaveBeenCalledWith({
+      target: { tabId: 42 },
+      world: 'MAIN',
+      files: ['content/injected.js'],
+    });
   });
 });

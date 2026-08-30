@@ -114,6 +114,12 @@ async function handleMessage(message, sender) {
     case 'AGENT_CONNECT':
       return agentConnection.connect();
 
+    // From the bridge: inject injected.js into the page context with
+    // world:'MAIN', which bypasses x.com's CSP (a nonce-based script-src
+    // allowlist blocks <script src="chrome-extension://..."> and inline).
+    case 'INJECT_PAGE_SCRIPT':
+      return injectPageScript(sender);
+
     // From the popup: explicit disconnect.
     case 'AGENT_DISCONNECT':
       return agentConnection.disconnect();
@@ -483,6 +489,28 @@ chrome.webRequest?.onCompleted?.addListener?.(
 // ============================================
 // HELPERS
 // ============================================
+
+/**
+ * Inject injected.js into the page context via chrome.scripting with
+ * world:'MAIN'. This bypasses x.com's CSP entirely (the page's nonce-based
+ * script-src allowlist blocks <script src="chrome-extension://..."> and
+ * inline injection from the page).
+ */
+async function injectPageScript(sender) {
+  const tabId = sender?.tab?.id;
+  if (!tabId) return { success: false, error: 'No tab' };
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      files: ['content/injected.js'],
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err?.message || 'Injection failed' };
+  }
+}
+
 async function getXTabs() {
   const tabs = await chrome.tabs.query({
     url: ['https://x.com/*', 'https://twitter.com/*'],

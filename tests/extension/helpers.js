@@ -84,6 +84,9 @@ export function makeChrome({ storage, tabs } = {}) {
         return null;
       },
     },
+    scripting: {
+      executeScript: async () => [{ result: true }],
+    },
     action: {
       setBadgeBackgroundColor({ color }) { badge.color = color; },
       setBadgeText({ text }) { badge.text = text; },

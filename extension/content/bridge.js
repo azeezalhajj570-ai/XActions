@@ -11,11 +11,28 @@
   // ============================================
   // INJECT AUTOMATION CODE INTO PAGE CONTEXT
   // ============================================
+  // x.com's CSP uses a nonce-based script-src allowlist that blocks both
+  // <script src="chrome-extension://..."> and inline injection from the page
+  // context. Ask the service worker to run chrome.scripting.executeScript with
+  // world:'MAIN', which bypasses the page CSP entirely.
   function injectScript() {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('content/injected.js');
-    script.onload = () => script.remove();
-    (document.head || document.documentElement).appendChild(script);
+    try {
+      chrome.runtime.sendMessage({ type: 'INJECT_PAGE_SCRIPT' }, () => {
+        // If the service worker is not available or fails, fall back to the
+        // legacy <script src> injection (may be CSP-blocked on x.com).
+        if (chrome.runtime.lastError) {
+          const script = document.createElement('script');
+          script.src = chrome.runtime.getURL('content/injected.js');
+          script.onload = () => script.remove();
+          (document.head || document.documentElement).appendChild(script);
+        }
+      });
+    } catch {
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('content/injected.js');
+      script.onload = () => script.remove();
+      (document.head || document.documentElement).appendChild(script);
+    }
   }
 
   // Wait for DOM ready then inject
