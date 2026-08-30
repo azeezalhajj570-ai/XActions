@@ -38,7 +38,7 @@ function cleanUsername(raw) {
  * @param {string} cookieString
  * @returns {Promise<{ username: string, twitterId: string }>}
  */
-async function validateSessionCookie(cookieString) {
+export async function validateSessionCookie(cookieString) {
   const client = new TwitterHttpClient({ cookies: cookieString, maxRetries: 0 });
   const response = await client.graphql(
     'oKJZqMkGz6Kq8ZDdK2zBPA',

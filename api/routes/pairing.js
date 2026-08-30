@@ -2,6 +2,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { pendingSessions } from '../realtime/socketHandler.js';
+import { validateSessionCookie } from './accounts.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -22,13 +23,15 @@ router.get('/info', (req, res) => {
  * The extension claims a dashboard session with the pairing code the dashboard
  * received over its socket. The code is short-lived (10 min) and single-use,
  * so it is the bearer credential — the extension never holds a JWT or any
- * server secret. The body also carries the X account detected on the tab so
- * the dashboard can show who is connected.
+ * server secret. The body carries the X session cookie (when available) and
+ * the account the extension detected; the backend validates the cookie and
+ * resolves the authoritative username itself, so a browser that cannot reach
+ * x.com from the extension context still pairs correctly.
  *
- * Body: { pairingCode, username, displayName?, profileUrl?, avatar? }
+ * Body: { pairingCode, sessionCookie?, username?, displayName?, profileUrl?, avatar? }
  */
 router.post('/claim', async (req, res) => {
-  const { pairingCode, username, displayName, profileUrl, avatar } = req.body || {};
+  const { pairingCode, sessionCookie, username, displayName, profileUrl, avatar } = req.body || {};
 
   if (!pairingCode || typeof pairingCode !== 'string') {
     return res.status(400).json({ error: 'pairingCode is required' });
@@ -46,7 +49,21 @@ router.post('/claim', async (req, res) => {
     return res.status(400).json({ error: 'Pairing code already used' });
   }
 
-  if (!username || typeof username !== 'string' || !username.trim()) {
+  // Resolve the authoritative account from the session cookie when present.
+  let resolvedUsername = '';
+  let verified = false;
+  if (typeof sessionCookie === 'string' && /auth_token=[^;]+/.test(sessionCookie)) {
+    try {
+      const info = await validateSessionCookie(sessionCookie);
+      resolvedUsername = (info?.username || '').trim().replace(/^@/, '');
+      verified = Boolean(resolvedUsername);
+    } catch (err) {
+      console.warn('⚠️ Pairing claim: cookie validation failed:', err?.message);
+    }
+  }
+
+  const cleanUsername = (resolvedUsername || username || '').trim().replace(/^@/, '');
+  if (!cleanUsername) {
     return res.status(400).json({ error: 'X account username is required' });
   }
 
@@ -55,7 +72,6 @@ router.post('/claim', async (req, res) => {
   entry.claimed = true;
 
   // Remember the X account on the user record so the dashboard can show it.
-  const cleanUsername = username.trim().replace(/^@/, '');
   try {
     await prisma.user.update({
       where: { id: entry.userId },
@@ -70,6 +86,9 @@ router.post('/claim', async (req, res) => {
     success: true,
     sessionId: entry.sessionId,
     backendUrl: process.env.API_URL || 'http://localhost:3001',
+    username: cleanUsername,
+    displayName: verified ? displayName || cleanUsername : (displayName || undefined),
+    verified,
   });
 });
 
