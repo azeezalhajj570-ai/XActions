@@ -59,6 +59,19 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       documentUrlPatterns: ['https://x.com/*', 'https://twitter.com/*'],
     });
   });
+
+  // Content scripts only inject on navigation. Reload any x.com tabs that were
+  // open before the extension installed/updated, so the bridge + page script
+  // are present without the user having to refresh by hand.
+  if (details.reason === 'install' || details.reason === 'update') {
+    try {
+      const tabs = await chrome.tabs.query({ url: ['https://x.com/*', 'https://twitter.com/*'] });
+      for (const tab of tabs) {
+        chrome.tabs.reload(tab.id).catch(() => {});
+      }
+      if (tabs.length) console.log(`🔄 Reloaded ${tabs.length} x.com tab(s) for bridge injection`);
+    } catch { /* no tabs or no permission */ }
+  }
 });
 
 // ============================================
