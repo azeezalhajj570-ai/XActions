@@ -122,7 +122,7 @@
     }
 
     async setState(patch) {
-      this.state = { ...this.state, ...patch };
+      this.state = { ...this.state, ...patch, updatedAt: Date.now() };
       await this.emitStatus();
     }
 
@@ -408,11 +408,13 @@
       return new Promise((resolve) => {
         const timeout = setTimeout(() => {
           cleanup();
-          resolve({ success: false, error: 'Timed out waiting for connection' });
+          this.setState({ status: 'offline', lastError: 'Timed out connecting to the backend' });
+          resolve({ success: false, error: 'Timed out connecting to the backend' });
         }, 12000);
         const onConnect = () => { cleanup(); resolve({ success: true }); };
         const onError = (err) => {
           cleanup();
+          this.setState({ status: 'offline', lastError: err?.message || 'Connection rejected' });
           resolve({ success: false, error: err?.message || 'Connection rejected' });
         };
         const cleanup = () => {
@@ -442,19 +444,28 @@
       // Ensure the page script is present before reading the account. The
       // bridge injects at page load, but if the tab predates the extension
       // (or the bridge missed), inject on demand via chrome.scripting.
+      // Bound with a timeout so a hung executeScript cannot stall pairing.
       try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          world: 'MAIN',
-          files: ['content/injected.js'],
-        });
+        await Promise.race([
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            world: 'MAIN',
+            files: ['content/injected.js'],
+          }),
+          new Promise((resolve) => setTimeout(resolve, 3000)),
+        ]);
       } catch { /* already injected or scripting unavailable */ }
 
       // The injected page script may not be ready the moment the tab loads;
-      // retry a few times before giving up.
+      // retry a few times before giving up. Each read is time-boxed: the
+      // bridge resolves GET_ACCOUNT_INFO only when the page answers, and can
+      // otherwise leave the promise pending forever.
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
-          const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_ACCOUNT_INFO' });
+          const response = await Promise.race([
+            chrome.tabs.sendMessage(tab.id, { type: 'GET_ACCOUNT_INFO' }),
+            new Promise((resolve) => setTimeout(() => resolve({ data: null, timeout: true }), 2500)),
+          ]);
           if (response?.data?.handle) {
             const pageCookie = response.data.sessionCookie || '';
             // The service worker can read the cookies via chrome.cookies even

@@ -665,7 +665,12 @@
   }
 
   function renderAgentStatus(agentState) {
-    const status = agentState.status || 'offline';
+    // A 'connecting' status older than ~15s is stale (the service worker died
+    // mid-handshake); show it as offline so the popup is not stuck forever.
+    let status = agentState.status || 'offline';
+    if (status === 'connecting' && agentState.updatedAt && (Date.now() - agentState.updatedAt) > 15000) {
+      status = 'offline';
+    }
     const hasXTab = !!agentState.agentTabId || !!agentState.account?.username;
 
     // X Connection — is there a live x.com tab bound?
