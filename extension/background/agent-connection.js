@@ -502,7 +502,11 @@
       if (this.account?.username) {
         return this.account;
       }
-      await this.setState({ lastError: 'Could not read the X account from the tab. Make sure you are signed in on x.com.' });
+      const cookieInfo = sessionCookie ? 'cookie-ok' : 'no-cookie';
+      const credInfo = viaCredentials?.username ? 'cred-ok' : 'cred-fail';
+      await this.setState({
+        lastError: `Could not read the X account from the tab. (${cookieInfo}, ${credInfo}, tab ${tab.id}) Make sure you are signed in on x.com.`,
+      });
       return null;
     }
 
