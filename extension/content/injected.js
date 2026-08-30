@@ -1085,11 +1085,15 @@
           .catch(async (err) => {
             // The REST path cannot access group DMs (X's API surface does not
             // expose group conversation participants). Fall back to reading the
-            // open group chat's participant panel from the DOM — the same
-            // [data-testid="UserCell"] rows the rest of the app scrapes. The
-            // user must have the group chat open with its member list visible.
-            // Wait briefly for the panel to finish rendering before scraping.
-            await new Promise((r) => setTimeout(r, 600));
+            // group's member panel from the DOM. The /info page does NOT render
+            // the member list — it lives in the conversation-info overlay, so
+            // open it first (the conversation info button), wait for it to
+            // render, then scrape the UserCell rows.
+            const infoBtn = document.querySelector('[data-testid="conversationInfoButton"]');
+            if (infoBtn) {
+              try { infoBtn.click(); } catch { /* ignore */ }
+            }
+            await new Promise((r) => setTimeout(r, 900));
             const domMembers = scrapeGroupMembersFromDOM();
             if (domMembers.length > 0) {
               window.postMessage({
