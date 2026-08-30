@@ -1,0 +1,85 @@
+# ─── Version control ───────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ─── Dependencies (installed fresh in the image) ──────────────────
+node_modules
+**/node_modules
+
+# ─── Local env / secrets (never ship) ─────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# ─── Tests & CI (not needed at runtime) ───────────────────────────
+tests
+coverage
+.github
+.vscode
+.eslintcache
+eslint.config.js
+vitest.config.js
+jsconfig.json
+*.test.js
+
+# ─── Docs & metadata (bloat the image, not needed by the API) ─────
+docs
+site
+tutorials
+prompts
+AGENTS.md
+CHANGELOG.md
+CITATION.cff
+CLAUDE.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+GEMINI.md
+README.md
+ROADMAP.md
+SECURITY.md
+THIRD-PARTY-NOTICES.md
+llms.txt
+llms-full.txt
+humans.txt
+metadata.json
+glama.json
+
+# ─── Heavy / irrelevant source trees ──────────────────────────────
+python
+xspace-agents
+playground
+examples
+integrations
+packages
+archive
+data
+functions
+worker
+bin
+types
+config
+deploy
+public/screenshots
+dashboard/docs
+dashboard/tutorials
+# 33M of price-chart CSVs only used by the price-correlation page; the ask
+# index/actions JSON (dashboard/data/ask-*.json) IS needed at runtime.
+dashboard/data/tweet-price
+
+# ─── Build artifacts & caches ─────────────────────────────────────
+dist
+dist-cloudflare
+pages-out
+.wrangler
+coverage
+*.log
+.DS_Store
+
+# ─── Editor / OS junk ─────────────────────────────────────────────
+.idea
+*.swp
+*~
