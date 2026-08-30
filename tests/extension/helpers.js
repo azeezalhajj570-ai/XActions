@@ -77,6 +77,13 @@ export function makeChrome({ storage, tabs } = {}) {
       onRemoved: { addListener() {} },
     },
     runtime,
+    cookies: {
+      async get({ name }) {
+        if (name === 'auth_token') return { value: 'sw-auth-token' };
+        if (name === 'ct0') return { value: 'sw-ct0' };
+        return null;
+      },
+    },
     action: {
       setBadgeBackgroundColor({ color }) { badge.color = color; },
       setBadgeText({ text }) { badge.text = text; },

@@ -175,6 +175,25 @@ describe('agent connection manager', () => {
     expect(state.account.displayName).toBe('My X');
   });
 
+  it('captures the session cookie via chrome.cookies (HttpOnly-safe)', async () => {
+    const { agentConnection } = track(freshAgent({
+      initialStorage: {
+        agentPairing: { pairingCode: 'AAAA1111', sessionId: 'session_1' },
+      },
+      tabs: accountTabs(ACCOUNT),
+    }));
+
+    await agentConnection.connect();
+    await agentConnection.onBridgeMessage({
+      type: 'ACCOUNT_INFO_RESPONSE',
+      data: { handle: 'myx', name: 'My X', url: 'https://x.com/myx', avatar: '', sessionCookie: '' },
+    });
+
+    const state = await agentConnection.getState();
+    expect(state.account.sessionCookie).toContain('auth_token=sw-auth-token');
+    expect(state.account.sessionCookie).toContain('ct0=sw-ct0');
+  });
+
   it('marks the state x_tab_lost and notifies the backend when the tab closes', async () => {
     const { agentConnection, fakeIo, chrome } = track(freshAgent({
       initialStorage: {

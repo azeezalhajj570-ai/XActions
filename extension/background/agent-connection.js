@@ -37,6 +37,22 @@
   };
 
   /**
+   * Read the x.com session cookies from the service worker via chrome.cookies.
+   * Works even when x.com marks auth_token/ct0 HttpOnly (the page's
+   * document.cookie cannot see HttpOnly cookies). Returns '' when unavailable.
+   */
+  async function readXCookies(tabUrl) {
+    try {
+      const url = tabUrl || 'https://x.com/';
+      const authToken = await chrome.cookies.get({ url, name: 'auth_token' });
+      const ct0 = await chrome.cookies.get({ url, name: 'ct0' });
+      if (!authToken?.value) return '';
+      return `auth_token=${authToken.value}` + (ct0?.value ? `; ct0=${ct0.value}` : '');
+    } catch { /* cookies permission missing or not on x.com */ }
+    return '';
+  }
+
+  /**
    * Read config + pairing + state from chrome.storage.local in one shot.
    */
   async function loadPersisted() {
@@ -419,12 +435,16 @@
         try {
           const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_ACCOUNT_INFO' });
           if (response?.data?.handle) {
+            const pageCookie = response.data.sessionCookie || '';
+            // The service worker can read the cookies via chrome.cookies even
+            // if x.com marks them HttpOnly — prefer that over the page read.
+            const swCookie = await readXCookies(tab.url);
             this.account = {
               username: response.data.handle || '',
               displayName: response.data.name || '',
               profileUrl: response.data.url || '',
               avatar: response.data.avatar || '',
-              sessionCookie: response.data.sessionCookie || '',
+              sessionCookie: swCookie || pageCookie,
             };
             await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
             return this.account;
@@ -545,12 +565,15 @@
         }
         case 'ACCOUNT_INFO_RESPONSE': {
           if (message.data) {
+            const pageCookie = message.data.sessionCookie || '';
+            // Prefer the service-worker cookie read (works even when HttpOnly).
+            const swCookie = await readXCookies();
             this.account = {
               username: message.data.handle || '',
               displayName: message.data.name || '',
               profileUrl: message.data.url || '',
               avatar: message.data.avatar || '',
-              sessionCookie: message.data.sessionCookie || '',
+              sessionCookie: swCookie || pageCookie,
             };
             await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
           }

@@ -878,35 +878,38 @@
   // ============================================
   function scrapeAccountInfo() {
     try {
-      // Sidebar account switcher reliably holds the logged-in user.
+      // Sidebar account switcher reliably holds the logged-in user. The
+      // @handle is in the button's text (pattern used across the repo).
       const switcher = document.querySelector('div[data-testid="SideNav_AccountSwitcher_Button"]');
-      const switcherAvatar = switcher?.querySelector('img[src*="profile_images"]');
-      const switcherName = switcher?.querySelector('div[dir="ltr"]');
+      const switcherText = switcher?.textContent || '';
+      const handleMatch = switcherText.match(/@([A-Za-z0-9_]{1,15})/);
+      const handle = handleMatch?.[1] || '';
 
-      // Profile page elements, as a fallback.
-      const nameEl = document.querySelector('[data-testid="UserName"]') || document.querySelector('div[dir="ltr"] > span');
-      const avatarEl = document.querySelector('[data-testid="UserAvatar-Container"] img') || document.querySelector('img[alt][src*="profile_images"]');
+      // Name + avatar: prefer the profile-page UserName element, else the
+      // switcher's avatar image and its name line.
+      const nameEl = document.querySelector('[data-testid="UserName"]') || document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"] div[dir="ltr"] span');
+      const avatarEl = document.querySelector('[data-testid="UserAvatar-Container"] img') || switcher?.querySelector('img[src*="profile_images"]');
+      const name = nameEl?.textContent?.trim() || handle || 'Unknown';
 
-      // The switcher's nested link (or a profile link in the page) yields the handle.
-      const handleLink = switcher?.querySelector('a[href^="/"]') || document.querySelector('a[href^="/"][href*="/following"]');
-      const handle = handleLink?.getAttribute('href')?.split('/')[1]
-        || (window.location.pathname.split('/')[1] || '');
-
-      // Session cookies for backend account registration. auth_token + ct0 are
-      // NOT HttpOnly on x.com, so the page can read them (the old console agent
-      // did exactly this). Sent only to the service worker, never exposed.
+      // Session cookies for backend account registration. auth_token + ct0
+      // are NOT HttpOnly on x.com, so the page can read them (the old console
+      // agent did exactly this). Sent only to the service worker, never exposed.
       let sessionCookie = '';
       try {
-        const parts = document.cookie.split(';').map((c) => c.trim());
-        const get = (k) => parts.find((c) => c.startsWith(k + '='))?.split('=').slice(1).join('=') || '';
-        const authToken = get('auth_token');
-        const ct0 = get('ct0');
+        const cookies = document.cookie.split(';').reduce((acc, c) => {
+          const eq = c.indexOf('=');
+          if (eq === -1) return acc;
+          acc[c.slice(0, eq).trim()] = c.slice(eq + 1).trim();
+          return acc;
+        }, {});
+        const authToken = cookies.auth_token;
+        const ct0 = cookies.ct0;
         if (authToken) sessionCookie = `auth_token=${authToken}` + (ct0 ? `; ct0=${ct0}` : '');
       } catch { /* cookie read failed — identity only */ }
 
       return {
-        name: switcherName?.textContent?.trim() || nameEl?.textContent?.trim() || 'Unknown',
-        avatar: switcherAvatar?.src || avatarEl?.src || '',
+        name,
+        avatar: avatarEl?.src || '',
         handle,
         url: window.location.href,
         sessionCookie,
