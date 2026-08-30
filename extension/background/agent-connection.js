@@ -53,6 +53,39 @@
   }
 
   /**
+   * Resolve the authenticated X account from the session cookie via x.com's
+   * verify_credentials endpoint. Runs in the service worker (x.com host
+   * permission, no page CSP). Returns { username, displayName, profileUrl,
+   * avatar } or throws.
+   */
+  async function fetchXAccount(sessionCookie) {
+    const ct0 = /ct0=([^;]+)/.exec(sessionCookie)?.[1] || '';
+    const res = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
+      method: 'GET',
+      headers: {
+        'authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
+        'cookie': sessionCookie,
+        'x-csrf-token': ct0,
+        'x-twitter-auth-type': 'OAuth2Session',
+        'content-type': 'application/json',
+      },
+      credentials: 'omit',
+    });
+    if (!res.ok) {
+      throw new Error(`verify_credentials HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const username = data?.screen_name || '';
+    if (!username) throw new Error('verify_credentials missing screen_name');
+    return {
+      username,
+      displayName: data?.name || username,
+      profileUrl: `https://x.com/${username}`,
+      avatar: data?.profile_image_url_https || '',
+    };
+  }
+
+  /**
    * Read config + pairing + state from chrome.storage.local in one shot.
    */
   async function loadPersisted() {
@@ -429,7 +462,12 @@
       });
     }
 
-    /** Read the current X account from a live x.com tab through the bridge. */
+    /**
+     * Read the current X account. Primary: fetch x.com's own
+     * verify_credentials endpoint from the service worker (authoritative,
+     * no page-script/CSP dependency — the SW has x.com host permission).
+     * Fallback: the page script via the bridge.
+     */
     async refreshAccountFromTab() {
       await this.ensureInitialized();
       const tab = await this.pickXTab();
@@ -441,10 +479,22 @@
       this.agentTabId = tab.id;
       await chrome.storage.local.set({ [STORAGE_KEYS.tab]: tab.id });
 
-      // Ensure the page script is present before reading the account. The
-      // bridge injects at page load, but if the tab predates the extension
-      // (or the bridge missed), inject on demand via chrome.scripting.
-      // Bound with a timeout so a hung executeScript cannot stall pairing.
+      // 1) Authoritative identity from x.com via the session cookie.
+      const sessionCookie = await readXCookies(tab.url);
+      if (sessionCookie) {
+        try {
+          const account = await fetchXAccount(sessionCookie);
+          if (account?.username) {
+            this.account = { ...account, sessionCookie };
+            await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
+            return this.account;
+          }
+        } catch { /* fall through to the bridge read */ }
+      }
+
+      // 2) Fall back to the page script through the bridge. Inject on demand
+      //    (CSP-safe, world:'MAIN') and time-box every step so pairing cannot
+      //    hang on a missing or unresponsive page script.
       try {
         await Promise.race([
           chrome.scripting.executeScript({
@@ -456,10 +506,6 @@
         ]);
       } catch { /* already injected or scripting unavailable */ }
 
-      // The injected page script may not be ready the moment the tab loads;
-      // retry a few times before giving up. Each read is time-boxed: the
-      // bridge resolves GET_ACCOUNT_INFO only when the page answers, and can
-      // otherwise leave the promise pending forever.
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
           const response = await Promise.race([
@@ -468,15 +514,12 @@
           ]);
           if (response?.data?.handle) {
             const pageCookie = response.data.sessionCookie || '';
-            // The service worker can read the cookies via chrome.cookies even
-            // if x.com marks them HttpOnly — prefer that over the page read.
-            const swCookie = await readXCookies(tab.url);
             this.account = {
               username: response.data.handle || '',
               displayName: response.data.name || '',
               profileUrl: response.data.url || '',
               avatar: response.data.avatar || '',
-              sessionCookie: swCookie || pageCookie,
+              sessionCookie: sessionCookie || pageCookie,
             };
             await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
             return this.account;

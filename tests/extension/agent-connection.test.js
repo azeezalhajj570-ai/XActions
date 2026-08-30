@@ -52,6 +52,23 @@ describe('agent connection manager', () => {
     return result;
   }
 
+  // The primary account read now fetches x.com verify_credentials; stub fetch
+  // so connect()/refreshAccountFromTab succeeds without real network.
+  beforeEach(() => {
+    const originalFetch = global.fetch;
+    global.fetch = async (url) => {
+      if (String(url).includes('verify_credentials')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ screen_name: 'myx', name: 'My X', profile_image_url_https: 'https://pbs.twimg.com/avatar' }),
+        };
+      }
+      return originalFetch(url);
+    };
+    cleanups.push(() => { global.fetch = originalFetch; });
+  });
+
   it('creates exactly one socket for repeated connect() calls', async () => {
     const { agentConnection, fakeIo } = track(freshAgent({
       initialStorage: {

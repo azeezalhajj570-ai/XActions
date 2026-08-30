@@ -10,6 +10,23 @@ afterEach(() => {
   while (cleanups.length) cleanups.pop()();
 });
 
+// connect() now reads the X account via verify_credentials; stub fetch so the
+// connection manager resolves the account without real network.
+beforeEach(() => {
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).includes('verify_credentials')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ screen_name: 'myx', name: 'My X', profile_image_url_https: 'https://pbs.twimg.com/avatar' }),
+      };
+    }
+    return originalFetch(url);
+  };
+  cleanups.push(() => { global.fetch = originalFetch; });
+});
+
 /**
  * Load the full service worker (vendored socket.io client + connection
  * manager + worker) against a chrome stub that captures the onMessage
