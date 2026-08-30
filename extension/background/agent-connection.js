@@ -60,6 +60,30 @@
   }
 
   /**
+   * Resolve the authenticated X account via x.com's verify_credentials from
+   * the service worker. The SW has x.com host permission, so a fetch with
+   * credentials:'include' sends the x.com cookies automatically — no
+   * forbidden Cookie header needed. No page script / bridge required.
+   */
+  async function fetchXAccount() {
+    const res = await fetch('https://x.com/i/api/1.1/account/verify_credentials.json', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(`verify_credentials HTTP ${res.status}`);
+    const data = await res.json();
+    const username = data?.screen_name || '';
+    if (!username) throw new Error('verify_credentials missing screen_name');
+    return {
+      username,
+      displayName: data?.name || username,
+      profileUrl: `https://x.com/${username}`,
+      avatar: data?.profile_image_url_https || '',
+    };
+  }
+
+  /**
    * Read config + pairing + state from chrome.storage.local in one shot.
    */
   async function loadPersisted() {
@@ -455,7 +479,21 @@
 
       const sessionCookie = await readXCookies(tab.url);
 
-      // 1) Authoritative identity: verify_credentials from the page (same-origin).
+      // 1) Authoritative identity: verify_credentials from the service worker.
+      //    credentials:'include' sends the x.com cookies automatically (host
+      //    permission), so this works even when the bridge/page script is not
+      //    loaded in the tab.
+      try {
+        const account = await fetchXAccount();
+        if (account?.username) {
+          this.account = { ...account, sessionCookie };
+          await chrome.storage.local.set({ [STORAGE_KEYS.account]: this.account });
+          return this.account;
+        }
+      } catch { /* fall through to the page-script path */ }
+
+      // 2) Fall back: ask the injected page script (same-origin fetch) via the
+      //    bridge. Inject on demand (CSP-safe, world:'MAIN').
       try {
         await Promise.race([
           chrome.scripting.executeScript({
