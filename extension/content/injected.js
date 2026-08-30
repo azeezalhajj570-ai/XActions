@@ -1083,17 +1083,70 @@
             }, '*');
           })
           .catch((err) => {
+            // The REST path cannot access group DMs (X's API surface does not
+            // expose group conversation participants). Fall back to reading the
+            // open group chat's participant panel from the DOM — the same
+            // [data-testid="UserCell"] rows the rest of the app scrapes. The
+            // user must have the group chat open with its member list visible.
+            const domMembers = scrapeGroupMembersFromDOM();
+            if (domMembers.length > 0) {
+              window.postMessage({
+                source: 'xactions-page',
+                type: 'X_GROUP_MEMBERS_RESULT',
+                ok: true,
+                data: {
+                  conversationId,
+                  members: domMembers,
+                  source: 'dom',
+                },
+              }, '*');
+              return;
+            }
             window.postMessage({
               source: 'xactions-page',
               type: 'X_GROUP_MEMBERS_RESULT',
               ok: false,
-              error: err?.message || 'NETWORK_ERROR',
+              error: domMembers.length === 0 && err?.message === 'ACCESS_DENIED'
+                ? 'ACCESS_DENIED'
+                : (err?.message || 'NETWORK_ERROR'),
+              hint: 'Open the group chat and show its member list, then retry.',
             }, '*');
           });
         break;
       }
     }
   });
+
+  // Read the open group DM's participant panel from the DOM. X renders the
+  // member list as [data-testid="UserCell"] rows (name, handle, avatar) —
+  // the same cells the follower/unfollower scripts scrape. Needs the group
+  // chat open with the member list visible (click the group info / people
+  // icon so the panel is on screen).
+  function scrapeGroupMembersFromDOM() {
+    const rows = document.querySelectorAll('[data-testid="UserCell"]');
+    const members = [];
+    const seen = new Set();
+    for (const row of rows) {
+      // The handle is in a link whose href is /<username>.
+      const link = row.querySelector('a[href^="/"]');
+      const href = link?.getAttribute('href') || '';
+      const username = (href.split('/').filter(Boolean)[0] || '').replace(/^@/, '');
+      if (!username || seen.has(username)) continue;
+      seen.add(username);
+      const nameEl = row.querySelector('[dir="ltr"] > span') || row.querySelector('span');
+      const displayName = nameEl?.textContent?.trim() || username;
+      const avatar = row.querySelector('img')?.src || '';
+      members.push({
+        xUserId: username, // DOM rows do not expose the numeric user id
+        username,
+        displayName,
+        profileUrl: `https://x.com/${username}`,
+        avatarUrl: avatar || '',
+        isAdmin: false,
+      });
+    }
+    return members;
+  }
 
   console.log('✅ XActions automation engine injected');
 
